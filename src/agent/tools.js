@@ -8,6 +8,34 @@ import { explain, scoreAirports } from '../scoring/score.js'
 import { longHaulProfile, rawMetrics, BASELINE_YEAR, MOMENTUM_FROM, LATEST_YEAR } from '../scoring/metrics.js'
 import { round } from '../scoring/normalize.js'
 
+/** The only metric names compare_airports understands. */
+export const COMPARABLE_METRICS = [
+  'loadFactor',
+  'departures',
+  'passengers',
+  'seats',
+  'seatsPerDeparture',
+  'paxCagr',
+  'seatCagr',
+  'departureCagr',
+  'demandGap',
+  'recoveryRatio',
+  'upgaugeRate',
+  'freightLbs',
+  'avgStageMiles',
+  'intlDepartureShare',
+]
+
+const DEFAULT_COMPARE_METRICS = [
+  'loadFactor',
+  'departures',
+  'passengers',
+  'seatsPerDeparture',
+  'paxCagr',
+  'seatCagr',
+  'demandGap',
+]
+
 const SOURCE = 'BTS T-100 Segment Summary By Origin Airport (data.bts.gov, dataset r495-tyji)'
 const PERIOD = `${BASELINE_YEAR} baseline; ${MOMENTUM_FROM}-${LATEST_YEAR} trend`
 const COVERAGE =
@@ -139,15 +167,13 @@ export const handlers = {
     const ctx = scoreAirports(store.annual, { peerSetLabel: 'all 158 scored US airports' })
     const byIata = new Map(ctx.scored.map((s) => [s.iata, s]))
 
-    const chosen = metrics ?? [
-      'loadFactor',
-      'departures',
-      'passengers',
-      'seatsPerDeparture',
-      'paxCagr',
-      'seatCagr',
-      'demandGap',
-    ]
+    // An unrecognised metric name used to pass straight through and produce a column of
+    // nulls with no verdicts — a silent failure. Validate, fall back, and say what was
+    // dropped so the agent can tell the user rather than quietly answering less.
+    const requested = Array.isArray(metrics) ? metrics : metrics ? [metrics] : null
+    const valid = requested?.filter((m) => COMPARABLE_METRICS.includes(m)) ?? null
+    const unknownMetrics = requested?.filter((m) => !COMPARABLE_METRICS.includes(m)) ?? []
+    const chosen = valid?.length ? valid : DEFAULT_COMPARE_METRICS
 
     const rows = known.map((iata) => {
       const entry = byIata.get(iata)
@@ -191,6 +217,8 @@ export const handlers = {
     return {
       data: {
         peerSet: ctx.peerSet,
+        metricsUsed: chosen,
+        unknownMetrics,
         airports: rows,
         verdicts,
         unknown,
@@ -334,8 +362,9 @@ export const toolSchemas = [
         },
         metrics: {
           type: 'array',
-          items: { type: 'string' },
-          description: 'Optional metric subset.',
+          items: { type: 'string', enum: COMPARABLE_METRICS },
+          description:
+            'Optional subset of metric names. Must come from the listed set — "congestion" and other free-text labels are not metric names. Omit this to get the standard congestion and demand set.',
         },
       },
       required: ['iataList'],

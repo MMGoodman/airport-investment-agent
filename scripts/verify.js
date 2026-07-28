@@ -15,10 +15,10 @@ let failed = 0
 function check(label, condition, detail = '') {
   if (condition) {
     passed++
-    console.log(`  PASS  ${label}${detail ? `  — ${detail}` : ''}`)
+    console.log(`  PASS  ${label}${detail ? `  - ${detail}` : ''}`)
   } else {
     failed++
-    console.log(`  FAIL  ${label}${detail ? `  — ${detail}` : ''}`)
+    console.log(`  FAIL  ${label}${detail ? `  - ${detail}` : ''}`)
   }
 }
 
@@ -40,7 +40,7 @@ check(
   store.regions['New England'].join(' '),
 )
 
-section('Q1 — rank_airports over New England')
+section('Q1 - rank_airports over New England')
 const q1 = await runTool('rank_airports', { region: 'New England' })
 check('returns a ranking', q1.data.ranked?.length > 0, `${q1.data.ranked.length} ranked`)
 check('names the peer set', Boolean(q1.data.peerSet), q1.data.peerSet)
@@ -62,7 +62,7 @@ console.log(
   `        top 3: ${q1.data.ranked.slice(0, 3).map((r) => `${r.iata} ${r.score}`).join(', ')}`,
 )
 
-section('Q2 — compare_airports LAX vs SNA')
+section('Q2 - compare_airports LAX vs SNA')
 const q2 = await runTool('compare_airports', { iataList: ['LAX', 'SNA'] })
 check('returns both airports', q2.data.airports?.length === 2)
 check('produces per-metric verdicts', q2.data.verdicts?.length > 0, `${q2.data.verdicts.length} verdicts`)
@@ -75,28 +75,50 @@ check(
   q2.data.airports.find((a) => a.iata === 'SNA')?.constraintNote?.includes('court-ordered'),
 )
 
-section('Q3 — get_flight_mix for ANC')
+section('Q3 - get_flight_mix for ANC')
 const q3 = await runTool('get_flight_mix', { iata: 'ANC', dimension: 'distance' })
-check('returns a long-haul share', Number.isFinite(q3.data.estimatedLongHaulDepartureSharePct),
-  `${q3.data.estimatedLongHaulDepartureSharePct}%`)
+check(
+  'returns a long-haul share',
+  Number.isFinite(q3.data.estimatedLongHaulDepartureSharePct),
+  `${q3.data.estimatedLongHaulDepartureSharePct}%`,
+)
 check('flags the estimate as inexact', q3.data.exact === false)
 check('states the segment-data limitation', q3.data.caveat?.includes('origin-destination'))
 check('surfaces the cargo-hub note', q3.data.constraintNote?.includes('cargo'))
 
-section('Q4 — get_airport_profile for SFO')
+section('Q4 - get_airport_profile for SFO')
 const q4 = await runTool('get_airport_profile', { iata: 'SFO' })
 check('returns a multi-year history', q4.data.history?.length >= 4, `${q4.data.history.length} years`)
-check('returns an unmet-demand component', Number.isFinite(q4.data.components?.unmetDemand),
-  `unmetDemand ${q4.data.components?.unmetDemand}`)
+check(
+  'returns an unmet-demand component',
+  Number.isFinite(q4.data.components?.unmetDemand),
+  `unmetDemand ${q4.data.components?.unmetDemand}`,
+)
 check('explanation names the peer set', Boolean(q4.data.explanation?.peerSet), q4.data.explanation?.peerSet)
 
-section('Scoping — out-of-scope requests fail cleanly')
+section('Scoping - out-of-scope requests fail cleanly')
 const bad = await runTool('get_airport_profile', { iata: 'LHR' })
 check('unknown airport returns a typed error, not a guess', bad.data.error === 'unknown_airport')
 const badRegion = await runTool('rank_airports', { region: 'Scandinavia' })
 check('unknown region lists what is supported', badRegion.data.error === 'unknown_region')
 const badDim = await runTool('get_flight_mix', { iata: 'SFO', dimension: 'carrier' })
 check('unavailable dimension explains why', badDim.data.error === 'dimension_unavailable')
+
+section('Metric-name robustness')
+const bogus = await runTool('compare_airports', { iataList: ['LAX', 'SNA'], metrics: ['congestion'] })
+check(
+  'an unknown metric name falls back to the defaults',
+  bogus.data.verdicts.length > 0,
+  `${bogus.data.verdicts.length} verdicts`,
+)
+check('the unknown name is reported, not swallowed', bogus.data.unknownMetrics?.includes('congestion'))
+check(
+  'metricsUsed states what was actually compared',
+  bogus.data.metricsUsed?.length > 0,
+  bogus.data.metricsUsed?.join(', '),
+)
+const validMetric = await runTool('compare_airports', { iataList: ['LAX', 'SNA'], metrics: ['loadFactor'] })
+check('a valid metric subset is honoured', validMetric.data.metricsUsed?.join() === 'loadFactor')
 
 section('Determinism')
 const a = await runTool('rank_airports', { region: 'New England' })

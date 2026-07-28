@@ -243,6 +243,14 @@ statistics. Route-level and carrier-level breakdowns.
   answer and the agent is instructed to quote it.
 - **Outbound only.** The dataset is origin-airport based, so all figures describe departing
   traffic.
+- **Place names resolve to IATA codes through the model, not a lookup table.** The tools take
+  codes; turning *"LA and Santa Ana"* into `['LAX', 'SNA']` is the model's world knowledge.
+  That is a routing decision rather than a value — a wrong code is visible in the trace
+  immediately, and no figure is invented either way. It is still the one place where an
+  answer depends on something outside the deterministic layer, and *"LA"* is genuinely
+  ambiguous: LAX, BUR, LGB and ONT all serve greater Los Angeles. A `resolve_airport` tool
+  over the OurAirports name and municipality columns would close it, and would let the agent
+  ask which one was meant instead of choosing silently.
 
 ### The assumption that matters most
 

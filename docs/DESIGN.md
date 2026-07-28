@@ -241,6 +241,16 @@ statistics. Route-level and carrier-level breakdowns.
 - **Percentile ranks are relative to the peer set actually scored.** Ranking eight New
   England airports answers "best of these eight". The tool returns the peer set with every
   answer and the agent is instructed to quote it.
+
+  This has a sharper consequence than it first looks. Scores from two calls with *different*
+  peer sets are on different axes and cannot be compared — "84.9, 1st of 18" does not beat
+  "71.8, 1st of 42". Asked which regions held the best candidates, an earlier version called
+  `rank_airports` once per region and ranked the results against each other, which is not a
+  valid comparison. The tool had returned the warning; the prompt had not said what to do
+  with it. The prompt now requires a single call with the region omitted — scoring all 158
+  airports on one axis — for any cross-region question, and forbids assembling one out of
+  several per-region calls. **The tool trace is what surfaced this**: nine calls where there
+  should have been one is visible at a glance, while the prose read perfectly plausibly.
 - **Outbound only.** The dataset is origin-airport based, so all figures describe departing
   traffic.
 - **Place names resolve to IATA codes through the model, not a lookup table.** The tools take
@@ -359,8 +369,7 @@ signature of a freight hub, visible directly in the data.
 ### Follow-up — pronoun resolution against the prior ranking
 
 > **User:** *"Why is the second one ahead of the third?"*
-> **Tools:** `compare_airports({iataList: ['BGR','PWM']})` · `get_airport_profile({iata:'BGR'})`
-> · `get_airport_profile({iata:'PWM'})` · `rank_airports({region:'New England'})`
+> **Tools:** `list_supported_regions()` · `rank_airports({region:'New England', topN:3})`
 
 > Bangor (BGR) ranks 2nd of 8 with 61.3, ahead of Portland Jetport (PWM) at 57.8, primarily
 > due to higher capacity constraint pressure and stronger long-term growth relative to its
@@ -375,5 +384,8 @@ signature of a freight hub, visible directly in the data.
 > is offset by BGR's advantages in the other three drivers.
 
 The agent resolved "the second one" and "the third" against the previous ranking, then went
-back to the tools for the specific airports rather than reasoning from memory of its own
-earlier answer.
+back to the tools rather than reasoning from memory of its own earlier answer — and it went
+back through the *same* peer set, so the follow-up cannot contradict the ranking it explains.
+An earlier version reached for `compare_airports` here, which scores nationally, and produced
+an answer that corrected the ranking it was supposed to be explaining. See the peer-set rule
+in §6.

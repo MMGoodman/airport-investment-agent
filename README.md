@@ -28,6 +28,7 @@ Open http://localhost:5173.
 
 ```bash
 npm test          # scoring engine unit tests
+npm run verify    # end-to-end checks on data, tools and determinism — no API quota used
 ```
 
 ## Try it without the model

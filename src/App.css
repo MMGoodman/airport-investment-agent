@@ -66,6 +66,46 @@
   color: var(--text-dim);
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+  font: 500 0.72rem/1 var(--mono);
+  color: var(--text-dim);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.toggle:hover:not(:disabled) {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
+.toggle.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.toggle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .status {
   display: inline-flex;
   align-items: center;
@@ -335,10 +375,46 @@
   cursor: default;
 }
 
+/* The mic sits next to the send button but must not compete with it. */
+.field button.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.field button.ghost:hover:not(:disabled) {
+  color: var(--text-strong);
+  border-color: var(--accent);
+  transform: none;
+}
+
+.field button.ghost.live {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  transform: none;
+  animation: pulse 1.4s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
 .hint {
   font-size: 0.72rem;
   color: var(--text-dim);
   padding-left: 0.3rem;
+  min-height: 1.1rem;
+}
+
+.hint-warn {
+  color: var(--danger);
 }
 
 kbd {

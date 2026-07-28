@@ -126,7 +126,8 @@ Three layers, one rule between them: **the model never crosses into the right-ha
   caches raw responses, prints a summary, fails loudly with the HTTP status and body.
 - `src/scoring/` — pure functions. No I/O, no clock, no randomness. Unit-tested.
 - `src/agent/` — five tools over the scoring engine, plus the tool-calling loop.
-- `server/` + `src/` (React) — HTTP surface and UI.
+- `server/` + `src/` (React) — HTTP surface and UI, including browser-native voice
+  (`src/voice.js`) layered over the same `/api/chat` call.
 
 **Endpoints**
 
@@ -180,6 +181,26 @@ which directly contradicts the deterministic-ranking requirement. A vector store
 the right call for unstructured sources such as FAA reports or airport master plans, which
 are out of scope here.
 
+### Voice — and where it deliberately stops
+
+Voice is handled entirely by the browser's Web Speech API (`src/voice.js`): `SpeechRecognition`
+for dictation, `speechSynthesis` for reading answers back. No audio leaves the machine, no
+transcription service is billed, and no dependency was added. Chrome and Edge implement both
+halves; Firefox implements neither, so each control reports support and disables itself with an
+explanation rather than presenting a button that quietly does nothing.
+
+Two decisions inside it are worth naming:
+
+- **Dictation fills the box; it does not auto-send.** Hands-free would demo better, but a
+  misheard question spends a request against a free-tier quota the user cannot get back, and
+  the transcript is right there to correct. Review-then-send is the safer default.
+- **Long answers are spoken as queued short utterances.** Chrome silently truncates a single
+  utterance after roughly fifteen seconds, which lands mid-sentence on a real answer.
+  `intoChunks` splits on sentence boundaries to keep the synthesiser alive to the end.
+
+Voice is an input and output skin on the same `/api/chat` path — it changes nothing about
+routing, scoring, or the tool trace. The spoken answer is the same string as the rendered one.
+
 ---
 
 ## 5. Key tradeoffs
@@ -194,6 +215,7 @@ are out of scope here.
 | **Stateless conversation** | Server-side sessions | The client posts the whole history each turn, so there is no session store to manage or expire. It costs tokens on long conversations and would not survive multi-user scale — fine for a single-analyst demo, and one of the first things to change. |
 | **158 airports, 7 metrics** | 40 airports, 20 metrics | The brief prizes clarity over completeness. Breadth of coverage made the region questions answerable; depth would have meant a richer profile per airport but fewer of them. |
 | **Google Gemini** | Any other provider | The brief names no provider and this one has a free tier. The LLM is confined to `src/agent/agent.js`; swapping it is one file. |
+| **Browser Web Speech API for voice** | Whisper or a cloud speech service | Zero cost, zero dependencies, no audio leaving the machine, and no server work — against a hard Chrome/Edge-only constraint and no control over recognition quality. For an English-language analyst tool on a desktop browser that trade is clearly worth it; a production build with non-native speakers or noisy environments would need real ASR. |
 
 ---
 

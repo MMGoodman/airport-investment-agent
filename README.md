@@ -59,6 +59,12 @@ curl 'http://localhost:3001/api/rankings?region=New%20England&growth=0.6'
 - What is the unmet flight demand at SFO, and why?
 - Follow-ups: *"why is the second one ahead of the third?"*, *"what if we cared more about growth?"*
 
+## Voice
+
+Ask by voice with the mic button, and toggle **voice on** in the header to have answers read
+back. Both use the browser's Web Speech API — no audio leaves your machine and nothing extra
+is billed. Needs Chrome or Edge; other browsers show the controls disabled with a reason.
+
 ## How it fits together
 
 ```
@@ -66,7 +72,7 @@ src/ingest/   BTS T-100 + OurAirports  ->  data/*.json     (npm run ingest)
 src/scoring/  pure functions: metrics, percentile ranks, composite + explanation
 src/agent/    five tools over the scoring engine, plus the tool-calling loop
 server/       /api/chat, /api/rankings, /api/tool, /api/airports, /health
-src/*.jsx     chat UI with the tool trace panel
+src/*.jsx     chat UI with the tool trace panel; src/voice.js adds speech in and out
 config/       weights.json · regions.json · known-constraints.json
 ```
 

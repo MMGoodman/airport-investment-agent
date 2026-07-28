@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ToolTrace from './ToolTrace.jsx'
+import { useDictation, useSpeech } from './voice.js'
 import './App.css'
 
 const AGENT_NAME = 'Airport Agent'
@@ -19,8 +20,19 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [health, setHealth] = useState(null)
+  const [readAloud, setReadAloud] = useState(false)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
+
+  // Anything already typed stays put; dictation appends to it rather than replacing it.
+  const dictationBase = useRef('')
+  const dictation = useDictation({
+    onTranscript: (heard) => setInput(`${dictationBase.current} ${heard}`.trimStart()),
+  })
+  const { speak, cancel: cancelSpeech, supported: speechSupported } = useSpeech()
+
+  // Index of the last message read out, so a re-render never repeats an answer.
+  const spokenThrough = useRef(0)
 
   useEffect(() => {
     fetch('/health')
@@ -28,6 +40,13 @@ function App() {
       .then(setHealth)
       .catch(() => setHealth({ ok: false }))
   }, [])
+
+  useEffect(() => {
+    if (!readAloud || messages.length <= spokenThrough.current) return
+    spokenThrough.current = messages.length
+    const last = messages[messages.length - 1]
+    if (last?.role === 'assistant') speak(last.content)
+  }, [messages, readAloud, speak])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,6 +68,9 @@ function App() {
   async function send(text = input) {
     const trimmed = text.trim()
     if (!trimmed || loading) return
+
+    dictation.stop()
+    cancelSpeech()
 
     const next = [...messages, { role: 'user', content: trimmed }]
     setMessages(next)
@@ -82,6 +104,26 @@ function App() {
     }
   }
 
+  function toggleMic() {
+    if (dictation.listening) {
+      dictation.stop()
+      return
+    }
+    dictationBase.current = input
+    dictation.start()
+  }
+
+  // Turning it on mid-conversation should not replay the answer already on screen.
+  function toggleReadAloud() {
+    if (readAloud) {
+      cancelSpeech()
+      setReadAloud(false)
+      return
+    }
+    spokenThrough.current = messages.length
+    setReadAloud(true)
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -92,11 +134,54 @@ function App() {
             <p className="tagline">US terminal expansion — demand opportunity analysis</p>
           </div>
         </div>
-        <div className={`status ${health?.ok ? 'up' : 'down'}`}>
-          <span className="dot" aria-hidden="true" />
-          <span className="status-text">
-            {health ? (health.ok ? health.model : 'offline') : 'connecting…'}
-          </span>
+        <div className="topbar-right">
+          <button
+            type="button"
+            className={`toggle ${readAloud ? 'on' : ''}`}
+            onClick={toggleReadAloud}
+            disabled={!speechSupported}
+            aria-pressed={readAloud}
+            title={
+              speechSupported
+                ? 'Read answers aloud'
+                : 'This browser has no speech synthesis — try Chrome or Edge'
+            }
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                d="M11 5 6.5 9H3v6h3.5L11 19V5Z"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              {readAloud ? (
+                <path
+                  d="M15 9.5a3.5 3.5 0 0 1 0 5M17.8 6.8a7 7 0 0 1 0 10.4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              ) : (
+                <path
+                  d="m16 10 5 4m0-4-5 4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
+            <span>{readAloud ? 'voice on' : 'voice off'}</span>
+          </button>
+
+          <div className={`status ${health?.ok ? 'up' : 'down'}`}>
+            <span className="dot" aria-hidden="true" />
+            <span className="status-text">
+              {health ? (health.ok ? health.model : 'offline') : 'connecting…'}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -166,10 +251,42 @@ function App() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Ask about an airport…"
+            placeholder={dictation.listening ? 'Listening…' : 'Ask about an airport…'}
             rows={1}
             disabled={loading}
           />
+          <button
+            type="button"
+            className={`ghost ${dictation.listening ? 'live' : ''}`}
+            onClick={toggleMic}
+            disabled={loading || !dictation.supported}
+            aria-pressed={dictation.listening}
+            title={
+              dictation.supported
+                ? 'Ask by voice'
+                : 'This browser has no speech recognition — try Chrome or Edge'
+            }
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <rect
+                x="9"
+                y="2.5"
+                width="6"
+                height="11"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+              />
+              <path
+                d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
           <button type="submit" aria-label="Send" disabled={loading || !input.trim()}>
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path
@@ -184,7 +301,16 @@ function App() {
           </button>
         </div>
         <p className="hint">
-          <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line
+          {dictation.error ? (
+            <span className="hint-warn">{dictation.error}</span>
+          ) : dictation.listening ? (
+            'Speak your question — it stops on its own when you pause.'
+          ) : (
+            <>
+              <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line ·
+              mic to dictate
+            </>
+          )}
         </p>
       </form>
     </div>

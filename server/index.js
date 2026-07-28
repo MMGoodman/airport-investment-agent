@@ -37,6 +37,36 @@ app.get('/health', async (req, res) => {
   }
 })
 
+/**
+ * Which models this key can actually reach. Free-tier quota is per model and per day, so a
+ * chat that returns 429 while /api/rankings still works means this model is exhausted, not
+ * that the app is broken — pick another name from here, set GEMINI_MODEL, restart.
+ */
+app.get('/api/models', async (req, res) => {
+  if (!API_KEY) return res.status(400).json({ error: 'GEMINI_API_KEY is not set.' })
+  try {
+    const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+      headers: { 'x-goog-api-key': API_KEY },
+    })
+    const payload = await upstream.json()
+    if (!upstream.ok) {
+      return res.status(upstream.status).json({ error: payload?.error?.message ?? 'Model list failed' })
+    }
+    const usable = (payload.models ?? [])
+      .filter((m) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m) => m.name.replace(/^models\//, ''))
+      .sort()
+    res.json({
+      current: MODEL,
+      // Cheap, tool-calling-capable models are the realistic swaps; the rest are listed after.
+      suggested: usable.filter((name) => /flash/.test(name) && !/thinking|image|audio|tts/.test(name)),
+      all: usable,
+    })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
+})
+
 app.get('/api/airports', async (req, res) => {
   try {
     const store = await getStore()

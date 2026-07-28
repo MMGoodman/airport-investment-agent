@@ -169,6 +169,12 @@
   align-items: flex-end;
 }
 
+/* Answers carry a trace panel, so they get the full column. */
+.row.assistant {
+  max-width: 100%;
+  width: 100%;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -351,4 +357,94 @@ kbd {
   .tagline {
     display: none;
   }
+}
+
+/* ---------- tool trace ---------- */
+
+.trace {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.trace-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.trace-title {
+  font: 600 0.66rem/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.trace-count {
+  font: 0.7rem/1 var(--mono);
+  color: var(--text-dim);
+}
+
+.trace-call + .trace-call {
+  border-top: 1px solid var(--border);
+}
+
+.trace-call > button {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: 0.76rem/1.4 var(--mono);
+}
+
+.trace-call > button:hover {
+  background: var(--accent-soft);
+}
+
+.trace-name {
+  color: var(--text-strong);
+  font-weight: 600;
+  flex: none;
+}
+
+.trace-args {
+  color: var(--text-dim);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-ms {
+  color: var(--text-dim);
+  flex: none;
+}
+
+.trace-call.open > button .trace-args {
+  white-space: normal;
+}
+
+.trace-body {
+  margin: 0;
+  padding: 0.75rem;
+  max-height: 22rem;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  font: 0.72rem/1.5 var(--mono);
+  color: var(--text);
+  white-space: pre;
+  scrollbar-width: thin;
 }

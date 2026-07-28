@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import ToolTrace from './ToolTrace.jsx'
 import './App.css'
 
 const AGENT_NAME = 'Airport Agent'
@@ -63,7 +64,10 @@ function App() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? `Server returned ${res.status}`)
-      setMessages([...next, { role: 'assistant', content: data.reply }])
+      setMessages([
+        ...next,
+        { role: 'assistant', content: data.reply, toolCalls: data.toolCalls },
+      ])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -99,10 +103,11 @@ function App() {
       <main className="messages">
         {messages.length === 0 && !loading && (
           <div className="welcome">
-            <h2>Step 1 — chat shell</h2>
+            <h2>Ask about US airport expansion candidates</h2>
             <p>
-              The model layer is live. Scoring, data and tools land in later milestones, so
-              these questions cannot be answered with real figures yet.
+              Every figure comes from a deterministic scoring engine over BTS T-100 data —
+              open the tool trace under any answer to see exactly which call produced it.
+              Follow-up questions work; try “why is the second one ahead of the third?”.
             </p>
             <div className="chips">
               {TARGET_QUESTIONS.map((question) => (
@@ -123,6 +128,7 @@ function App() {
           <article key={i} className={`row ${message.role}`}>
             <span className="who">{message.role === 'user' ? 'You' : AGENT_NAME}</span>
             <div className="bubble">{message.content}</div>
+            <ToolTrace calls={message.toolCalls} />
           </article>
         ))}
 

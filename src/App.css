@@ -268,11 +268,20 @@
   border: 1px solid var(--border);
 }
 
-.md ul {
+.md h4 {
+  font-size: 0.83rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.md ul,
+.md ol {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding-left: 1.15rem;
+  padding-left: 1.35rem;
 }
 
 .md li::marker {

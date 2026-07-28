@@ -22,20 +22,24 @@ function inline(text) {
     })
 }
 
+function Block({ block }) {
+  if (block.type === 'heading') {
+    // One visual weight for every level — an answer is not a document outline.
+    return <h4>{inline(block.text)}</h4>
+  }
+  if (block.type === 'list') {
+    const items = block.items.map((item, i) => <li key={i}>{inline(item)}</li>)
+    return block.ordered ? <ol>{items}</ol> : <ul>{items}</ul>
+  }
+  return <p>{inline(block.lines.join('\n'))}</p>
+}
+
 export default function Markdown({ text }) {
   return (
     <div className="md">
-      {toBlocks(text).map((block, i) =>
-        block.type === 'list' ? (
-          <ul key={i}>
-            {block.items.map((item, j) => (
-              <li key={j}>{inline(item)}</li>
-            ))}
-          </ul>
-        ) : (
-          <p key={i}>{inline(block.lines.join('\n'))}</p>
-        ),
-      )}
+      {toBlocks(text).map((block, i) => (
+        <Block key={i} block={block} />
+      ))}
     </div>
   )
 }

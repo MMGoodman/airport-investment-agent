@@ -1,23 +1,33 @@
 /**
- * A parser for the light Markdown the model actually emits — bold labels, bullet lists, the
- * occasional code span. Nothing more. Kept separate from the component so it stays a pure
- * function over strings, and so it can be tested without rendering anything.
+ * A parser for the light Markdown the model actually emits — headings, bullet and numbered
+ * lists, bold labels, the occasional code span. Nothing more. Kept separate from the component
+ * so it stays a pure function over strings, and so it can be tested without rendering anything.
  */
 
+export const HEADING = /^(#{1,4})\s+(.+)$/
 export const BULLET = /^\s*[-*]\s+/
+export const ORDERED = /^\s*\d+[.)]\s+/
 export const INLINE = /(\*\*[^*]+\*\*|`[^`]+`)/g
 
-/** Group lines into runs of list items and runs of prose, dropping the blank separators. */
+/** Group lines into headings, runs of list items and runs of prose, dropping blank separators. */
 export function toBlocks(text) {
   const blocks = []
 
   for (const line of String(text ?? '').split('\n')) {
     const last = blocks[blocks.length - 1]
 
-    if (BULLET.test(line)) {
-      const item = line.replace(BULLET, '')
-      if (last?.type === 'list') last.items.push(item)
-      else blocks.push({ type: 'list', items: [item] })
+    const heading = line.match(HEADING)
+    if (heading) {
+      blocks.push({ type: 'heading', level: heading[1].length, text: heading[2] })
+      continue
+    }
+
+    const ordered = ORDERED.test(line)
+    if (ordered || BULLET.test(line)) {
+      const item = line.replace(ordered ? ORDERED : BULLET, '')
+      // A change of marker starts a new list rather than mixing the two.
+      if (last?.type === 'list' && last.ordered === ordered) last.items.push(item)
+      else blocks.push({ type: 'list', ordered, items: [item] })
       continue
     }
 
@@ -40,7 +50,9 @@ export function toPlainText(text) {
     .split('\n')
     .map((line) =>
       line
+        .replace(HEADING, '$2')
         .replace(BULLET, '')
+        .replace(ORDERED, '')
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/`([^`]+)`/g, '$1'),
     )

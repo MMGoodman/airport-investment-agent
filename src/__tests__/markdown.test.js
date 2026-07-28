@@ -17,12 +17,27 @@ describe('toBlocks', () => {
 
   it('keeps consecutive bullets in one list', () => {
     expect(toBlocks('- one\n- two\n- three')).toEqual([
-      { type: 'list', items: ['one', 'two', 'three'] },
+      { type: 'list', ordered: false, items: ['one', 'two', 'three'] },
     ])
   })
 
   it('accepts both bullet markers and extra spacing', () => {
-    expect(toBlocks('*   star\n-  dash')).toEqual([{ type: 'list', items: ['star', 'dash'] }])
+    expect(toBlocks('*   star\n-  dash')).toEqual([
+      { type: 'list', ordered: false, items: ['star', 'dash'] },
+    ])
+  })
+
+  it('reads numbered lists and keeps them separate from bullets', () => {
+    expect(toBlocks('1.  first\n2.  second\n- bullet')).toEqual([
+      { type: 'list', ordered: true, items: ['first', 'second'] },
+      { type: 'list', ordered: false, items: ['bullet'] },
+    ])
+  })
+
+  it('reads headings at any level', () => {
+    expect(toBlocks('### Top Candidates')).toEqual([
+      { type: 'heading', level: 3, text: 'Top Candidates' },
+    ])
   })
 
   it('drops blank separators rather than rendering empty blocks', () => {
@@ -44,10 +59,12 @@ describe('toPlainText', () => {
     expect(toPlainText('**Key Caveats:** see `weights.json`')).toBe('Key Caveats: see weights.json')
   })
 
-  it('removes bullet markers but keeps the item text', () => {
+  it('removes bullet, number and heading markers but keeps the text', () => {
     expect(toPlainText('*   These scores measure demand opportunity.')).toBe(
       'These scores measure demand opportunity.',
     )
+    expect(toPlainText('1.  Boston Logan')).toBe('Boston Logan')
+    expect(toPlainText('### Top Candidates')).toBe('Top Candidates')
   })
 
   it('leaves ordinary prose untouched', () => {

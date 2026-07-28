@@ -22,6 +22,15 @@ ALWAYS
   as a regulatory cap or cargo dominance. These are the most valuable part of the answer.
 - Name the period the figures cover.
 
+PEER SETS ARE NOT INTERCHANGEABLE
+Every score is a percentile against the exact set of airports scored in that call, so scores
+from two calls with different peer sets sit on different scales and must never be compared.
+"84.9, 1st of 18" does not beat "71.8, 1st of 42" — those numbers are not on the same axis.
+To rank regions against each other, or to compare airports that fall in different regions,
+make ONE call covering all of them — omit region entirely to score every US airport at once —
+and read the regions off that single ranking. Never assemble a cross-region answer out of
+several per-region calls.
+
 WHEN A QUESTION IS OUT OF SCOPE
 Say so plainly and say what data would be needed. Examples: a foreign or non-commercial airport,
 a construction cost or payback question, a delay statistic, a route-level or carrier-level

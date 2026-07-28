@@ -3,31 +3,53 @@ import './App.css'
 
 const AGENT_NAME = 'Airport Agent'
 
+// SPEC §1 — the four acceptance questions. They only get real answers once the
+// scoring engine and tools land in M3/M4; until then they document the target.
+const TARGET_QUESTIONS = [
+  'Which airports in New England are strong candidates for terminal expansion?',
+  'Compare LAX and SNA congestion levels.',
+  'What is the percentage of long-haul flights out of Anchorage (ANC)?',
+  'What is the unmet flight demand at SFO, and why?',
+]
+
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [health, setHealth] = useState(null)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
+
+  useEffect(() => {
+    fetch('/health')
+      .then((res) => res.json())
+      .then(setHealth)
+      .catch(() => setHealth({ ok: false }))
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Grow the box with the text instead of scrolling it out of sight.
+  // Grow the box with the text. An empty box falls back to the CSS height —
+  // measuring scrollHeight while empty would size it to the placeholder.
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
-    el.style.height = 'auto'
+    if (!input) {
+      el.style.height = ''
+      return
+    }
+    el.style.height = '0px'
     el.style.height = `${el.scrollHeight}px`
   }, [input])
 
-  async function send() {
-    const text = input.trim()
-    if (!text || loading) return
+  async function send(text = input) {
+    const trimmed = text.trim()
+    if (!trimmed || loading) return
 
-    const next = [...messages, { role: 'user', content: text }]
+    const next = [...messages, { role: 'user', content: trimmed }]
     setMessages(next)
     setInput('')
     setError(null)
@@ -50,7 +72,6 @@ function App() {
   }
 
   function onKeyDown(event) {
-    // Enter sends, Shift+Enter adds a line.
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       send()
@@ -59,28 +80,70 @@ function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>Airport Investment Agent</h1>
-        <p>Step 1 — chat shell</p>
+      <header className="topbar">
+        <div className="brand">
+          <span className="mark" aria-hidden="true" />
+          <div>
+            <h1>Airport Investment Agent</h1>
+            <p className="tagline">US terminal expansion — demand opportunity analysis</p>
+          </div>
+        </div>
+        <div className={`status ${health?.ok ? 'up' : 'down'}`}>
+          <span className="dot" aria-hidden="true" />
+          <span className="status-text">
+            {health ? (health.ok ? health.model : 'offline') : 'connecting…'}
+          </span>
+        </div>
       </header>
 
       <main className="messages">
         {messages.length === 0 && !loading && (
-          <p className="empty">Ask anything to check the connection.</p>
+          <div className="welcome">
+            <h2>Step 1 — chat shell</h2>
+            <p>
+              The model layer is live. Scoring, data and tools land in later milestones, so
+              these questions cannot be answered with real figures yet.
+            </p>
+            <div className="chips">
+              {TARGET_QUESTIONS.map((question) => (
+                <button
+                  key={question}
+                  type="button"
+                  className="chip"
+                  onClick={() => setInput(question)}
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
+
         {messages.map((message, i) => (
-          <div key={i} className={`message ${message.role}`}>
+          <article key={i} className={`row ${message.role}`}>
             <span className="who">{message.role === 'user' ? 'You' : AGENT_NAME}</span>
             <div className="bubble">{message.content}</div>
-          </div>
+          </article>
         ))}
+
         {loading && (
-          <div className="message assistant">
+          <article className="row assistant">
             <span className="who">{AGENT_NAME}</span>
-            <div className="bubble">…</div>
+            <div className="bubble typing">
+              <i />
+              <i />
+              <i />
+            </div>
+          </article>
+        )}
+
+        {error && (
+          <div className="error">
+            <span className="error-label">Request failed</span>
+            {error}
           </div>
         )}
-        {error && <div className="error">{error}</div>}
+
         <div ref={bottomRef} />
       </main>
 
@@ -91,18 +154,32 @@ function App() {
           send()
         }}
       >
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Type a message — Enter to send, Shift+Enter for a new line"
-          rows={1}
-          disabled={loading}
-        />
-        <button type="submit" disabled={loading || !input.trim()}>
-          Send
-        </button>
+        <div className="field">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Ask about an airport…"
+            rows={1}
+            disabled={loading}
+          />
+          <button type="submit" aria-label="Send" disabled={loading || !input.trim()}>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                d="M4 12h15M13 6l6 6-6 6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <p className="hint">
+          <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line
+        </p>
       </form>
     </div>
   )

@@ -234,7 +234,7 @@
   border-radius: 0.9rem;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  white-space: pre-wrap;
+  white-space: pre-wrap; /* user messages are plain text and keep their own line breaks */
   line-height: 1.6;
   font-size: 0.95rem;
   color: var(--text-strong);
@@ -242,6 +242,41 @@
 
 .row.assistant .bubble {
   border-top-left-radius: 0.25rem;
+  white-space: normal; /* answers are rendered from Markdown, which owns its own spacing */
+}
+
+/* ---------- rendered answer ---------- */
+
+.md > * + * {
+  margin-top: 0.7rem;
+}
+
+.md p {
+  white-space: pre-wrap;
+}
+
+.md strong {
+  font-weight: 650;
+  color: var(--text-strong);
+}
+
+.md code {
+  font: 0.85em/1.4 var(--mono);
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+}
+
+.md ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-left: 1.15rem;
+}
+
+.md li::marker {
+  color: var(--accent);
 }
 
 .row.user .bubble {

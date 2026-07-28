@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import ToolTrace from './ToolTrace.jsx'
+import Markdown from './Markdown.jsx'
+import { toPlainText } from './markdown.js'
 import { useDictation, useSpeech } from './voice.js'
 import './App.css'
 
@@ -45,7 +47,7 @@ function App() {
     if (!readAloud || messages.length <= spokenThrough.current) return
     spokenThrough.current = messages.length
     const last = messages[messages.length - 1]
-    if (last?.role === 'assistant') speak(last.content)
+    if (last?.role === 'assistant') speak(toPlainText(last.content))
   }, [messages, readAloud, speak])
 
   useEffect(() => {
@@ -212,7 +214,9 @@ function App() {
         {messages.map((message, i) => (
           <article key={i} className={`row ${message.role}`}>
             <span className="who">{message.role === 'user' ? 'You' : AGENT_NAME}</span>
-            <div className="bubble">{message.content}</div>
+            <div className="bubble">
+              {message.role === 'user' ? message.content : <Markdown text={message.content} />}
+            </div>
             <ToolTrace calls={message.toolCalls} />
           </article>
         ))}

@@ -1,0 +1,31 @@
+{
+  "_note": "Hand-curated domain notes. The agent must surface these verbatim when the airport appears in an answer; it must not invent new ones.",
+  "SNA": {
+    "type": "regulatory",
+    "note": "John Wayne Airport operates under a court-ordered noise and access agreement that caps annual passenger volume and regulated commercial departures, with a night-time curfew. Congestion here is a legal ceiling, not a physical one — extra terminal capacity cannot lift it."
+  },
+  "ANC": {
+    "type": "cargo-dominant",
+    "note": "Anchorage is one of the world's largest cargo hubs. Passenger-only metrics understate its role and its investment case; freight tonnage is the more relevant driver."
+  },
+  "LGA": {
+    "type": "regulatory",
+    "note": "LaGuardia is FAA slot-controlled and subject to a perimeter rule, so departures cannot grow freely with demand."
+  },
+  "DCA": {
+    "type": "regulatory",
+    "note": "Reagan National is FAA slot-controlled with a statutory perimeter rule; new service requires congressional or FAA action."
+  },
+  "JFK": {
+    "type": "regulatory",
+    "note": "JFK is FAA slot-controlled. Departure growth is administratively limited regardless of terminal capacity."
+  },
+  "EWR": {
+    "type": "regulatory",
+    "note": "Newark is FAA slot-controlled following sustained delay problems."
+  },
+  "ORD": {
+    "type": "physical",
+    "note": "O'Hare completed a runway reconfiguration programme; airfield capacity has been expanded more recently than terminal capacity."
+  }
+}

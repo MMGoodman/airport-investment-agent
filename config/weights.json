@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "note": "Analyst policy, not a model fact. Overridable per request.",
+  "utilization": 0.3,
+  "growth": 0.3,
+  "unmetDemand": 0.25,
+  "constraint": 0.15
+}

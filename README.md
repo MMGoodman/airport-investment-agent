@@ -13,6 +13,8 @@ the full tool trace under each answer so you can check that rather than take it 
 
 ## Run it
 
+Node 20.19+ (or 22.12+), and a free Gemini API key.
+
 ```bash
 npm install
 
@@ -20,11 +22,17 @@ npm install
 #   GEMINI_API_KEY=...
 cp .env.example .env
 
-npm run ingest    # pulls BTS + OurAirports into data/  (~30s, cached after the first run)
 npm run dev:all   # API on :3001, UI on :5173
 ```
 
 Open http://localhost:5173.
+
+The ingested data is committed under `data/`, so there is nothing to download before the first
+run. To rebuild it from source instead — 158 airports, ~30s against the BTS API:
+
+```bash
+npm run ingest
+```
 
 ```bash
 npm test          # scoring engine unit tests

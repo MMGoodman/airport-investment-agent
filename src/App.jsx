@@ -1,19 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
+const AGENT_NAME = 'Airport Agent'
+
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const bottomRef = useRef(null)
+  const textareaRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  async function send(event) {
-    event.preventDefault()
+  // Grow the box with the text instead of scrolling it out of sight.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [input])
+
+  async function send() {
     const text = input.trim()
     if (!text || loading) return
 
@@ -39,6 +49,14 @@ function App() {
     }
   }
 
+  function onKeyDown(event) {
+    // Enter sends, Shift+Enter adds a line.
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      send()
+    }
+  }
+
   return (
     <div className="app">
       <header>
@@ -52,13 +70,13 @@ function App() {
         )}
         {messages.map((message, i) => (
           <div key={i} className={`message ${message.role}`}>
-            <span className="who">{message.role === 'user' ? 'You' : 'Claude'}</span>
+            <span className="who">{message.role === 'user' ? 'You' : AGENT_NAME}</span>
             <div className="bubble">{message.content}</div>
           </div>
         ))}
         {loading && (
           <div className="message assistant">
-            <span className="who">Claude</span>
+            <span className="who">{AGENT_NAME}</span>
             <div className="bubble">…</div>
           </div>
         )}
@@ -66,11 +84,20 @@ function App() {
         <div ref={bottomRef} />
       </main>
 
-      <form className="composer" onSubmit={send}>
-        <input
+      <form
+        className="composer"
+        onSubmit={(event) => {
+          event.preventDefault()
+          send()
+        }}
+      >
+        <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message"
+          onKeyDown={onKeyDown}
+          placeholder="Type a message — Enter to send, Shift+Enter for a new line"
+          rows={1}
           disabled={loading}
         />
         <button type="submit" disabled={loading || !input.trim()}>

@@ -82,18 +82,30 @@
 
 .composer {
   display: flex;
+  align-items: flex-end;
   gap: 0.5rem;
   padding-top: 0.75rem;
 }
 
-.composer input {
+.composer textarea {
   flex: 1;
+  min-width: 0;
   padding: 0.7rem 0.9rem;
   border-radius: 0.6rem;
   border: 1px solid rgba(127, 127, 127, 0.35);
   background: transparent;
   color: inherit;
   font: inherit;
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+  /* Grows with the text up to ~8 lines, then scrolls. */
+  max-height: 12rem;
+}
+
+.composer textarea:focus {
+  outline: 2px solid #2f6fed;
+  outline-offset: -1px;
 }
 
 .composer button {

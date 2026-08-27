@@ -37,6 +37,18 @@ npm run ingest
 ```bash
 npm test          # scoring engine unit tests
 npm run verify    # end-to-end checks on data, tools and determinism — no API quota used
+npm run eval      # 15 cases against every model path — needs API keys
+```
+
+`verify` proves the numbers are deterministic. `eval` proves the layer above them: which
+tool each model reached for, on which arguments, and — the check that matters — that every
+figure in the prose came out of a tool rather than out of the model. It drives the realtime
+path over a WebSocket with text output, so voice agents are tested without a microphone.
+
+```bash
+npm run eval -- --group=scope          # only the questions the data cannot answer
+npm run eval -- --case=lax-vs-sna      # one case, with the reply printed
+npm run eval -- --path=gemini          # one path
 ```
 
 ## Try it without the model

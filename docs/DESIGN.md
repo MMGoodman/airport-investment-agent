@@ -463,6 +463,78 @@ enter the picture. Every answer the agent gives carries this caveat, and it is n
 
 ---
 
+## 6b. Evaluating the agent layer
+
+`npm run verify` proves the scoring engine is deterministic. Nothing proved the layer above
+it. Correctness there was checked by a human reading four transcripts and recognising the
+numbers — tolerable with one model in the loop, not with three, each choosing its own tools.
+
+The failure that matters is also the quietest: the model calls a real tool, gets real
+numbers, and answers a question nobody asked. No error, no stack trace, a fluent reply.
+
+`npm run eval` runs 15 cases against every model path and asserts what a correct answer must
+*do*, not what it must say:
+
+| Group | Cases | What it protects |
+|---|---|---|
+| `target` | 4 | The four questions in the brief: right tool, right arguments, right caveat |
+| `follow-up` | 2 | Pronouns resolved against the prior ranking; a weight change re-runs the engine instead of being reasoned about |
+| `scope` | 5 | Construction cost, foreign airports, delay statistics, unknown regions, "highest ROI" — each an invitation to invent |
+| `edge` | 4 | Cargo hubs, a city with two airports, state queries, three-way comparisons |
+
+### The provenance check
+
+The headline assertion. Every figure in the prose must be traceable to a tool result:
+numbers are pulled out of the reply and matched against everything the tools returned,
+allowing for how a person actually says a number — a load factor stored as `0.816` spoken
+as "81.6 percent", `273,911` as "over 273,000", `36,766,912` as "36.8 million". Anything
+left over is a figure no tool produced.
+
+Given a reply containing *"payback in 7 years at $430 million, ROI 14.5%"* against a real
+tool result, it returns `[430, 14.5]` and passes the 7 — a rank, not a claim.
+
+This is the one check that tests the sentence the whole submission rests on, and it was the
+only one previously performed by eye.
+
+### Two things the harness found immediately
+
+**Its own provenance model was incomplete.** The peer-set size lives in the string
+`"all 158 scored US airports"`, the long-haul threshold in `">= 2200 statute miles"`, and
+the growth rates only ever appear inside a driver's `why` sentence. Scanning numeric fields
+alone flagged all of them as fabricated. They are the tool's own words, which the prompt
+tells the model to reuse, so they are provenanced by definition.
+
+**The same assertion was right for text and wrong for speech.** Requiring the literal string
+`SNA` failed the voice path on four cases — because it says "Santa Ana", which is what the
+spoken-delivery rules ask of it and what an analyst would actually say. Airport names now
+resolve through aliases built from `data/`. Neither of these is visible from one path alone.
+
+### Driving voice agents without a microphone
+
+Both live paths accept text on the same session they accept audio on, with the same prompt
+and the same tools, so the harness drives the realtime model over a WebSocket with output
+forced to text — no browser, no audio, no synthesis cost, and it runs in CI. That measures
+tool selection and phrasing, which is what regresses when a prompt is reworded. It does not
+measure speech recognition, and does not claim to.
+
+ElevenLabs is not covered. Their simulation endpoint exists but cannot execute client tools,
+which is where every number in an answer comes from — so it would test the wording of an
+agent that had no data. Listed as a gap rather than faked.
+
+### Current state
+
+```
+path                            cases     checks     provenance
+gemini-3.1-flash-lite · text    15/15     62/62      15/15
+gpt-realtime · realtime         15/15     62/62      15/15
+```
+
+The run also prints where the paths chose different tools. That is not a failure — two tools
+can both answer a question — but it is the first place to look when one path starts behaving
+differently from the other.
+
+---
+
 ## 7. What I would do next, with another week
 
 1. **Segment-level T-100 from TranStats.** Replaces the estimated long-haul share with a real
@@ -476,10 +548,10 @@ enter the picture. Every answer the agent gives carries this caveat, and it is n
 4. **Gate and stand inventory.** Replaces the seats-per-departure proxy with the real
    constraint denominator, and makes the constraint component defensible rather than
    suggestive.
-5. **An evaluation harness for the agent.** Right now correctness is verified by reading four
-   transcripts. A fixed question set with assertions on which tool was called and which
-   figures appeared would catch a regression in tool selection immediately — the failure mode
-   most likely to go unnoticed as the tool surface grows.
+5. ~~**An evaluation harness for the agent.**~~ Built — see §6b. `npm run eval`. What is
+   still missing there: ElevenLabs coverage, which needs their simulation endpoint to be able
+   to execute client tools, and an audio-in fixture set so speech recognition is measured
+   rather than assumed.
 
 ---
 

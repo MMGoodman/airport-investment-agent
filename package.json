@@ -13,7 +13,8 @@
     "ingest": "node src/ingest/run.js",
     "test": "vitest run",
     "verify": "node scripts/verify.js",
-    "sync:agent": "node scripts/sync-elevenlabs-agent.js"
+    "sync:agent": "node scripts/sync-elevenlabs-agent.js",
+    "eval": "node scripts/eval.js"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.23.0",
@@ -30,6 +31,7 @@
     "concurrently": "^10.0.4",
     "oxlint": "^1.71.0",
     "vite": "^8.1.1",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "ws": "^8.21.3"
   }
 }

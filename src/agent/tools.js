@@ -136,11 +136,23 @@ export const handlers = {
       ...explain(s, ctx, store.knownConstraints),
     }))
 
+    // The four standing caveats are identical on every entry, so ten airports used to
+    // carry forty copies of the same four sentences — three quarters of the payload, and
+    // the reason a spoken answer took so long to start. Hoist what every entry shares and
+    // leave each entry only what is true of that airport. No figure changes.
+    const shared = ranked.length
+      ? ranked[0].caveats.filter((c) => ranked.every((r) => r.caveats.includes(c)))
+      : []
+    for (const entry of ranked) {
+      entry.caveats = entry.caveats.filter((c) => !shared.includes(c))
+    }
+
     return {
       data: {
         peerSet: ctx.peerSet,
         weights: ctx.weights,
         excluded: ctx.excluded,
+        caveats: shared,
         ranked,
       },
       meta: meta([

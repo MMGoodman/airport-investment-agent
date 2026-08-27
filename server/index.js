@@ -4,6 +4,7 @@ import cors from 'cors'
 import { runAgent } from '../src/agent/agent.js'
 import { runTool } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
+import { mountVoiceRoutes } from './voice.js'
 
 const app = express()
 app.use(cors())
@@ -21,6 +22,9 @@ if (!API_KEY) {
       '  Put your key from aistudio.google.com in .env, then restart the server.\n',
   )
 }
+
+// Live-voice transports. Same prompt, same tools, same scoring engine — only the pipe differs.
+mountVoiceRoutes(app)
 
 app.get('/health', async (req, res) => {
   try {
@@ -112,14 +116,14 @@ app.post('/api/tool', async (req, res) => {
 })
 
 app.post('/api/chat', async (req, res) => {
-  const { messages } = req.body ?? {}
+  const { messages, lang } = req.body ?? {}
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Body must be { messages: [{ role, content }] }' })
   }
 
   try {
-    const { reply, trace, turns, usage } = await runAgent(messages, { apiKey: API_KEY })
+    const { reply, trace, turns, usage } = await runAgent(messages, { apiKey: API_KEY, lang: lang === 'he' ? 'he' : 'en' })
     res.json({ reply, toolCalls: trace, turns, usage, model: MODEL })
   } catch (err) {
     // Fail loudly: surface the real status and message, never a fake answer.

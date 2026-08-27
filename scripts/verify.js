@@ -45,7 +45,22 @@ const q1 = await runTool('rank_airports', { region: 'New England' })
 check('returns a ranking', q1.data.ranked?.length > 0, `${q1.data.ranked.length} ranked`)
 check('names the peer set', Boolean(q1.data.peerSet), q1.data.peerSet)
 check('every entry carries drivers', q1.data.ranked.every((r) => r.drivers?.length === 4))
-check('every entry carries caveats', q1.data.ranked.every((r) => r.caveats?.length > 0))
+// Caveats used to be repeated verbatim on every entry — ten airports, forty copies of the
+// same four sentences. They now sit once at the response level, with only airport-specific
+// notes left on the entry. A reader still sees every caveat; the model reads a third less.
+check('standing caveats are stated once, at the top', q1.data.caveats?.length > 0, `${q1.data.caveats.length} shared`)
+check(
+  'no standing caveat is repeated on an entry',
+  q1.data.ranked.every((r) => (r.caveats ?? []).every((c) => !q1.data.caveats.includes(c))),
+)
+check(
+  'airport-specific caveats still surface',
+  q1.data.ranked.some((r) => (r.caveats ?? []).length > 0),
+  q1.data.ranked
+    .filter((r) => r.caveats?.length)
+    .map((r) => r.iata)
+    .join(', ') || 'none in this peer set',
+)
 check(
   'driver contributions rebuild the score',
   q1.data.ranked.every((r) => {

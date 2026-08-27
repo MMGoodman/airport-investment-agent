@@ -7,7 +7,7 @@
  * is what makes "the model never computes a number" verifiable rather than a claim.
  */
 import { runTool, toolSchemas } from './tools.js'
-import { SYSTEM_PROMPT } from './prompt.js'
+import { SYSTEM_PROMPT, languageInstruction } from './prompt.js'
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
@@ -35,14 +35,14 @@ function retryDelayMs(payload) {
   return fromMessage ? Math.ceil(Number(fromMessage[1]) * 1000) : 20_000
 }
 
-async function callModel(contents, apiKey, attempt = 1) {
+async function callModel(contents, apiKey, instructions, attempt = 1) {
   const MAX_ATTEMPTS = 3
 
   const res = await fetch(`${ENDPOINT}/${MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      system_instruction: { parts: [{ text: instructions }] },
       contents,
       tools: [{ functionDeclarations }],
     }),
@@ -54,7 +54,7 @@ async function callModel(contents, apiKey, attempt = 1) {
     const wait = Math.min(retryDelayMs(data), 30_000)
     console.warn(`  rate limited, waiting ${Math.round(wait / 1000)}s (attempt ${attempt})`)
     await sleep(wait + 500)
-    return callModel(contents, apiKey, attempt + 1)
+    return callModel(contents, apiKey, instructions, attempt + 1)
   }
 
   if (!res.ok) {
@@ -69,7 +69,7 @@ async function callModel(contents, apiKey, attempt = 1) {
  * @param {{role: 'user'|'assistant', content: string}[]} messages conversation so far
  * @returns {{reply: string, trace: object[], turns: number}}
  */
-export async function runAgent(messages, { apiKey } = {}) {
+export async function runAgent(messages, { apiKey, lang = 'en' } = {}) {
   if (!apiKey) throw Object.assign(new Error('GEMINI_API_KEY is not set in .env.'), { status: 500 })
 
   const contents = messages.map((m) => ({
@@ -77,10 +77,11 @@ export async function runAgent(messages, { apiKey } = {}) {
     parts: [{ text: m.content }],
   }))
 
+  const instructions = SYSTEM_PROMPT + languageInstruction(lang)
   const trace = []
 
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
-    const data = await callModel(contents, apiKey)
+    const data = await callModel(contents, apiKey, instructions)
     const parts = data.candidates?.[0]?.content?.parts ?? []
     const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall)
 

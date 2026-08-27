@@ -91,6 +91,11 @@ Drivers are sorted by contribution and the contributions sum back to the score. 
 only job is to turn this object into prose — it may not add a driver or a caveat that is not
 in it.
 
+`rank_airports` hoists the caveats every entry shares to the top of its response and leaves
+each entry only what is true of that airport. Ten ranked airports used to carry forty copies
+of the same four sentences; a reader still sees every caveat, and the payload the model has
+to read before it can answer drops by about a third. Nothing about a figure changes.
+
 ### Edge cases handled explicitly
 
 - **ANC** is one of the world's largest cargo hubs. Any airport carrying more than 50 lbs of
@@ -140,6 +145,170 @@ Three layers, one rule between them: **the model never crosses into the right-ha
 
 `/api/rankings` existing separately is a deliberate demo asset: it proves the ranking is
 deterministic with the model switched off entirely.
+
+### Live voice: two more transports, the same engine
+
+Voice was a stated bonus. The first pass did it the cheap way — browser dictation in,
+speech synthesis out, the text agent untouched. That still ships as the fallback. On top of
+it there are now two real-time speech-to-speech paths, selectable from the switcher in the
+header.
+
+The rule that governs them is the one that governs everything else: **a new transport may
+not bring its own numbers.** Both live providers are handed the same `SYSTEM_PROMPT` and the
+same five `toolSchemas` the text path imports, and when either asks for a tool the browser
+calls `POST /api/tool` — the endpoint that already existed. Not one line of `src/scoring/`
+or `src/agent/tools.js` changed to add either of them.
+
+```
+                  ┌─ gemini · text ──── POST /api/chat ─── agent loop ─┐
+switcher ─────────┼─ openai · live ──── WebRTC ─── OpenAI session ─────┼── POST /api/tool ── scoring/
+                  └─ elevenlabs · live ─ WebSocket ─ EL agent runtime ──┘        (unchanged)
+```
+
+The switcher spells each option out in full, and the arrows are the argument:
+
+```
+gemini-3.1-flash-lite · text
+gpt-realtime · voice
+gemini-3.1-flash-lite → eleven_flash_v2_5 · voice
+```
+
+One name means one model. Two names with an arrow between them mean two models in series,
+and that is visible before you have listened to either.
+
+| | `gemini · text` | `openai · live` | `elevenlabs · live` |
+|---|---|---|---|
+| Transport | HTTP request/response | WebRTC peer connection | WebSocket via SDK |
+| Turn-taking | you press Enter | semantic VAD, barge-in | platform VAD, barge-in |
+| Who routes to a tool | our loop in `agent.js` | the model inside OpenAI's session | the ElevenLabs agent runtime |
+| Who runs the tool | our server | this browser | this browser |
+| Where the prompt lives | `src/agent/prompt.js` | same file, sent per session | same file, pushed by `npm run sync:agent` |
+| Secret handling | key stays server-side | ephemeral key, minutes to live | signed WebSocket URL |
+| Transcription | n/a | `gpt-4o-transcribe` | `scribe_realtime` |
+| Billing unit | tokens | audio minutes | audio minutes |
+
+**Why the latency differs, mechanically.** The text path is two full model round trips —
+route, then narrate — with a tool call between them, and nothing is shown until the second
+completes. The live paths stream audio continuously and the model starts speaking before
+its sentence is finished, so a tool call happens *inside* a turn rather than between two of
+them. That is a difference in shape, not in tuning; no amount of optimisation makes the
+request/response path feel conversational.
+
+**The ElevenLabs configuration problem, and the fix.** An ElevenLabs agent normally lives in
+their dashboard — prompt, tools, model, all of it outside version control, which would mean
+the voice agent could silently drift from the text agent. `scripts/sync-elevenlabs-agent.js`
+pushes the repo's own `SYSTEM_PROMPT` and `toolSchemas` into the agent over their API, so the
+definition still lives in git and one command re-syncs it. It registers the tools as **client**
+tools rather than server tools deliberately: server tools would have ElevenLabs' cloud call
+back into us, which needs a public URL and a tunnel in development. Client tools execute in
+the browser and reach the same local endpoint.
+
+### Making a spoken answer fast enough to feel live
+
+The first working version was slow to start talking, and the trace panel said why: a single
+`rank_airports` call returned **13.5 KB**, roughly 3,400 tokens, which the model had to read
+in full before it could open its mouth. Two changes, neither of which touches a number:
+
+1. **Deduplicated caveats** (above) — 13.5 KB to 9.3 KB.
+2. **`VOICE_ADDENDUM`**, appended to `SYSTEM_PROMPT` on the live paths only. It changes
+   delivery, not analysis: two or three sentences, `topN` 3 rather than 10, numbers spoken
+   the way a person says them, one caveat chosen rather than a list recited. With `topN` 3
+   the same call returns **4.3 KB** — a 68% cut against where it started.
+
+The analytical contract is identical across all three paths; only the register differs, and
+it differs because reading ten ranked airports aloud is not an answer, it is a filibuster.
+
+### Watching it happen
+
+`ToolTrace`, under each answer, shows what a finished turn was built from. The live panel
+adds `LiveTrace`: a timestamped log of the session as it runs — microphone opened, speech
+detected, which tool fired with which arguments, **how many bytes it returned and how long
+it took**, then the reply. A `raw events` toggle drops to the provider's own event stream.
+
+Payload size sits in the log on purpose. Latency in a voice agent is usually a token-count
+problem wearing a network-problem costume, and the fix above was found by reading this panel
+rather than by guessing.
+
+### Why ElevenLabs is the slower of the two, structurally
+
+Tuning did not close the gap, because the gap is architectural. **OpenAI Realtime is one
+native speech-to-speech model.** **ElevenLabs, by default, is a cascade:** transcribe, then
+run an LLM, then synthesise — three stages in series, and nothing can start speaking until
+the stage before it has produced output. Every stage's time-to-first-token adds.
+
+What was tuned, and what it bought:
+
+| Setting | Was | Now | Why |
+|---|---|---|---|
+| Agent LLM | `gemini-2.5-flash` | `gemini-3.1-flash-lite` | Same tier as the text path, so an A/B across providers compares transports rather than models. |
+| `expressive_mode` | on | off | Prosody costs time to first audio, and on a cascade that lands after the LLM has already finished. |
+| `optimize_streaming_latency` | 3 | 4 | Their maximum. |
+| `turn_eagerness` | normal | eager | Commit to a turn when the speaker has plainly stopped instead of waiting out the silence window. |
+| Voice model (English) | `eleven_v3_conversational` | `eleven_flash_v2_5` | The low-latency model. |
+
+**The Hebrew constraint is real and unfixable from here.** Of the nine voice models on the
+platform — flash v2/v2.5, turbo v2/v2.5, multilingual v2, v3, v3 conversational, v4, v4
+turbo — **only `eleven_v3_conversational` has Hebrew in its language list**, and it is the
+slowest of them. Worse, ElevenLabs validates a preset language against the *base* model, so
+keeping Hebrew forces the slow model as the agent's default. English escapes it by
+overriding the model at connect time; Hebrew has nothing to override to. Hebrew on this
+provider is slower than English by construction, and no amount of configuration changes it.
+
+The OpenAI path has no equivalent problem: one model, both languages, no synthesis stage to
+pick a model for.
+
+**If the cascade is the problem, collapse it.** `ELEVENLABS_REALTIME_MODEL` set to
+`eleven_realtime_v1_mini` or `_max` switches the agent to their native speech-to-speech
+model — the same shape the OpenAI path uses. It is left unset by default because the cascade
+is the more interesting comparison: it is what makes the architectural difference audible
+rather than theoretical.
+
+### Four bugs the trace panel found
+
+None of these were visible from the code. All four came out of reading a pasted session log.
+
+**The model chose its own language.** `languageInstruction('en')` returned an empty string,
+on the reasoning that English is the default and needs no steering. A session selected as
+English opened in Arabic, drifted to Hebrew and stayed there for the rest of the call. With
+nothing said about language, the realtime model takes its cue from the speaker's accent.
+Both languages are now stated explicitly.
+
+**The cascade told a user it could not understand their language.** Asked in Hebrew during
+an English session, the ElevenLabs agent replied that it lacked the capability to process
+Hebrew. That is false — the transcriber was set to English, which is a configuration choice,
+not a limit of the model. The prompt now forbids that answer and points at the EN/HE control.
+
+**Turn detection cut sentences in half.** OpenAI's server VAD ends a turn after 200 ms of
+silence by default. One question — *"I want to compare BOS and Portland"* — arrived as four
+fragments, each one cancelling the answer to the fragment before it. Switched to semantic
+VAD at `low` eagerness, which judges whether a thought is finished rather than timing a gap.
+`whisper-1` was also mangling spelled-out airport codes, so transcription moved to
+`gpt-4o-transcribe`.
+
+**The latency metric was measuring nothing.** It read `26 ms` on the cascade while the log's
+own timestamps showed 2.6 seconds. It was timing the gap between a mode-change event and a
+transcript event, which on that provider fire together. It now runs from the end of speech
+(or the transcript, where the provider does not report speech end) to the first word of the
+answer, and says in the label which of the two it used.
+
+The general lesson is the one the panel was built for: **a voice agent fails in ways its
+source code looks fine for.** Every one of these is a configuration default or an
+unstated assumption, and none would have been found by reading the repository.
+
+### Hebrew
+
+Every path takes a language. On the text path it appends an instruction to the system
+prompt. On the live paths it also switches the transcriber — Whisper is told which language
+to expect, and the ElevenLabs agent carries a Hebrew `language_preset` that swaps its ASR,
+its voice and its opening line. A prompt instruction alone cannot do that: a transcriber left
+on English will phonetically mangle Hebrew speech into English words, and the model then
+answers the mangled version. Airport codes and metric names stay in English in both
+languages, because that is how an analyst says them.
+
+**What this costs.** Two providers, two SDK surfaces and two failure modes to reason about,
+for a bonus. It is justified here only because the deterministic core is genuinely untouched
+by all three — which is the claim the whole submission rests on, and three independent
+transports agreeing on the same numbers is the strongest available evidence for it.
 
 ---
 

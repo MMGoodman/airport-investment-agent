@@ -12,9 +12,11 @@
     "dev:all": "concurrently npm:server npm:dev",
     "ingest": "node src/ingest/run.js",
     "test": "vitest run",
-    "verify": "node scripts/verify.js"
+    "verify": "node scripts/verify.js",
+    "sync:agent": "node scripts/sync-elevenlabs-agent.js"
   },
   "dependencies": {
+    "@elevenlabs/client": "^1.23.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

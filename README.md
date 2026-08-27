@@ -51,6 +51,59 @@ curl 'http://localhost:3001/api/rankings?region=New%20England&topN=3'
 curl 'http://localhost:3001/api/rankings?region=New%20England&growth=0.6'
 ```
 
+## Talk to it
+
+The switcher in the header picks which brain answers and over which pipe. All three share
+the same prompt module, the same five tools and the same scoring engine — only the transport
+changes.
+
+Each option names its models in full, because the shape of the name is the point — one name
+is one model, two with an arrow are two in series:
+
+| | |
+|---|---|
+| `gemini-3.1-flash-lite · text` | Type. Two model round trips, tool call in between. The default. |
+| `gpt-realtime · voice` | Native speech-to-speech over WebRTC. Interrupt it mid-sentence. |
+| `gemini-3.1-flash-lite → eleven_flash_v2_5 · voice` | A cascade: transcribe, think, synthesise. Structurally the slower of the two, and audibly so. |
+
+Both live paths need keys in `.env`; a provider without one still appears in the switcher,
+marked `no key`, rather than vanishing:
+
+```bash
+OPENAI_API_KEY=...           # platform.openai.com/api-keys
+ELEVENLABS_API_KEY=...       # elevenlabs.io -> Settings -> API Keys
+ELEVENLABS_AGENT_ID=...      # printed by the sync command below
+```
+
+Everything else has a working default; `.env.example` lists the knobs worth turning,
+including the transcription model and how long the agent waits before deciding you have
+finished a sentence.
+
+ElevenLabs agents are normally configured in a dashboard. This one is not — its prompt and
+tools are pushed from this repo, so the voice agent cannot drift from the text agent:
+
+```bash
+npm run sync:agent    # creates or updates the agent, prints its id for .env
+```
+
+Browser dictation and read-aloud (Web Speech API, no key, no cost) stay available under
+every provider as the fallback.
+
+**`EN` / `HE`** next to the switcher sets the reply language on all three paths. On the live
+ones it switches the transcriber and the voice too, not just the wording.
+
+**Session trace.** Under a live call, a timestamped log of what is actually happening —
+microphone, speech detected, which tool fired, how many bytes it returned, and
+`answer latency`: the gap between the end of your sentence and the first word of the reply.
+Tick `raw events` for the provider's own event stream, and `copy` to lift the whole session
+as text.
+
+That panel is not decoration. Four real bugs were found by reading a pasted log and none of
+them were visible in the source: a session selected as English answering in Arabic, an agent
+claiming it could not understand a language when only its transcriber was misconfigured, a
+turn detector splitting one question into four fragments, and a latency metric reporting
+26 ms for a wait that took 2.6 seconds. See [docs/DESIGN.md](docs/DESIGN.md) §3.
+
 ## Questions it answers
 
 - Which airports in New England are strong candidates for terminal expansion?

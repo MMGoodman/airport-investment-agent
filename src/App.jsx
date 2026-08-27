@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ToolTrace from './ToolTrace.jsx'
+import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
 import { toPlainText } from './markdown.js'
 import { useDictation, useSpeech } from './voice.js'
@@ -22,6 +23,12 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [health, setHealth] = useState(null)
+  // Which brain answers, and over which pipe. All three share the same tools.
+  const [providers, setProviders] = useState([])
+  const [providerId, setProviderId] = useState('gemini')
+  // Applies to all three paths: it steers the reply, and on the live paths the
+  // transcriber and the voice as well.
+  const [lang, setLang] = useState('en')
   const [readAloud, setReadAloud] = useState(false)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
@@ -41,6 +48,11 @@ function App() {
       .then((res) => res.json())
       .then(setHealth)
       .catch(() => setHealth({ ok: false }))
+
+    fetch('/api/voice/providers')
+      .then((res) => res.json())
+      .then((d) => setProviders(d.providers ?? []))
+      .catch(() => setProviders([]))
   }, [])
 
   useEffect(() => {
@@ -84,7 +96,7 @@ function App() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, lang }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? `Server returned ${res.status}`)
@@ -98,6 +110,12 @@ function App() {
       setLoading(false)
     }
   }
+
+  // A live turn lands in the same list a typed one does, so ToolTrace renders it the same.
+  const appendLive = useCallback((message) => {
+    setMessages((prev) => [...prev, message])
+    setError(null)
+  }, [])
 
   function onKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -125,6 +143,9 @@ function App() {
     spokenThrough.current = messages.length
     setReadAloud(true)
   }
+
+  const activeProvider = providers.find((p) => p.id === providerId) ?? null
+  const live = activeProvider?.mode === 'live'
 
   return (
     <div className="app">
@@ -178,12 +199,35 @@ function App() {
             <span>{readAloud ? 'voice on' : 'voice off'}</span>
           </button>
 
-          <div className={`status ${health?.ok ? 'up' : 'down'}`}>
+          <label className="switcher lang" title="Reply language — also switches the live transcriber and voice">
+            <select value={lang} onChange={(event) => setLang(event.target.value)} aria-label="Language">
+              <option value="en">EN</option>
+              <option value="he">HE</option>
+            </select>
+          </label>
+
+          <label className={`switcher ${health?.ok ? 'up' : 'down'} ${live ? 'live' : ''}`}>
             <span className="dot" aria-hidden="true" />
-            <span className="status-text">
-              {health ? (health.ok ? health.model : 'offline') : 'connecting…'}
-            </span>
-          </div>
+            <select
+              value={providerId}
+              onChange={(event) => {
+                setProviderId(event.target.value)
+                setError(null)
+              }}
+              aria-label="Model and transport"
+              title="Same tools, same scoring engine — only the model and the transport change"
+            >
+              {providers.length === 0 && (
+                <option value="gemini">{health?.model ?? 'connecting…'}</option>
+              )}
+              {providers.map((p) => (
+                <option key={p.id} value={p.id} disabled={!p.available}>
+                  {p.label}
+                  {p.available ? '' : ' — no key'}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -242,6 +286,9 @@ function App() {
         <div ref={bottomRef} />
       </main>
 
+      {live ? (
+        <LivePanel provider={activeProvider} lang={lang} onAppend={appendLive} onError={setError} />
+      ) : (
       <form
         className="composer"
         onSubmit={(event) => {
@@ -317,6 +364,7 @@ function App() {
           )}
         </p>
       </form>
+      )}
     </div>
   )
 }

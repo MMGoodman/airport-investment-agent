@@ -12,6 +12,7 @@
 import 'dotenv/config'
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemas } from '../src/agent/tools.js'
+import { asrKeywords } from '../src/agent/vocabulary.js'
 
 const API = 'https://api.elevenlabs.io/v1/convai'
 const KEY = process.env.ELEVENLABS_API_KEY
@@ -113,6 +114,9 @@ const conversation_config = {
     // out the full silence window.
     turn_eagerness: 'eager',
   },
+  // The same vocabulary bias the OpenAI path gets as a transcription prompt. Without it a
+  // transcriber has no reason to expect three-letter airport codes and guesses at them.
+  asr: { keywords: await asrKeywords() },
   // Set ELEVENLABS_REALTIME_MODEL to collapse the cascade into one native
   // speech-to-speech model — the same shape the OpenAI path uses. Left unset it stays a
   // cascade, which is the more interesting comparison and the reason the switcher exists.

@@ -295,6 +295,29 @@ The general lesson is the one the panel was built for: **a voice agent fails in 
 source code looks fine for.** Every one of these is a configuration default or an
 unstated assumption, and none would have been found by reading the repository.
 
+### Recognition, not just synthesis
+
+With the reply side fixed, the remaining weakness was the input. A general transcriber has
+no reason to expect three-letter airport codes: spoken "BOS and PDX" came back as
+`D-O-S-L-A-T-E`. Two changes:
+
+**Vocabulary bias.** Both providers take a hint — OpenAI a `transcription.prompt`,
+ElevenLabs `asr.keywords`. `src/agent/vocabulary.js` builds it from `data/`: the airports
+named in the four target questions, pinned so they cannot fall out, then the largest by
+passengers, plus the metric names this domain uses and everyday speech does not. Derived
+rather than hand-listed, so an airport entering the dataset enters the vocabulary with it.
+SNA is the case that made pinning necessary — it is 41st by passengers and would have been
+cut, and mis-hearing an airport named in a demo question is the worst failure available.
+
+**The transcriber no longer takes the language selector.** It used to be pinned to the
+selected language, which is wrong: that control governs the *reply*. A user asking in Hebrew
+and wanting the answer in English — a combination they asked for out loud — had their
+question mangled by a transcriber told to expect English. Auto-detection handles a session
+that mixes the two, and the selector now does one job instead of two.
+
+ElevenLabs cannot make the same split: its language preset drives transcriber, voice and
+reply together. Another place the managed platform trades control for convenience.
+
 ### Hebrew
 
 Every path takes a language. On the text path it appends an instruction to the system

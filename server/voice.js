@@ -11,6 +11,7 @@
  */
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemas } from '../src/agent/tools.js'
+import { transcriptionPrompt } from '../src/agent/vocabulary.js'
 
 const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
 const OPENAI_VOICE = process.env.OPENAI_REALTIME_VOICE || 'marin'
@@ -104,7 +105,15 @@ export function mountVoiceRoutes(app) {
               input: {
                 // gpt-4o-transcribe rather than whisper-1: whisper turned a spelled-out
                 // airport code into nonsense and dropped words around pauses.
-                transcription: { model: TRANSCRIBE_MODEL, language: lang },
+                //
+                // No `language`: the selector governs the REPLY language, not what the
+                // speaker uses. Pinning it to English mangled Hebrew questions from a user
+                // who wanted English answers — a combination they asked for out loud.
+                // Auto-detection handles a session that mixes the two.
+                //
+                // `prompt` biases recognition toward this domain's vocabulary, built from
+                // data/ rather than hand-listed. See src/agent/vocabulary.js.
+                transcription: { model: TRANSCRIBE_MODEL, prompt: await transcriptionPrompt() },
                 // Semantic turn detection, not a silence timer. The 200 ms server-VAD
                 // default ended the turn on an ordinary mid-sentence breath: one question
                 // arrived as four fragments, each cancelling the answer to the one before.

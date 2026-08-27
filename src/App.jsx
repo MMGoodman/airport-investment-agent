@@ -199,7 +199,14 @@ function App() {
             <span>{readAloud ? 'voice on' : 'voice off'}</span>
           </button>
 
-          <label className="switcher lang" title="Reply language — also switches the live transcriber and voice">
+          <label
+            className="switcher lang"
+            title={
+              providerId === 'elevenlabs'
+                ? 'Reply language. On this provider it also switches the transcriber and the voice, so choose it before starting the call — it cannot change mid-session.'
+                : 'Reply language. Speech recognition auto-detects, so you can ask in one language and be answered in another, or just ask the agent to switch.'
+            }
+          >
             <select value={lang} onChange={(event) => setLang(event.target.value)} aria-label="Language">
               <option value="en">EN</option>
               <option value="he">HE</option>

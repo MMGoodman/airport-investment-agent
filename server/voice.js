@@ -14,7 +14,12 @@ import { toolSchemas } from '../src/agent/tools.js'
 import { transcriptionPrompt } from '../src/agent/vocabulary.js'
 
 const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
+// Ten voices exist: alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar.
+// marin and cedar are the current pair and the only ones worth starting from. A voice
+// carries an accent, so the one that reads English best is not automatically the one that
+// reads Hebrew best — hence a separate setting rather than one voice for both.
 const OPENAI_VOICE = process.env.OPENAI_REALTIME_VOICE || 'marin'
+const OPENAI_VOICE_HE = process.env.OPENAI_REALTIME_VOICE_HE || OPENAI_VOICE
 const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcribe'
 const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
@@ -120,7 +125,7 @@ export function mountVoiceRoutes(app) {
                 // Semantic VAD judges whether the thought is finished; 'low' waits longer.
                 turn_detection: { type: 'semantic_vad', eagerness: OPENAI_VAD_EAGERNESS },
               },
-              output: { voice: OPENAI_VOICE },
+              output: { voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE },
             },
           },
         }),

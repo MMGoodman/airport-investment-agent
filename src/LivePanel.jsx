@@ -52,6 +52,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   // That gap is the number that actually matters in a voice agent.
   const askedAt = useRef(null)
   const speechWasOpen = useRef(false)
+  const measured = useRef(false)
   // Tools called since the last completed answer; they attach to the answer they produced.
   const pendingTools = useRef([])
 
@@ -103,10 +104,20 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
             speechWasOpen.current = false
             askedAt.current = { at: performance.now(), from: 'speech end' }
           }
-          if (who === 'user') speechWasOpen.current = true
+          if (who === 'user') {
+            speechWasOpen.current = true
+            // A new turn: arm the clock again.
+            measured.current = false
+          }
         },
         onUserTranscript: (text) => {
-          askedAt.current ??= { at: performance.now(), from: 'transcript' }
+          // A native speech-to-speech model answers from the audio and transcribes in
+          // parallel, so the transcript can land after the reply has already started. Only
+          // start the clock here if the turn has not already been measured, or every turn
+          // reports twice: once truthfully, once as a meaningless few milliseconds.
+          if (!measured.current) {
+            askedAt.current ??= { at: performance.now(), from: 'transcript' }
+          }
           push('you', text)
           onAppend({ role: 'user', content: text })
         },
@@ -114,9 +125,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           // First content of the turn, partial or final. Measuring here rather than on a
           // mode-change event matters: on the cascade those two fire together and the
           // metric read 26 ms while the real wait was 2.6 seconds.
-          if (askedAt.current) {
+          if (askedAt.current && !measured.current) {
             const { at, from } = askedAt.current
             askedAt.current = null
+            measured.current = true
             push('timing', `answer latency (from ${from})`, {
               ms: Math.round(performance.now() - at),
             })

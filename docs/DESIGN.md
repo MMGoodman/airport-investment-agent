@@ -249,7 +249,15 @@ What was tuned, and what it bought:
 **The Hebrew constraint is real and unfixable from here.** Of the nine voice models on the
 platform — flash v2/v2.5, turbo v2/v2.5, multilingual v2, v3, v3 conversational, v4, v4
 turbo — **only `eleven_v3_conversational` has Hebrew in its language list**, and it is the
-slowest of them. Worse, ElevenLabs validates a preset language against the *base* model, so
+slowest of them.
+
+That constraint is about the *model*. A separate reading nearly became a second, wrong
+conclusion: no voice in the account lists Hebrew under `verified_languages`, and the voice
+library returns nothing for a Hebrew search, which looked like "ElevenLabs has no Hebrew
+voice at all". Listening to one said otherwise — they read Hebrew perfectly well. The field
+records what ElevenLabs has tested, not what a voice is capable of, and absence of a label
+is not absence of the ability. Worth remembering the next time an API's metadata is the only
+evidence: it answers what was measured, not what is true. Worse, ElevenLabs validates a preset language against the *base* model, so
 keeping Hebrew forces the slow model as the agent's default. English escapes it by
 overriding the model at connect time; Hebrew has nothing to override to. Hebrew on this
 provider is slower than English by construction, and no amount of configuration changes it.

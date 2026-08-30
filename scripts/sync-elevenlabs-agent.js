@@ -103,6 +103,11 @@ const conversation_config = {
   // supporting Hebrew at all forces it here. It is also the slowest of them. English
   // sessions override it at runtime (see server/voice.js); Hebrew cannot, and pays for it.
   tts: {
+    // Their `verified_languages` metadata lists no Hebrew for any voice, and the voice
+    // library returns nothing for a Hebrew search — but listening to one settles it and
+    // listening said they are fine. The field marks what ElevenLabs has tested, not what
+    // a voice can do, and treating absence as incapacity was the wrong read.
+    voice_id: process.env.ELEVENLABS_VOICE_ID || 'pqHfZKP75CvOlQylNhV4',
     model_id: process.env.ELEVENLABS_TTS_MODEL || 'eleven_v3_conversational',
     optimize_streaming_latency: 4,
     // Expressive synthesis buys prosody at the cost of time to first audio. On a cascade

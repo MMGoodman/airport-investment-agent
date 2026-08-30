@@ -235,7 +235,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
       <p className="live-hint">
         {!provider.available ? (
           <span className="hint-warn">
-            This provider has no key in .env — the switcher shows it, but it cannot connect.
+            {provider.note ?? 'No key in .env — the switcher shows it, but it cannot connect.'}
           </span>
         ) : speaking === 'user' ? (
           'listening…'

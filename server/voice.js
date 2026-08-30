@@ -24,6 +24,7 @@ const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcri
 const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const SONIOX_STT = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
+const SONIOX_FUNDED = process.env.SONIOX_FUNDED === 'true'
 const CASCADE_TTS =
   process.env.CASCADE_TTS_PROVIDER === 'soniox'
     ? process.env.SONIOX_TTS_MODEL || 'tts-rt-v2'
@@ -73,7 +74,14 @@ export function mountVoiceRoutes(app) {
           // Ours, not theirs. Every stage is a component we chose and can time.
           label: `${SONIOX_STT} → ${GEMINI_MODEL} → ${CASCADE_TTS} · voice`,
           mode: 'live',
-          available: Boolean(process.env.SONIOX_API_KEY && process.env.OPENAI_API_KEY),
+          // A key alone is not readiness. Streaming audio bills per hour, so an unfunded
+          // account mints temporary keys happily and then returns 402 the moment real
+          // audio arrives. Listing it as available would put that failure mid-conversation
+          // instead of in the switcher, where it can be read before a call starts.
+          available: Boolean(
+            process.env.SONIOX_API_KEY && process.env.OPENAI_API_KEY && SONIOX_FUNDED,
+          ),
+          note: SONIOX_FUNDED ? null : 'needs a funded Soniox account — set SONIOX_FUNDED=true once topped up',
           model: `${SONIOX_STT} + ${CASCADE_TTS}`,
           pipeline: `${SONIOX_STT} → ${GEMINI_MODEL} → ${CASCADE_TTS} (assembled — three vendors)`,
           transport: 'WebSocket STT · our agent · REST TTS',

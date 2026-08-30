@@ -82,7 +82,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     (label, from, to) => {
       const a = marks.current[from]
       const b = marks.current[to]
-      if (a == null || b == null) return
+      if (a == null || b == null || b < a) return
       push('timing', label, { ms: Math.round(b - a) })
     },
     [push],
@@ -154,7 +154,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           // First words of the turn, partial or final.
           if (!marks.current.firstToken) {
             mark('firstToken')
-            stage('think', 'transcript', 'firstToken')
+            // Streaming partials means this really is time-to-first-token. A provider that
+            // only hands over the finished message — the managed cascade does — is telling
+            // us when generation ENDED, and calling that "think" would flatter it against
+            // a model that starts speaking mid-sentence. Different names, different things.
+            stage(final ? 'generate (full answer)' : 'think (to first word)', 'transcript', 'firstToken')
             // The honest fallback when a provider never told us when speech stopped.
             stage('answer', marks.current.speechEnd ? 'speechEnd' : 'transcript', 'firstToken')
           }

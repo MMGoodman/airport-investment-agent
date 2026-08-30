@@ -92,17 +92,32 @@ async function biasAirports(limit) {
   return codes.map((c) => store.byIata.get(c)).filter(Boolean)
 }
 
-/** A comma-separated hint for OpenAI's `transcription.prompt`. */
+/**
+ * A comma-separated hint for OpenAI's `transcription.prompt`.
+ *
+ * Hard limit of 1024 characters, enforced by the API — adding the Hebrew terms pushed it
+ * to 1070 and every session was rejected before a word was spoken. Rather than trimming
+ * the list by hand and having it break again on the next addition, the sections are laid
+ * out in priority order and truncated at a comma so the hint is always well-formed.
+ */
+const PROMPT_LIMIT = 1024
+
 export async function transcriptionPrompt(limit = 40) {
   const airports = await biasAirports(limit)
   const codes = airports.map((a) => a.iata).join(', ')
   const cities = [...new Set(airports.map((a) => a.city.split('/')[0]))].join(', ')
 
-  return (
-    'Aviation investment analysis, in English or Hebrew. Expect three-letter IATA airport ' +
-    `codes spoken as letters: ${codes}. City names: ${cities}. ` +
-    `Terms: ${DOMAIN_TERMS.join(', ')}. Hebrew: ${HEBREW_TERMS.slice(0, 14).join(', ')}.`
-  )
+  // Codes first: they are the figures an answer is built on and the ones a general
+  // transcriber is most likely to mangle. Prose terms are the first thing to lose.
+  const full =
+    'Aviation investment analysis, English or Hebrew. Three-letter IATA codes spoken as ' +
+    `letters: ${codes}. Cities: ${cities}. Hebrew: ${HEBREW_TERMS.join(', ')}. ` +
+    `Terms: ${DOMAIN_TERMS.join(', ')}.`
+
+  if (full.length <= PROMPT_LIMIT) return full
+
+  const cut = full.slice(0, PROMPT_LIMIT)
+  return `${cut.slice(0, cut.lastIndexOf(','))}.`
 }
 
 /** A flat keyword list for ElevenLabs' `asr.keywords`. */

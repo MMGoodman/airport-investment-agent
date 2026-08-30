@@ -314,9 +314,17 @@ them is always the culprit — usually `think`, which is the LLM plus however ma
 called, and which the payload sizes in the same log then explain.
 
 **The Soniox path exists to make that legible.** It is the only one of the three we
-assemble ourselves — their recogniser, our existing agent over `POST /api/chat`, their
-synthesiser — so every boundary is a timestamp we own rather than one a platform chooses
-to expose. ElevenLabs can report roughly when it started speaking and nothing before that;
+assemble ourselves — their recogniser, our existing agent over `POST /api/chat`, and a
+synthesiser chosen separately — so every boundary is a timestamp we own rather than one a
+platform chooses to expose.
+
+The synthesiser is separate on purpose, and the reason is instructive. Soniox does offer
+TTS — `tts-rt-v2`, Hebrew, six voices — on a different host to the rest of its API, but the
+account's balance is exhausted and every request returns 402. OpenAI holds the stage
+instead, and `CASCADE_TTS_PROVIDER=soniox` swaps it back the moment the account is funded,
+with nothing else changing. That single line is the difference between a pipeline you
+assembled and one you bought: ElevenLabs accepts only its own four transcribers, and OpenAI
+Realtime has no seams to swap at all. ElevenLabs can report roughly when it started speaking and nothing before that;
 OpenAI has nothing to decompose. Soniox was chosen for the recogniser because it switches
 language mid-sentence without being told which language to expect, which is the exact
 pattern a bilingual user produces and the one that broke every other configuration here.

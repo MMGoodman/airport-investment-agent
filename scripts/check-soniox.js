@@ -53,9 +53,44 @@ await step('the configured STT model exists and speaks Hebrew', async () => {
   return true
 })
 
-// Soniox is the recogniser here and nothing else — this account has no voices and no
-// synthesis models. The cascade's third stage comes from OpenAI instead.
-await step('synthesis stage (OpenAI) speaks Hebrew', async () => {
+// Soniox does have TTS — tts-rt-v2, Hebrew, voice "Daniel" — on a different host to the
+// rest of the API. Whether it answers is a billing question, not a capability one, so the
+// check reports the two separately: can it speak, and is the account funded to.
+await step('soniox tts is available to this account', async () => {
+  const r = await fetch('https://api.soniox.com/v1/tts-models', { headers: auth })
+  const { models = [] } = await r.json()
+  const want = process.env.SONIOX_TTS_MODEL || 'tts-rt-v2'
+  const model = models.find((m) => m.id === want)
+  if (!model) throw new Error(`${want} not offered; have: ${models.map((m) => m.id).join(', ')}`)
+  const voices = (model.voices ?? []).map((v) => v.id ?? v.name)
+  console.log(`       ${want}: voices ${voices.slice(0, 6).join(', ')}`)
+  return true
+})
+
+await step('soniox tts actually synthesises (needs a funded account)', async () => {
+  const r = await fetch('https://tts-rt.soniox.com/tts', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({
+      model: process.env.SONIOX_TTS_MODEL || 'tts-rt-v2',
+      voice: process.env.SONIOX_TTS_VOICE || 'Daniel',
+      language: 'he',
+      text: 'בוסטון לוגן מוביל בין שדות התעופה של ניו אינגלנד.',
+      audio_format: 'mp3',
+    }),
+  })
+  if (r.status === 402) {
+    throw new Error(
+      'organization balance exhausted — add funds at console.soniox.com, or leave ' +
+        'CASCADE_TTS_PROVIDER=openai and the cascade still runs',
+    )
+  }
+  if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`)
+  console.log(`       returned ${((await r.arrayBuffer()).byteLength / 1024).toFixed(1)} KB of Hebrew audio`)
+  return true
+})
+
+await step('the configured synthesis stage speaks Hebrew', async () => {
   if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set')
   const r = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',

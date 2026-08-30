@@ -24,7 +24,10 @@ const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcri
 const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const SONIOX_STT = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
-const CASCADE_TTS = process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts'
+const CASCADE_TTS =
+  process.env.CASCADE_TTS_PROVIDER === 'soniox'
+    ? process.env.SONIOX_TTS_MODEL || 'tts-rt-v2'
+    : process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts'
 const EL_LLM = process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite'
 // English sessions swap to the fast model at connect time; that is what the label shows.
 const EL_TTS =
@@ -197,29 +200,23 @@ export function mountVoiceRoutes(app) {
   })
 
   /**
-   * The synthesis stage of the assembled cascade.
+   * The synthesis stage of the assembled cascade — a stage, not a vendor.
    *
-   * Deliberately not tied to whoever does the recognising. Soniox has no TTS on this
-   * account — no voices, no synthesis models — and the ElevenLabs key is scoped to their
-   * agent platform, so it returns 401 for plain text-to-speech. OpenAI does both languages
-   * and is already configured, so it takes this stage.
+   * Whoever recognises does not have to be whoever speaks, and here they are not. Soniox
+   * has TTS (`tts-rt-v2`, Hebrew, voice "Daniel") but the organization balance is
+   * exhausted, so every request comes back 402. OpenAI speaks both languages and is
+   * already paid for, so it holds the stage until Soniox is funded, at which point
+   * CASCADE_TTS_PROVIDER=soniox swaps it back with no other change.
    *
-   * That the three stages come from three vendors is the argument for assembling a
-   * pipeline rather than buying one: each stage is chosen on its merits and replaced on
-   * its own, which is exactly what a managed platform will not let you do.
+   * Being able to do that is the entire argument for assembling a pipeline instead of
+   * buying one. ElevenLabs will only accept its own four transcribers; OpenAI Realtime has
+   * no seams at all. Here every stage is replaceable on its own merits.
    */
-  app.post('/api/voice/speak', async (req, res) => {
-    const { text, lang } = req.body ?? {}
-    if (!process.env.OPENAI_API_KEY) return res.status(503).json({ error: 'OPENAI_API_KEY is not set.' })
-    if (!text?.trim()) return res.status(400).json({ error: 'Body must be { text }' })
-
-    try {
-      const upstream = await fetch('https://api.openai.com/v1/audio/speech', {
+  const SYNTHESISERS = {
+    openai: async (text, lang) => {
+      const r = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts',
           voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE,
@@ -227,15 +224,51 @@ export function mountVoiceRoutes(app) {
           response_format: 'mp3',
         }),
       })
+      return r
+    },
+    // Note the host: synthesis lives on tts-rt.soniox.com, not the api. subdomain.
+    soniox: async (text, lang) => {
+      const r = await fetch('https://tts-rt.soniox.com/tts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.SONIOX_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: process.env.SONIOX_TTS_MODEL || 'tts-rt-v2',
+          voice: process.env.SONIOX_TTS_VOICE || 'Daniel',
+          language: lang === 'he' ? 'he' : 'en',
+          text,
+          audio_format: 'mp3',
+        }),
+      })
+      return r
+    },
+  }
+
+  app.post('/api/voice/speak', async (req, res) => {
+    const { text, lang } = req.body ?? {}
+    const provider = process.env.CASCADE_TTS_PROVIDER || 'openai'
+    const synthesise = SYNTHESISERS[provider]
+
+    if (!synthesise) return res.status(500).json({ error: `Unknown CASCADE_TTS_PROVIDER "${provider}"` })
+    if (!text?.trim()) return res.status(400).json({ error: 'Body must be { text }' })
+
+    try {
+      const upstream = await synthesise(text, lang)
 
       if (!upstream.ok) {
-        return res.status(upstream.status).json({ error: (await upstream.text()).slice(0, 300) })
+        const detail = await upstream.text()
+        // Say which stage failed and who owns it. "TTS failed" sends someone reading the
+        // wrong logs; "soniox: balance exhausted" is a thing you can act on.
+        return res.status(upstream.status).json({
+          error: `${provider}: ${detail.slice(0, 240)}`,
+          stage: 'synthesise',
+          provider,
+        })
       }
 
       res.setHeader('Content-Type', 'audio/mpeg')
       res.send(Buffer.from(await upstream.arrayBuffer()))
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(500).json({ error: `${provider}: ${err.message}`, stage: 'synthesise', provider })
     }
   })
 

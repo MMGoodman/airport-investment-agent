@@ -25,6 +25,7 @@ const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const SONIOX_STT = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
 const SONIOX_FUNDED = process.env.SONIOX_FUNDED === 'true'
+const DEFAULT_LANG = process.env.DEFAULT_LANG === 'en' ? 'en' : 'he'
 const CASCADE_TTS =
   process.env.CASCADE_TTS_PROVIDER === 'soniox'
     ? process.env.SONIOX_TTS_MODEL || 'tts-rt-v2'
@@ -49,6 +50,9 @@ export function mountVoiceRoutes(app) {
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
   app.get('/api/voice/providers', (req, res) => {
     res.json({
+      // Which language the UI opens on. Hebrew is the default here because that is what
+      // this deployment is being exercised in; the control still switches it per session.
+      defaultLang: DEFAULT_LANG,
       providers: [
         {
           id: 'gemini',

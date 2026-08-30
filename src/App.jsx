@@ -28,7 +28,7 @@ function App() {
   const [providerId, setProviderId] = useState('gemini')
   // Applies to all three paths: it steers the reply, and on the live paths the
   // transcriber and the voice as well.
-  const [lang, setLang] = useState('en')
+  const [lang, setLang] = useState('he')
   const [readAloud, setReadAloud] = useState(false)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
@@ -51,7 +51,10 @@ function App() {
 
     fetch('/api/voice/providers')
       .then((res) => res.json())
-      .then((d) => setProviders(d.providers ?? []))
+      .then((d) => {
+        setProviders(d.providers ?? [])
+        if (d.defaultLang) setLang(d.defaultLang)
+      })
       .catch(() => setProviders([]))
   }, [])
 

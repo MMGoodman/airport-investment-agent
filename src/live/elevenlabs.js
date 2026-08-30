@@ -29,6 +29,7 @@ export async function startElevenLabs({
   onAssistantTranscript = () => {},
   onToolCall = () => {},
   onSpeaking = () => {},
+  onFirstAudio = () => {},
   onError = () => {},
 }) {
   onStatus('minting key')
@@ -72,7 +73,11 @@ export async function startElevenLabs({
     onConnect: () => onStatus('live'),
     onDisconnect: () => onStatus('idle'),
     onError: (err) => onError(err instanceof Error ? err : new Error(String(err))),
-    onModeChange: ({ mode }) => onSpeaking(mode === 'speaking' ? 'assistant' : null),
+    onModeChange: ({ mode }) => {
+      onSpeaking(mode === 'speaking' ? 'assistant' : null)
+      // The platform switching to "speaking" is the only synthesis boundary it exposes.
+      if (mode === 'speaking') onFirstAudio()
+    },
     onMessage: ({ message, source }) => {
       if (!message?.trim()) return
       if (source === 'user') onUserTranscript(message.trim())

@@ -132,6 +132,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           }
         },
         onUserTranscript: (text) => {
+          // A transcript arriving after an answer means a new turn. OpenAI resets on
+          // speech_started, but the cascade never reports that a person began talking, so
+          // its opening greeting set firstToken once and nothing was ever measured again.
+          if (marks.current.firstToken) marks.current = {}
           mark('transcript')
           push('you', text)
           onAppend({ role: 'user', content: text })

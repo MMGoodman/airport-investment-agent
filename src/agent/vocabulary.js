@@ -11,6 +11,38 @@
  */
 import { getStore } from '../data/store.js'
 
+/**
+ * The same domain in Hebrew. A keyword list of English metric names does nothing for a
+ * Hebrew caller, and the transcripts showed it: spoken Hebrew about airports came back as
+ * unrelated words. These are the terms a Hebrew speaker actually uses for this subject.
+ */
+const HEBREW_TERMS = [
+  'שדה תעופה',
+  'שדות תעופה',
+  'טרמינל',
+  'הרחבת טרמינל',
+  'נמל תעופה',
+  'תפוסה',
+  'עומס',
+  'ביקוש',
+  'ביקוש לא מסופק',
+  'צמיחה',
+  'נוסעים',
+  'המראות',
+  'טיסות',
+  'מושבים',
+  'השקעה',
+  'דירוג',
+  'להשוות',
+  'בוסטון',
+  'לוס אנג׳לס',
+  'סנטה אנה',
+  'אנקורג׳',
+  'סן פרנסיסקו',
+  'פורטלנד',
+  'ניו אינגלנד',
+]
+
 /** The words this domain uses that everyday speech does not. */
 const DOMAIN_TERMS = [
   'IATA code',
@@ -67,8 +99,9 @@ export async function transcriptionPrompt(limit = 40) {
   const cities = [...new Set(airports.map((a) => a.city.split('/')[0]))].join(', ')
 
   return (
-    'Aviation investment analysis. Expect three-letter IATA airport codes spoken as ' +
-    `letters: ${codes}. City names: ${cities}. Terms: ${DOMAIN_TERMS.join(', ')}.`
+    'Aviation investment analysis, in English or Hebrew. Expect three-letter IATA airport ' +
+    `codes spoken as letters: ${codes}. City names: ${cities}. ` +
+    `Terms: ${DOMAIN_TERMS.join(', ')}. Hebrew: ${HEBREW_TERMS.slice(0, 14).join(', ')}.`
   )
 }
 
@@ -79,5 +112,6 @@ export async function asrKeywords(limit = 60) {
     ...airports.map((a) => a.iata),
     ...new Set(airports.map((a) => a.city.split('/')[0])),
     ...DOMAIN_TERMS,
+    ...HEBREW_TERMS,
   ]
 }

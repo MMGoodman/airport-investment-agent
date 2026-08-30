@@ -14,7 +14,8 @@
     "test": "vitest run",
     "verify": "node scripts/verify.js",
     "sync:agent": "node scripts/sync-elevenlabs-agent.js",
-    "eval": "node scripts/eval.js"
+    "eval": "node scripts/eval.js",
+    "check:soniox": "node scripts/check-soniox.js"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.23.0",

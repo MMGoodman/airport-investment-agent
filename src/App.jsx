@@ -233,7 +233,10 @@ function App() {
               {providers.map((p) => (
                 <option key={p.id} value={p.id} disabled={!p.available}>
                   {p.label}
-                  {p.available ? '' : ' — no key'}
+                  {/* "no key" was hardcoded, and stopped being true once a provider could
+                      be unavailable for other reasons — a key that exists but an account
+                      with no funds behind it. The server says why; the option repeats it. */}
+                  {p.available ? '' : ` — ${p.note ? 'unavailable' : 'no key'}`}
                 </option>
               ))}
             </select>

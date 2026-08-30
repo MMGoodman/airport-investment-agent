@@ -16,7 +16,8 @@
     "sync:agent": "node scripts/sync-elevenlabs-agent.js",
     "eval": "node scripts/eval.js",
     "check:soniox": "node scripts/check-soniox.js",
-    "notebook": "python -m jupyterlab notebooks/voice-latency.ipynb"
+    "notebook": "python -m jupyterlab notebooks/voice-latency.ipynb",
+    "notebook:html": "python -m nbconvert --to html --no-input --output voice-latency notebooks/voice-latency.ipynb"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.23.0",

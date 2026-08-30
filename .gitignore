@@ -2,3 +2,5 @@
 .env
 dist/
 data/raw/
+
+.ipynb_checkpoints/

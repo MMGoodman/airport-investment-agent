@@ -21,7 +21,45 @@ const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
 const OPENAI_VOICE = process.env.OPENAI_REALTIME_VOICE || 'marin'
 const OPENAI_VOICE_HE = process.env.OPENAI_REALTIME_VOICE_HE || OPENAI_VOICE
 const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcribe'
+/**
+ * Turn detection: when the caller has finished speaking, and when they have interrupted.
+ *
+ * Two mechanisms with genuinely different failure modes, so both are exposed rather than
+ * one being chosen here on the caller's behalf.
+ *
+ *   semantic  a model judges whether the THOUGHT is finished. Rides through a breath
+ *             mid-sentence, but offers no volume threshold, so background noise can still
+ *             register as an interruption and truncate an answer.
+ *   server    a silence timer with a loudness threshold. Crude about meaning — the 200 ms
+ *             default split one question into four fragments — but it is the only way to
+ *             say "ignore anything quieter than this".
+ *
+ * Reach for `server` with a high threshold when a room is noisy; keep `semantic` when it
+ * is quiet and sentences are long.
+ */
+const VAD_TYPE = process.env.OPENAI_VAD_TYPE === 'server' ? 'server_vad' : 'semantic_vad'
 const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
+const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback)
+
+const turnDetection =
+  VAD_TYPE === 'semantic_vad'
+    ? { type: 'semantic_vad', eagerness: OPENAI_VAD_EAGERNESS }
+    : {
+        type: 'server_vad',
+        // Higher ignores quieter sound. The lever semantic VAD does not have.
+        threshold: num(process.env.OPENAI_VAD_THRESHOLD, 0.5),
+        // How long a pause before the turn is considered over. The 200 ms default is the
+        // one that chopped sentences apart.
+        silence_duration_ms: num(process.env.OPENAI_VAD_SILENCE_MS, 700),
+        // Audio kept from before speech was detected, so the first syllable survives.
+        prefix_padding_ms: num(process.env.OPENAI_VAD_PREFIX_MS, 300),
+      }
+
+/** Human-readable, for the session trace — so a comparison records what it was run under. */
+const vadSummary =
+  VAD_TYPE === 'semantic_vad'
+    ? `semantic_vad · eagerness ${OPENAI_VAD_EAGERNESS}`
+    : `server_vad · threshold ${turnDetection.threshold} · silence ${turnDetection.silence_duration_ms}ms`
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const SONIOX_STT = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
 const SONIOX_FUNDED = process.env.SONIOX_FUNDED === 'true'
@@ -150,7 +188,7 @@ export function mountVoiceRoutes(app) {
                 // default ended the turn on an ordinary mid-sentence breath: one question
                 // arrived as four fragments, each cancelling the answer to the one before.
                 // Semantic VAD judges whether the thought is finished; 'low' waits longer.
-                turn_detection: { type: 'semantic_vad', eagerness: OPENAI_VAD_EAGERNESS },
+                turn_detection: turnDetection,
               },
               output: { voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE },
             },
@@ -164,7 +202,13 @@ export function mountVoiceRoutes(app) {
       }
 
       // Only the ephemeral value crosses to the browser — never the account key.
-      res.json({ clientSecret: body.value, expiresAt: body.expires_at, model: OPENAI_MODEL, lang })
+      res.json({
+        clientSecret: body.value,
+        expiresAt: body.expires_at,
+        model: OPENAI_MODEL,
+        lang,
+        vad: vadSummary,
+      })
     } catch (err) {
       res.status(500).json({ error: err.message })
     }

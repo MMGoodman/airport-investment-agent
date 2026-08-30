@@ -29,7 +29,10 @@ export async function startOpenAIRealtime({
   const keyRes = await fetch(`/api/realtime/session?lang=${lang}`)
   const keyBody = await keyRes.json()
   if (!keyRes.ok) throw new Error(keyBody.error ?? 'Could not mint a realtime key')
-  const { clientSecret, model } = keyBody
+  const { clientSecret, model, vad } = keyBody
+  // Record what turn detection this call ran under, so a pasted trace can be compared
+  // against another that was configured differently.
+  if (vad) onStatus(`turn detection: ${vad}`)
 
   onStatus('opening microphone')
   const mic = await navigator.mediaDevices.getUserMedia({ audio: true })

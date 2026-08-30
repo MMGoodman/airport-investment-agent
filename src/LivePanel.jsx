@@ -80,6 +80,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
    */
   const stage = useCallback(
     (label, from, to) => {
+      // Every stage is scoped to one answer, and an answer starts with a question. The
+      // agent's opening greeting has no question in front of it, so it is not a turn and
+      // has nothing to time.
+      if (marks.current.transcript == null) return
       const a = marks.current[from]
       const b = marks.current[to]
       if (a == null || b == null || b < a) return
@@ -104,6 +108,9 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     if (sessionRef.current) return
     t0.current = performance.now()
     seq.current = 0
+    // A stopwatch left running from the last call measured across both of them and
+    // reported 25 seconds of synthesis before anyone had spoken.
+    marks.current = {}
     setEvents([])
     setStatus('minting key')
     pendingTools.current = []

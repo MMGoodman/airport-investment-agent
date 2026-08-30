@@ -295,6 +295,32 @@ The general lesson is the one the panel was built for: **a voice agent fails in 
 source code looks fine for.** Every one of these is a configuration default or an
 unstated assumption, and none would have been found by reading the repository.
 
+### Where the time actually goes
+
+"One provider is slower than the other" is not actionable. The trace now breaks a turn
+into the stages a cascade is made of, and the shape of what each provider can report is
+itself the answer:
+
+```
+gpt-realtime                        soniox → our agent → soniox
+  ⏱ answer      340 ms                ⏱ recognise    260 ms
+  (one model — no stages to split)    ⏱ think        910 ms
+                                      ⏱ synthesise   180 ms
+                                      ⏱ answer     1,350 ms
+```
+
+A native model has one number because it has one stage. A cascade has three, and one of
+them is always the culprit — usually `think`, which is the LLM plus however many tools it
+called, and which the payload sizes in the same log then explain.
+
+**The Soniox path exists to make that legible.** It is the only one of the three we
+assemble ourselves — their recogniser, our existing agent over `POST /api/chat`, their
+synthesiser — so every boundary is a timestamp we own rather than one a platform chooses
+to expose. ElevenLabs can report roughly when it started speaking and nothing before that;
+OpenAI has nothing to decompose. Soniox was chosen for the recogniser because it switches
+language mid-sentence without being told which language to expect, which is the exact
+pattern a bilingual user produces and the one that broke every other configuration here.
+
 ### Recognition, not just synthesis
 
 With the reply side fixed, the remaining weakness was the input. A general transcriber has
@@ -481,6 +507,12 @@ numbers, and answers a question nobody asked. No error, no stack trace, a fluent
 | `follow-up` | 2 | Pronouns resolved against the prior ranking; a weight change re-runs the engine instead of being reasoned about |
 | `scope` | 5 | Construction cost, foreign airports, delay statistics, unknown regions, "highest ROI" — each an invitation to invent |
 | `edge` | 4 | Cargo hubs, a city with two airports, state queries, three-way comparisons |
+| `hebrew` | 4 | The same questions asked in Hebrew: same tool, same figures, answer in the right language, and the SNA cap surviving translation |
+
+The Hebrew group is not testing the numbers — the scoring engine cannot tell what language
+a question arrived in. It tests that switching language does not quietly change which tool
+runs or lose the caveat that matters, which is the sort of thing nobody notices until a
+demo.
 
 ### The provenance check
 
@@ -503,6 +535,14 @@ only one previously performed by eye.
 the growth rates only ever appear inside a driver's `why` sentence. Scanning numeric fields
 alone flagged all of them as fabricated. They are the tool's own words, which the prompt
 tells the model to reuse, so they are provenanced by definition.
+
+**A spoken preamble is not an answer.** Before a slow tool the voice model fills the
+silence — *"let me pull that up"* — and that filler is a complete response, with text and
+no function call, indistinguishable by shape from a real reply. The harness took it as the
+answer and reported a Hebrew case as having dropped the SNA regulatory cap, which the model
+had simply not reached yet. It now settles only after the model has been quiet for a beat.
+A harness that stops listening too early invents failures as readily as a model invents
+facts.
 
 **The same assertion was right for text and wrong for speech.** Requiring the literal string
 `SNA` failed the voice path on four cases — because it says "Santa Ana", which is what the

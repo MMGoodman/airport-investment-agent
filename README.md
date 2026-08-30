@@ -76,7 +76,8 @@ is one model, two with an arrow are two in series:
 |---|---|
 | `gemini-3.1-flash-lite · text` | Type. Two model round trips, tool call in between. The default. |
 | `gpt-realtime · voice` | Native speech-to-speech over WebRTC. Interrupt it mid-sentence. |
-| `gemini-3.1-flash-lite → eleven_flash_v2_5 · voice` | A cascade: transcribe, think, synthesise. Structurally the slower of the two, and audibly so. |
+| `soniox → gemini-3.1-flash-lite → soniox · voice` | A cascade we assemble: their recogniser, our agent, their synthesiser. The only path where each stage is timed separately. |
+| `gemini-3.1-flash-lite → eleven_flash_v2_5 · voice` | A managed cascade. Structurally the slower of the two, and audibly so. |
 
 Both live paths need keys in `.env`; a provider without one still appears in the switcher,
 marked `no key`, rather than vanishing:

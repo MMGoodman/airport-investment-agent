@@ -20,6 +20,8 @@ export async function startOpenAIRealtime({
   onAssistantTranscript = () => {},
   onToolCall = () => {},
   onSpeaking = () => {},
+  onFirstToken = () => {},
+  onFirstAudio = () => {},
   onError = () => {},
 }) {
   onStatus('minting key')
@@ -45,6 +47,9 @@ export async function startOpenAIRealtime({
 
   dc.addEventListener('open', () => onStatus('live'))
 
+  // Reset each turn so every answer reports its own first-audio moment.
+  let audioReported = false
+
   dc.addEventListener('message', async (event) => {
     let msg
     try {
@@ -59,7 +64,18 @@ export async function startOpenAIRealtime({
 
     switch (msg.type) {
       case 'input_audio_buffer.speech_started':
+        audioReported = false
         onSpeaking('user')
+        break
+
+      // One model produces text and audio together, so first token and first audio land
+      // within a few milliseconds of each other. That is not measurement noise — it is
+      // exactly the difference between a native model and a cascade, made visible.
+      case 'response.output_audio.delta':
+        if (!audioReported) {
+          audioReported = true
+          onFirstAudio()
+        }
         break
       case 'input_audio_buffer.speech_stopped':
         onSpeaking(null)
@@ -69,9 +85,8 @@ export async function startOpenAIRealtime({
         if (msg.transcript?.trim()) onUserTranscript(msg.transcript.trim())
         break
 
-      // The first delta of a response is the moment it begins speaking. Without this the
-      // time-to-first-word measurement never closed and always read "not measured".
       case 'response.output_audio_transcript.delta':
+        onFirstToken()
         onAssistantTranscript(msg.delta ?? '', false)
         break
       case 'response.output_audio_transcript.done':

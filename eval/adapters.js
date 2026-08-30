@@ -19,7 +19,7 @@ import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent
 const API = process.env.EVAL_API ?? 'http://localhost:3001'
 
 /** The text path, over the HTTP endpoint the UI uses. */
-export async function gemini(turns) {
+export async function gemini(turns, lang = 'en') {
   const started = Date.now()
   const messages = []
   let reply = ''
@@ -31,7 +31,7 @@ export async function gemini(turns) {
     const res = await fetch(`${API}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, lang: 'en' }),
+      body: JSON.stringify({ messages, lang }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error ?? `chat returned ${res.status}`)
@@ -49,7 +49,7 @@ export async function gemini(turns) {
  * OpenAI Realtime over WebSocket rather than WebRTC — same session shape, same tools,
  * no browser and no audio. Output is forced to text so a run costs no synthesis.
  */
-export async function openai(turns) {
+export async function openai(turns, lang = 'en') {
   const started = Date.now()
   const key = process.env.OPENAI_API_KEY
   if (!key) throw new Error('OPENAI_API_KEY is not set')
@@ -75,7 +75,7 @@ export async function openai(turns) {
     session: {
       type: 'realtime',
       output_modalities: ['text'],
-      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction('en'),
+      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang),
       tools: toolSchemas.map((t) => ({
         type: 'function',
         name: t.name,
@@ -89,14 +89,40 @@ export async function openai(turns) {
     },
   })
 
-  /** One user turn: ask, service every tool call, resolve on the first text answer. */
+  /**
+   * One user turn: ask, service every tool call, resolve when it has stopped talking.
+   *
+   * Not on the first completed response. A voice model fills the silence before a slow
+   * tool — "let me pull that up" — and that preamble is a complete response with text and
+   * no function call in it, indistinguishable from an answer by shape alone. Taking it as
+   * the reply made a Hebrew case fail for dropping a caveat the model had not reached yet.
+   *
+   * So: accumulate every piece of prose in the turn and settle once the model has been
+   * quiet for a beat. The preamble stays in the transcript, where it belongs, and the
+   * answer that follows it is what gets asserted on.
+   */
   const askOnce = (text) =>
     new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('timed out waiting for a reply')), 60_000)
       let text_ = ''
+      let settle = null
+
+      const quietFor = (ms) => {
+        clearTimeout(settle)
+        settle = setTimeout(() => {
+          clearTimeout(timer)
+          ws.off('message', onMessage)
+          resolve(text_.trim())
+        }, ms)
+      }
 
       const onMessage = async (raw) => {
         const msg = JSON.parse(raw.toString())
+
+        // Any activity means it has not finished thinking.
+        if (msg.type.startsWith('response.') || msg.type.startsWith('conversation.')) {
+          clearTimeout(settle)
+        }
 
         if (msg.type === 'response.function_call_arguments.done') {
           const args = msg.arguments ? JSON.parse(msg.arguments) : {}
@@ -111,18 +137,14 @@ export async function openai(turns) {
           send({ type: 'response.create' })
         }
 
-        if (msg.type === 'response.output_text.done') text_ = msg.text ?? text_
-        if (msg.type === 'response.output_text.delta') text_ += msg.delta ?? ''
+        if (msg.type === 'response.output_text.done') text_ += `${msg.text ?? ''} `
 
-        // A response that produced prose rather than another tool request ends the turn.
-        if (msg.type === 'response.done' && text_.trim()) {
-          clearTimeout(timer)
-          ws.off('message', onMessage)
-          resolve(text_.trim())
-        }
+        // Quiet after a completed response means the turn is genuinely over.
+        if (msg.type === 'response.done' && text_.trim()) quietFor(1500)
 
         if (msg.type === 'error') {
           clearTimeout(timer)
+          clearTimeout(settle)
           ws.off('message', onMessage)
           reject(new Error(msg.error?.message ?? 'realtime error'))
         }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { startOpenAIRealtime } from './live/openaiRealtime.js'
 import { startElevenLabs } from './live/elevenlabs.js'
+import { startSoniox } from './live/soniox.js'
 import LiveTrace from './LiveTrace.jsx'
 
 /**
@@ -15,6 +16,7 @@ import LiveTrace from './LiveTrace.jsx'
 const STARTERS = {
   openai: startOpenAIRealtime,
   elevenlabs: startElevenLabs,
+  soniox: startSoniox,
 }
 
 const STATUS_LABEL = {
@@ -50,11 +52,16 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const seq = useRef(0)
   // When the speaker stopped, so the gap until the first spoken word can be measured.
   // That gap is the number that actually matters in a voice agent.
-  const askedAt = useRef(null)
   const speechWasOpen = useRef(false)
-  const measured = useRef(false)
+  // Timestamps for the boundaries of one turn. A single "answer latency" number says a
+  // path is slow; these say WHICH stage is slow, which is the only version you can act on.
+  const marks = useRef({})
   // Tools called since the last completed answer; they attach to the answer they produced.
   const pendingTools = useRef([])
+
+  const mark = useCallback((name) => {
+    marks.current[name] = performance.now()
+  }, [])
 
   const push = useCallback((kind, text, extra = {}) => {
     const t = (performance.now() - t0.current) / 1000
@@ -63,6 +70,23 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
       return next.length > MAX_EVENTS ? next.slice(-MAX_EVENTS) : next
     })
   }, [])
+
+  /**
+   * Emit the gap between two marks, if both happened.
+   *
+   * Which gaps a provider can report is itself the comparison. A native speech-to-speech
+   * model has no separate recognise or synthesise stage to time — there is one model and
+   * one number. A cascade has three, and one of them is always the culprit.
+   */
+  const stage = useCallback(
+    (label, from, to) => {
+      const a = marks.current[from]
+      const b = marks.current[to]
+      if (a == null || b == null) return
+      push('timing', label, { ms: Math.round(b - a) })
+    },
+    [push],
+  )
 
   const stop = useCallback(async () => {
     const session = sessionRef.current
@@ -98,40 +122,37 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         },
         onSpeaking: (who) => {
           setSpeaking(who)
-          // Speech just stopped: the clock to a spoken answer starts here. Only the
-          // OpenAI path reports this; ElevenLabs falls back to the transcript below.
           if (who === null && speechWasOpen.current) {
             speechWasOpen.current = false
-            askedAt.current = { at: performance.now(), from: 'speech end' }
+            mark('speechEnd')
           }
           if (who === 'user') {
             speechWasOpen.current = true
-            // A new turn: arm the clock again.
-            measured.current = false
+            marks.current = {} // new turn, new stopwatch
           }
         },
         onUserTranscript: (text) => {
-          // A native speech-to-speech model answers from the audio and transcribes in
-          // parallel, so the transcript can land after the reply has already started. Only
-          // start the clock here if the turn has not already been measured, or every turn
-          // reports twice: once truthfully, once as a meaningless few milliseconds.
-          if (!measured.current) {
-            askedAt.current ??= { at: performance.now(), from: 'transcript' }
-          }
+          mark('transcript')
           push('you', text)
           onAppend({ role: 'user', content: text })
+          stage('recognise', 'speechEnd', 'transcript')
+        },
+
+        // Only a path we assemble ourselves can report this: the model has produced its
+        // first token but no sound has come out yet.
+        onFirstToken: () => mark('firstToken'),
+        onFirstAudio: () => {
+          mark('firstAudio')
+          stage('synthesise', 'firstToken', 'firstAudio')
+          stage('answer', 'speechEnd', 'firstAudio')
         },
         onAssistantTranscript: (text, final) => {
-          // First content of the turn, partial or final. Measuring here rather than on a
-          // mode-change event matters: on the cascade those two fire together and the
-          // metric read 26 ms while the real wait was 2.6 seconds.
-          if (askedAt.current && !measured.current) {
-            const { at, from } = askedAt.current
-            askedAt.current = null
-            measured.current = true
-            push('timing', `answer latency (from ${from})`, {
-              ms: Math.round(performance.now() - at),
-            })
+          // First words of the turn, partial or final.
+          if (!marks.current.firstToken) {
+            mark('firstToken')
+            stage('think', 'transcript', 'firstToken')
+            // The honest fallback when a provider never told us when speech stopped.
+            stage('answer', marks.current.speechEnd ? 'speechEnd' : 'transcript', 'firstToken')
           }
           if (!final) {
             setPartial((prev) => prev + text)

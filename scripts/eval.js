@@ -49,11 +49,11 @@ if (selected.length === 0) {
  */
 const TRANSIENT = /ENOTFOUND|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|timed out|429|rate limit|502|503|504/i
 
-async function runWithRetry(adapter, turns, attempts = 3) {
+async function runWithRetry(adapter, turns, lang, attempts = 3) {
   let last
   for (let i = 1; i <= attempts; i++) {
     try {
-      return await adapter(turns)
+      return await adapter(turns, lang)
     } catch (err) {
       last = err
       if (!TRANSIENT.test(err.message) || i === attempts) throw err
@@ -87,7 +87,7 @@ for (const path of paths) {
     const turns = testCase.turns ?? [testCase.ask]
     let entry
     try {
-      const run = await runWithRetry(adapters[path], turns)
+      const run = await runWithRetry(adapters[path], turns, testCase.lang ?? 'en')
       entry = { run, checks: checkCase(testCase, run, aliases) }
     } catch (err) {
       entry = { error: err.message, checks: [{ name: 'ran', ok: false, detail: err.message }] }

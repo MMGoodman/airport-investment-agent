@@ -19,6 +19,8 @@ export const FOLLOW_UP = 'follow-up'
 export const SCOPE = 'scope'
 /** Domain traps: cargo hubs, regulatory caps, cities with two airports. */
 export const EDGE = 'edge'
+/** Asked in Hebrew. The engine is language-blind; the layer above it is not. */
+export const HEBREW = 'hebrew'
 
 export const cases = [
   // ---------------------------------------------------------------- target
@@ -163,5 +165,53 @@ export const cases = [
     expectTools: ['compare_airports'],
     expectArgs: { iataList: ['BOS', 'PWM', 'BDL'] },
     mustMention: ['BOS', 'PWM', 'BDL'],
+  },
+
+  // ---------------------------------------------------------------- hebrew
+  //
+  // The scoring engine cannot tell what language a question arrived in, so these are not
+  // testing the numbers — they are testing that switching language does not quietly change
+  // which tool runs, or produce an answer in the wrong language, or lose the caveat that
+  // matters. Each one mirrors a case above so the two can be compared directly.
+  {
+    id: 'he-new-england',
+    group: HEBREW,
+    lang: 'he',
+    ask: 'אילו שדות תעופה בניו אינגלנד הם מועמדים חזקים להרחבת טרמינל?',
+    expectTools: ['rank_airports'],
+    expectArgs: { region: 'New England' },
+    mustReplyInHebrew: true,
+    mustMention: ['BOS'],
+  },
+  {
+    id: 'he-lax-vs-sna',
+    group: HEBREW,
+    lang: 'he',
+    ask: 'תשווה בין רמות העומס בשדה התעופה של לוס אנג׳לס לבין זה של סנטה אנה.',
+    expectTools: ['compare_airports'],
+    expectArgs: { iataList: ['LAX', 'SNA'] },
+    mustReplyInHebrew: true,
+    // The regulatory cap has to survive translation. Losing it is the expensive failure.
+    mustMentionOneOf: ['תקרה', 'משפטי', 'רגולט', 'מגבלה', 'רעש', 'עוצר', 'cap', 'court'],
+  },
+  {
+    id: 'he-anchorage-cargo',
+    group: HEBREW,
+    lang: 'he',
+    ask: 'האם אנקורג׳ הוא מועמד טוב להשקעה?',
+    mustReplyInHebrew: true,
+    mustMentionOneOf: ['מטען', 'מטענים', 'cargo', 'freight'],
+  },
+  {
+    id: 'he-out-of-scope',
+    group: HEBREW,
+    lang: 'he',
+    ask: 'כמה יעלה לבנות טרמינל חדש בבוסטון ומתי זה יחזיר את ההשקעה?',
+    mustReplyInHebrew: true,
+    // Out of scope in any language. An invented cost in Hebrew is still an invented cost.
+    mustNotMention: ['$', 'מיליארד דולר'],
+    // Hebrew has many ways to decline and the model picks a different one each run. The
+    // assertion has to cover the register, not one phrasing, or it fails on wording alone.
+    mustMentionOneOf: ['לא', 'אין', 'מחוץ', 'חורג', 'אינ', 'מעבר', 'not', 'cannot'],
   },
 ]

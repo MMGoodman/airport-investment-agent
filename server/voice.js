@@ -64,6 +64,18 @@ export function mountVoiceRoutes(app) {
           transport: 'WebRTC · speech-to-speech',
         },
         {
+          id: 'soniox',
+          // Ours, not theirs. Every stage is a component we chose and can time.
+          label: `soniox → ${GEMINI_MODEL} → soniox · voice`,
+          mode: 'live',
+          available: Boolean(process.env.SONIOX_API_KEY),
+          model: 'soniox stt + tts',
+          pipeline: `${process.env.SONIOX_STT_MODEL || 'stt-rt-v3'} → ${GEMINI_MODEL} → ${
+            process.env.SONIOX_TTS_MODEL || 'tts-1'
+          } (cascade we assemble)`,
+          transport: 'WebSocket STT · our agent · REST TTS',
+        },
+        {
           id: 'elevenlabs',
           // The arrow is the point: this provider is two models in series, and that is
           // why it answers later than the one above it.
@@ -138,6 +150,86 @@ export function mountVoiceRoutes(app) {
 
       // Only the ephemeral value crosses to the browser — never the account key.
       res.json({ clientSecret: body.value, expiresAt: body.expires_at, model: OPENAI_MODEL, lang })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  /**
+   * Mint a short-lived Soniox key for the browser to open its transcription socket with.
+   *
+   * This is the one path we assemble ourselves: Soniox recognises, our existing agent
+   * thinks, Soniox speaks. Three stages we own, which means three stages we can time
+   * separately — the managed providers only ever report a single number.
+   */
+  app.get('/api/voice/soniox-key', async (req, res) => {
+    if (!process.env.SONIOX_API_KEY) {
+      return res.status(503).json({ error: 'SONIOX_API_KEY is not set in .env.' })
+    }
+
+    try {
+      const upstream = await fetch('https://api.soniox.com/v1/auth/temporary-api-key', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.SONIOX_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          usage_type: 'transcribe_websocket',
+          expires_in_seconds: 120,
+          client_reference_id: 'airport-investment-agent',
+        }),
+      })
+
+      const body = await upstream.json()
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({ error: body?.message ?? 'Soniox rejected the key request' })
+      }
+
+      res.json({
+        apiKey: body.api_key ?? body.key,
+        expiresAt: body.expires_at ?? null,
+        sttModel: process.env.SONIOX_STT_MODEL || 'stt-rt-v3',
+        ttsModel: process.env.SONIOX_TTS_MODEL || 'tts-1',
+        ttsVoice: process.env.SONIOX_TTS_VOICE || null,
+      })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  /**
+   * Speak one answer. Kept on the server because TTS needs the long-lived key, and
+   * because it is the only stage of this cascade the browser cannot time on its own.
+   */
+  app.post('/api/voice/soniox-speak', async (req, res) => {
+    const { text, lang } = req.body ?? {}
+    if (!process.env.SONIOX_API_KEY) return res.status(503).json({ error: 'SONIOX_API_KEY is not set.' })
+    if (!text?.trim()) return res.status(400).json({ error: 'Body must be { text }' })
+
+    try {
+      const upstream = await fetch('https://api.soniox.com/v1/tts', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.SONIOX_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: process.env.SONIOX_TTS_MODEL || 'tts-1',
+          text,
+          language: lang === 'he' ? 'he' : 'en',
+          ...(process.env.SONIOX_TTS_VOICE ? { voice: process.env.SONIOX_TTS_VOICE } : {}),
+          audio_format: 'mp3',
+        }),
+      })
+
+      if (!upstream.ok) {
+        const detail = await upstream.text()
+        return res.status(upstream.status).json({ error: detail.slice(0, 300) })
+      }
+
+      res.setHeader('Content-Type', 'audio/mpeg')
+      res.send(Buffer.from(await upstream.arrayBuffer()))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }

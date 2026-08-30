@@ -39,7 +39,11 @@ function line(e) {
  * most useful half when something went wrong.
  */
 function buildReport(events, provider, lang) {
-  const firstWord = events.filter((e) => e.kind === 'timing').map((e) => e.ms)
+  const timings = events.filter((e) => e.kind === 'timing')
+  const firstWord = timings.filter((e) => e.text === 'answer').map((e) => e.ms)
+  const byStage = {}
+  for (const t of timings) (byStage[t.text] ??= []).push(t.ms)
+  const mean = (xs) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length)
   const payloads = events.filter((e) => e.bytes != null)
 
   return [
@@ -54,6 +58,9 @@ function buildReport(events, provider, lang) {
           ? `  (mean ${Math.round(firstWord.reduce((a, b) => a + b, 0) / firstWord.length)} ms)`
           : '')
       : 'answer latency: not measured',
+    Object.keys(byStage).length
+      ? 'stages  : ' + Object.entries(byStage).map(([k, v]) => `${k} ${mean(v)} ms`).join('  |  ')
+      : 'stages  : none recorded',
     payloads.length
       ? `tool payloads: ${payloads.map((p) => `${p.text.split(' ')[0]} ${fmtBytes(p.bytes)}`).join(', ')}`
       : 'tool payloads: none',

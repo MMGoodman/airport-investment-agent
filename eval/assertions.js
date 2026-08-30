@@ -173,6 +173,16 @@ export function checkCase(testCase, run, aliases = null) {
     add(`avoids "${phrase}"`, !reply.includes(norm(phrase)))
   }
 
+  if (testCase.mustReplyInHebrew) {
+    // A third of the characters being Hebrew separates a Hebrew answer from an English one
+    // that happens to quote an airport name. Codes and metric names stay in English by
+    // instruction, so demanding all-Hebrew would fail a correct reply.
+    const letters = [...String(run.reply)].filter((ch) => /\p{L}/u.test(ch))
+    const hebrew = letters.filter((ch) => /[֐-׿]/.test(ch))
+    const share = letters.length ? hebrew.length / letters.length : 0
+    add('answers in Hebrew', share > 0.33, `${Math.round(share * 100)}% Hebrew letters`)
+  }
+
   const invented = unprovenanced(run.reply, run.toolCalls)
   add(
     'provenance',

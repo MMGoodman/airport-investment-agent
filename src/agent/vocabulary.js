@@ -107,12 +107,19 @@ export async function transcriptionPrompt(limit = 40) {
   const codes = airports.map((a) => a.iata).join(', ')
   const cities = [...new Set(airports.map((a) => a.city.split('/')[0]))].join(', ')
 
-  // Codes first: they are the figures an answer is built on and the ones a general
-  // transcriber is most likely to mangle. Prose terms are the first thing to lose.
-  const full =
-    'Aviation investment analysis, English or Hebrew. Three-letter IATA codes spoken as ' +
-    `letters: ${codes}. Cities: ${cities}. Hebrew: ${HEBREW_TERMS.join(', ')}. ` +
-    `Terms: ${DOMAIN_TERMS.join(', ')}.`
+  // A bare vocabulary list, deliberately not sentences.
+  //
+  // The first version read like prose — "Aviation investment analysis. Three-letter IATA
+  // codes spoken as letters: ... Terms: load factor, CAGR ..." — and a transcriber given
+  // unclear audio continued it. One session recorded a fluent Hebrew paragraph about LAX
+  // congestion and CAGR that the caller never said, assembled entirely out of the words in
+  // this hint. A biasing prompt is a prior, and a prior stated as fluent text invites more
+  // fluent text.
+  //
+  // Comma-separated terms with no verbs and no framing keep the bias without giving the
+  // model a sentence to finish. Codes first: they are what an answer is built on and what
+  // a general transcriber most often mangles.
+  const full = `${codes}, ${cities}, ${HEBREW_TERMS.join(', ')}, ${DOMAIN_TERMS.join(', ')}`
 
   if (full.length <= PROMPT_LIMIT) return full
 

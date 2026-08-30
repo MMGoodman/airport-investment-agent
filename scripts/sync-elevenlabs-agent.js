@@ -122,9 +122,12 @@ const conversation_config = {
     expressive_mode: false,
   },
   turn: {
-    // Commit to a turn as soon as the speaker has plainly finished rather than waiting
-    // out the full silence window.
-    turn_eagerness: 'eager',
+    // Was 'eager', chosen to shave latency off a provider that is slow anyway. It cost far
+    // more than it saved: room noise and half-sentences aimed at someone else kept cutting
+    // the agent off, and one session lost thirty-four seconds to an answer being
+    // interrupted and then repeated in full. Two wasted turns dwarf the few hundred
+    // milliseconds eagerness buys.
+    turn_eagerness: process.env.ELEVENLABS_TURN_EAGERNESS || 'normal',
   },
   // The same vocabulary bias the OpenAI path gets as a transcription prompt. Without it a
   // transcriber has no reason to expect three-letter airport codes and guesses at them.

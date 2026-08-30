@@ -6,8 +6,13 @@
  * timestamp we own. That is the entire reason it exists: it is the only one of the three
  * that can say *which stage* was slow rather than that the whole turn was.
  *
- *   mic ──WebSocket──> Soniox STT ──> POST /api/chat ──> POST /api/voice/soniox-speak ──> audio
- *                                     (same agent, same five tools, same numbers)
+ *   mic ──WebSocket──> Soniox STT ──> POST /api/chat ──> POST /api/voice/speak ──> audio
+ *                                      (same agent, same five tools, same numbers)
+ *
+ * Three vendors, one per stage: Soniox recognises because it switches language
+ * mid-sentence unprompted, our agent thinks, OpenAI synthesises because Soniox has no TTS
+ * on this account and the ElevenLabs key is scoped to their agent platform. Picking each
+ * stage on its merits is the whole point of not buying the pipeline whole.
  */
 
 const STT_URL = 'wss://stt-rt.soniox.com/transcribe-websocket'
@@ -77,7 +82,7 @@ export async function startSoniox({
 
       // Stage three.
       onSpeaking('assistant')
-      const speech = await fetch('/api/voice/soniox-speak', {
+      const speech = await fetch('/api/voice/speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: data.reply, lang }),

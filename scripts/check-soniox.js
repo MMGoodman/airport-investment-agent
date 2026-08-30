@@ -40,29 +40,35 @@ await step('temporary key mints (this is what the browser uses)', async () => {
   return true
 })
 
-await step('STT models reachable', async () => {
+
+
+await step('the configured STT model exists and speaks Hebrew', async () => {
+  const want = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
   const r = await fetch('https://api.soniox.com/v1/models', { headers: auth })
-  if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 160)}`)
-  const b = await r.json()
-  const names = (b.models ?? b.data ?? []).map((m) => m.id ?? m.name).filter(Boolean)
-  console.log(`       ${names.slice(0, 8).join(', ') || 'none listed'}`)
+  const { models = [] } = await r.json()
+  const model = models.find((m) => m.id === want)
+  if (!model) throw new Error(`${want} is not in the list: ${models.map((m) => m.id).join(', ')}`)
+  if (!(model.languages ?? []).some((l) => l.code === 'he')) throw new Error(`${want} has no Hebrew`)
+  console.log(`       ${want}: ${(model.languages ?? []).length} languages, Hebrew included`)
   return true
 })
 
-await step('TTS reachable, and it speaks Hebrew', async () => {
-  const r = await fetch('https://api.soniox.com/v1/tts', {
+// Soniox is the recogniser here and nothing else — this account has no voices and no
+// synthesis models. The cascade's third stage comes from OpenAI instead.
+await step('synthesis stage (OpenAI) speaks Hebrew', async () => {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set')
+  const r = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
-    headers: auth,
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: process.env.SONIOX_TTS_MODEL || 'tts-1',
-      text: 'בוסטון לוגן מוביל בין שדות ניו אינגלנד.',
-      language: 'he',
-      audio_format: 'mp3',
+      model: process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts',
+      voice: process.env.OPENAI_REALTIME_VOICE_HE || 'marin',
+      input: 'בוסטון לוגן מוביל בין שדות התעופה של ניו אינגלנד.',
+      response_format: 'mp3',
     }),
   })
   if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`)
-  const bytes = (await r.arrayBuffer()).byteLength
-  console.log(`       returned ${(bytes / 1024).toFixed(1)} KB of audio`)
+  console.log(`       returned ${((await r.arrayBuffer()).byteLength / 1024).toFixed(1)} KB of Hebrew audio`)
   return true
 })
 

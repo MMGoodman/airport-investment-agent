@@ -23,6 +23,8 @@ const OPENAI_VOICE_HE = process.env.OPENAI_REALTIME_VOICE_HE || OPENAI_VOICE
 const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcribe'
 const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
+const SONIOX_STT = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
+const CASCADE_TTS = process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts'
 const EL_LLM = process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite'
 // English sessions swap to the fast model at connect time; that is what the label shows.
 const EL_TTS =
@@ -66,13 +68,11 @@ export function mountVoiceRoutes(app) {
         {
           id: 'soniox',
           // Ours, not theirs. Every stage is a component we chose and can time.
-          label: `soniox → ${GEMINI_MODEL} → soniox · voice`,
+          label: `${SONIOX_STT} → ${GEMINI_MODEL} → ${CASCADE_TTS} · voice`,
           mode: 'live',
-          available: Boolean(process.env.SONIOX_API_KEY),
-          model: 'soniox stt + tts',
-          pipeline: `${process.env.SONIOX_STT_MODEL || 'stt-rt-v3'} → ${GEMINI_MODEL} → ${
-            process.env.SONIOX_TTS_MODEL || 'tts-1'
-          } (cascade we assemble)`,
+          available: Boolean(process.env.SONIOX_API_KEY && process.env.OPENAI_API_KEY),
+          model: `${SONIOX_STT} + ${CASCADE_TTS}`,
+          pipeline: `${SONIOX_STT} → ${GEMINI_MODEL} → ${CASCADE_TTS} (assembled — three vendors)`,
           transport: 'WebSocket STT · our agent · REST TTS',
         },
         {
@@ -189,9 +189,7 @@ export function mountVoiceRoutes(app) {
       res.json({
         apiKey: body.api_key ?? body.key,
         expiresAt: body.expires_at ?? null,
-        sttModel: process.env.SONIOX_STT_MODEL || 'stt-rt-v3',
-        ttsModel: process.env.SONIOX_TTS_MODEL || 'tts-1',
-        ttsVoice: process.env.SONIOX_TTS_VOICE || null,
+        sttModel: process.env.SONIOX_STT_MODEL || 'stt-rt-v5',
       })
     } catch (err) {
       res.status(500).json({ error: err.message })
@@ -199,33 +197,39 @@ export function mountVoiceRoutes(app) {
   })
 
   /**
-   * Speak one answer. Kept on the server because TTS needs the long-lived key, and
-   * because it is the only stage of this cascade the browser cannot time on its own.
+   * The synthesis stage of the assembled cascade.
+   *
+   * Deliberately not tied to whoever does the recognising. Soniox has no TTS on this
+   * account — no voices, no synthesis models — and the ElevenLabs key is scoped to their
+   * agent platform, so it returns 401 for plain text-to-speech. OpenAI does both languages
+   * and is already configured, so it takes this stage.
+   *
+   * That the three stages come from three vendors is the argument for assembling a
+   * pipeline rather than buying one: each stage is chosen on its merits and replaced on
+   * its own, which is exactly what a managed platform will not let you do.
    */
-  app.post('/api/voice/soniox-speak', async (req, res) => {
+  app.post('/api/voice/speak', async (req, res) => {
     const { text, lang } = req.body ?? {}
-    if (!process.env.SONIOX_API_KEY) return res.status(503).json({ error: 'SONIOX_API_KEY is not set.' })
+    if (!process.env.OPENAI_API_KEY) return res.status(503).json({ error: 'OPENAI_API_KEY is not set.' })
     if (!text?.trim()) return res.status(400).json({ error: 'Body must be { text }' })
 
     try {
-      const upstream = await fetch('https://api.soniox.com/v1/tts', {
+      const upstream = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.SONIOX_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: process.env.SONIOX_TTS_MODEL || 'tts-1',
-          text,
-          language: lang === 'he' ? 'he' : 'en',
-          ...(process.env.SONIOX_TTS_VOICE ? { voice: process.env.SONIOX_TTS_VOICE } : {}),
-          audio_format: 'mp3',
+          model: process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts',
+          voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE,
+          input: text,
+          response_format: 'mp3',
         }),
       })
 
       if (!upstream.ok) {
-        const detail = await upstream.text()
-        return res.status(upstream.status).json({ error: detail.slice(0, 300) })
+        return res.status(upstream.status).json({ error: (await upstream.text()).slice(0, 300) })
       }
 
       res.setHeader('Content-Type', 'audio/mpeg')

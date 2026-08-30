@@ -86,10 +86,34 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
       if (marks.current.transcript == null) return
       const a = marks.current[from]
       const b = marks.current[to]
-      if (a == null || b == null || b < a) return
-      push('timing', label, { ms: Math.round(b - a) })
+      if (a == null || b == null) return
+      // A native model emits its first token and its first audio together, so the order
+      // between them is arbitrary and the gap is noise. Clamping at zero states that
+      // plainly; dropping the row would hide the very thing worth seeing.
+      push('timing', label, { ms: Math.max(0, Math.round(b - a)) })
     },
     [push],
+  )
+
+  /**
+   * The moment this turn's answer begins, whichever event gets there first.
+   *
+   * It used to be marked in one place and staged in another, so a streamed partial would
+   * take the mark and the staging that followed it found the mark already set and recorded
+   * nothing. Both live here now.
+   *
+   * `final` distinguishes what is being measured: partials mean this is genuinely
+   * time-to-first-word, while a provider that only hands over the finished message is
+   * telling us when generation ENDED. Naming both "think" would flatter the slower one.
+   */
+  const noteFirstToken = useCallback(
+    (final) => {
+      if (marks.current.firstToken) return
+      mark('firstToken')
+      stage(final ? 'generate (full answer)' : 'think (to first word)', 'transcript', 'firstToken')
+      stage('answer', marks.current.speechEnd ? 'speechEnd' : 'transcript', 'firstToken')
+    },
+    [mark, stage],
   )
 
   const stop = useCallback(async () => {
@@ -149,9 +173,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           stage('recognise', 'speechEnd', 'transcript')
         },
 
-        // Only a path we assemble ourselves can report this: the model has produced its
-        // first token but no sound has come out yet.
-        onFirstToken: () => mark('firstToken'),
+        onFirstToken: () => noteFirstToken(false),
         onFirstAudio: () => {
           mark('firstAudio')
           stage('synthesise', 'firstToken', 'firstAudio')
@@ -159,16 +181,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         },
         onAssistantTranscript: (text, final) => {
           // First words of the turn, partial or final.
-          if (!marks.current.firstToken) {
-            mark('firstToken')
-            // Streaming partials means this really is time-to-first-token. A provider that
-            // only hands over the finished message — the managed cascade does — is telling
-            // us when generation ENDED, and calling that "think" would flatter it against
-            // a model that starts speaking mid-sentence. Different names, different things.
-            stage(final ? 'generate (full answer)' : 'think (to first word)', 'transcript', 'firstToken')
-            // The honest fallback when a provider never told us when speech stopped.
-            stage('answer', marks.current.speechEnd ? 'speechEnd' : 'transcript', 'firstToken')
-          }
+          noteFirstToken(final)
           if (!final) {
             setPartial((prev) => prev + text)
             return

@@ -75,6 +75,13 @@ const conversation_config = {
       // the difference you hear should be the transport, not a smarter model.
       llm: process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite',
       temperature: 0.3,
+      // Unlimited by default, and it shows: one spoken answer ran to two paragraphs and
+      // took fifteen seconds to generate, because on a cascade nothing is spoken until
+      // generation finishes. The prompt asks for two or three sentences and is not always
+      // obeyed, so this is the backstop. Set high enough that a disciplined answer is
+      // never cut mid-sentence — the ceiling is for the pathological case, not the normal
+      // one.
+      max_tokens: Number(process.env.ELEVENLABS_MAX_TOKENS) || 400,
       tools,
     },
   },

@@ -168,7 +168,7 @@ export function mountVoiceRoutes(app) {
           session: {
             type: 'realtime',
             model: OPENAI_MODEL,
-            instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang),
+            instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
             tools: realtimeTools,
             tool_choice: 'auto',
             audio: {
@@ -183,7 +183,7 @@ export function mountVoiceRoutes(app) {
                 //
                 // `prompt` biases recognition toward this domain's vocabulary, built from
                 // data/ rather than hand-listed. See src/agent/vocabulary.js.
-                transcription: { model: TRANSCRIBE_MODEL, prompt: await transcriptionPrompt() },
+                transcription: { model: TRANSCRIBE_MODEL, prompt: await transcriptionPrompt(lang) },
                 // Semantic turn detection, not a silence timer. The 200 ms server-VAD
                 // default ended the turn on an ordinary mid-sentence breath: one question
                 // arrived as four fragments, each cancelling the answer to the one before.
@@ -360,7 +360,7 @@ export function mountVoiceRoutes(app) {
         agentId: ELEVENLABS_AGENT_ID,
         lang,
         ttsModelId,
-        prompt: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang),
+        prompt: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
       })
     } catch (err) {
       res.status(500).json({ error: err.message })

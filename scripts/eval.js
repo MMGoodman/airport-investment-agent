@@ -16,13 +16,28 @@ import { cases } from '../eval/cases.js'
 import { checkCase } from '../eval/assertions.js'
 import { adapters } from '../eval/adapters.js'
 import { getStore } from '../src/data/store.js'
+import { HEBREW_AIRPORT_NAMES } from '../src/agent/vocabulary.js'
 
-/** IATA code -> every name a person might say for it, straight out of the dataset. */
+/**
+ * IATA code -> every name a person might say for it, straight out of the dataset.
+ *
+ * Plus the Hebrew name, which the dataset does not carry. Without it every Hebrew voice
+ * case failed a check it should have passed: the reply said "בוסטון לוגן" and the assertion
+ * was looking for "Boston Logan". That is the same mistake this file's own comment in
+ * assertions.js describes for IATA codes — the voice path was right and the check was wrong
+ * — arriving a second time in a different script.
+ */
 const store = await getStore()
 const aliases = Object.fromEntries(
   store.airports.map((a) => [
     a.iata,
-    [a.iata, a.name, a.name.replace(/ (International|Regional)? ?Airport$/i, ''), ...a.city.split('/')],
+    [
+      a.iata,
+      a.name,
+      a.name.replace(/ (International|Regional)? ?Airport$/i, ''),
+      ...a.city.split('/'),
+      ...(HEBREW_AIRPORT_NAMES[a.iata] ? [HEBREW_AIRPORT_NAMES[a.iata]] : []),
+    ],
   ]),
 )
 

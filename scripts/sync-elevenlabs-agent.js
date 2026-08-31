@@ -70,7 +70,7 @@ const conversation_config = {
       'Airport investment agent, live. Ask me which airports are strong expansion candidates, ' +
       'or compare two of them.',
     prompt: {
-      prompt: SPOKEN_PROMPT + languageInstruction('en'),
+      prompt: SPOKEN_PROMPT + languageInstruction('en', true),
       // Same model tier as the text path on purpose: when you A/B the three providers,
       // the difference you hear should be the transport, not a smarter model.
       llm: process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite',
@@ -94,7 +94,7 @@ const conversation_config = {
           language: 'he',
           first_message:
             'סוכן השקעות בשדות תעופה, בשידור חי. אפשר לשאול אילו שדות מועמדים חזקים להרחבה, או להשוות בין שניים.',
-          prompt: { prompt: SPOKEN_PROMPT + languageInstruction('he') },
+          prompt: { prompt: SPOKEN_PROMPT + languageInstruction('he', true) },
         },
       },
     },

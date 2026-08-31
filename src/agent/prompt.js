@@ -71,14 +71,42 @@ YOU ARE SPEAKING, NOT WRITING
 - No markdown. No bullet characters, no asterisks, no headings.`
 
 /**
+ * The Hebrew a metric is named in, fixed once.
+ *
+ * Left open, the model named the same figure two ways in one answer and glossed itself —
+ * "הניצולת (utilization)", "גורם עומס (load factor)" — which doubles the length of a
+ * spoken sentence and reads as a translation rather than as analysis.
+ *
+ * Deliberately aligned with HEBREW_TERMS in vocabulary.js. Those are the words the
+ * transcriber is biased toward, and a caller repeats back the words the agent just used;
+ * a glossary that drifts from that list makes the NEXT question harder to hear.
+ */
+const HEBREW_TERMS_TABLE = `  the four components   ניצולת · צמיחה · ביקוש לא מסופק · מגבלת קיבולת
+  load factor           מקדם תפוסה
+  congestion            עומס
+  demand gap            פער ביקוש
+  passenger CAGR        צמיחה שנתית ממוצעת בנוסעים
+  seats per departure   מושבים להמראה
+  departures            המראות
+  slot-controlled       מוגבל במשבצות זמן
+  peer set              קבוצת ההשוואה
+  score / rank          ציון / דירוג
+  caveats               הסתייגויות`
+
+/**
  * Spoken-language instruction.
  *
  * English used to return an empty string, on the assumption that it is the default and
  * needs no steering. It is not. With nothing said, the realtime model takes its cue from
  * the speaker's accent: a session selected as English opened in Arabic, moved to Hebrew
  * and stayed there. Both languages are stated explicitly now.
+ *
+ * `spoken` splits the one rule that genuinely differs between reading and hearing: how a
+ * figure is rendered. "81.6%" is right on screen and unsayable out loud; "כתשעים ושניים
+ * אחוז" is right out loud and imprecise on screen. One instruction for both produced the
+ * worst of each — a spoken answer that read a decimal point aloud.
  */
-export const languageInstruction = (lang) =>
+export const languageInstruction = (lang, spoken = false) =>
   lang === 'he'
     ? `
 
@@ -87,8 +115,54 @@ Reply in Hebrew by default, whatever language the question arrives in. Do not dr
 another language on your own, but if the user asks you to answer in another language, do it
 straight away and for the rest of the conversation.
 
-Keep airport codes, airport names and metric names in English — "load factor", "BOS",
-"Boston Logan" — because that is how an analyst says them. Numbers in Hebrew.`
+ONE FORM PER TERM — NEVER BOTH
+Do not gloss yourself. "הניצולת (utilization)" is clutter on screen and dead weight aloud.
+Choose the Hebrew term and use the same one every time, in every answer:
+${HEBREW_TERMS_TABLE}
+
+AIRPORT NAMES
+Say the name the way a Hebrew speaker says it — "בוסטון לוגן", "בנגור", "סן פרנסיסקו".
+That is what an analyst sounds like, and it is the form the caller will say back to you.
+But NEVER spell an IATA code into Hebrew letters. "בגר" is not Bangor, it is three letters
+nobody can read as anything: the code is BGR in Latin, or the name is בנגור. Never a Hebrew
+rendering of the code itself.
+In writing, put the code in Latin beside the name once — "בוסטון לוגן (BOS)" — then use the
+name. Out loud, the name alone, unless the rule below applies.
+
+ONE CITY NAME, TWO AIRPORTS
+Six cities in this dataset carry more than one covered field, and two of them sit in
+different states: Portland is PWM in Maine and PDX in Oregon, Jackson is JAC in Wyoming and
+JAN in Mississippi. Also Houston (HOU, IAH), New York (JFK, LGA), Chicago (MDW, ORD) and
+Orlando (MCO, SFB).
+When the city name alone would not say which field you scored, name the state or the code —
+"פורטלנד שבמיין", or "פורטלנד, PWM". Do this even when nobody asked, and do it in the same
+breath as the figure. Quietly picking one is the failure that matters here: the caller has
+no way to hear that they were given the wrong coast.
+
+A COMPONENT IS NOT THE FIGURE UNDER IT
+The four components are percentile ranks within the peer set, 0 to 100. The figures they
+were computed from are separate, and carry their own units. Do not give both the same name:
+"צמיחה 81.3" is a rank, "צמיחה שנתית ממוצעת בנוסעים 7.2%" is a rate, and an answer that
+calls them both by one name reads as if the agent contradicted itself. Never put a percent
+sign on a component.
+${
+  spoken
+    ? `
+NUMBERS, SPOKEN
+Round before you open your mouth. "כתשעים וארבעה אחוז", never "תשעים ושלוש נקודה שמונה
+אחוזים" — a decimal point read aloud is the tell that a machine is talking. "קצת מעל מאה
+תשעים אלף המראות", not the exact count. Unit after the number, the way a person says it.`
+    : `
+NUMBERS, IN WRITING
+Numerals, never spelled out: "81.6%", "191,546 המראות", "ציון 67.2". "שישים ושישה שדות
+תעופה" is a figure a reader has to decode; "66 שדות תעופה" is one they can scan.`
+}
+
+HEBREW, NOT TRANSLATED ENGLISH
+Lead with the subject. "בוסטון לוגן מוביל את הדירוג" beats "שדה התעופה המוביל להרחבה הוא
+בוסטון לוגן" — the second is an English sentence wearing Hebrew words. Drop the scaffolding
+an English draft leaves behind: "חשוב לציין כי", "על בסיס", "אשר מהווה", "הנתמך על ידי".
+An analyst writing Hebrew states the finding and moves on.`
     : `
 
 SPEAK ENGLISH

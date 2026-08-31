@@ -12,6 +12,37 @@
 import { getStore } from '../data/store.js'
 
 /**
+ * What each airport is called out loud in Hebrew.
+ *
+ * One table, three consumers, and they have to agree or the loop breaks in a way that
+ * looks like a transcription fault:
+ *   - the ASR keyword list below, so the transcriber expects the word
+ *   - the agent, which is told to use these names rather than invent one
+ *   - eval, whose airport aliases were built from the English dataset only, so a correct
+ *     Hebrew answer failed a check that was looking for "Boston Logan"
+ *
+ * The failure that produced this table: the agent spelled the IATA code BGR into Hebrew
+ * letters as "בגר" — neither the code nor the city, and unreadable as either.
+ */
+export const HEBREW_AIRPORT_NAMES = {
+  BOS: 'בוסטון לוגן',
+  BGR: 'בנגור',
+  PWM: 'פורטלנד',
+  BDL: 'הרטפורד',
+  PVD: 'פרובידנס',
+  MHT: 'מנצ׳סטר',
+  BTV: 'ברלינגטון',
+  HVN: 'ניו הייבן',
+  LAX: 'לוס אנג׳לס',
+  SNA: 'סנטה אנה',
+  ANC: 'אנקורג׳',
+  SFO: 'סן פרנסיסקו',
+  PDX: 'פורטלנד',
+  JFK: 'ג׳ון קנדי',
+  LGA: 'לה גוארדיה',
+}
+
+/**
  * The same domain in Hebrew. A keyword list of English metric names does nothing for a
  * Hebrew caller, and the transcripts showed it: spoken Hebrew about airports came back as
  * unrelated words. These are the terms a Hebrew speaker actually uses for this subject.
@@ -23,24 +54,43 @@ const HEBREW_TERMS = [
   'הרחבת טרמינל',
   'נמל תעופה',
   'תפוסה',
+  'מקדם תפוסה',
+  'ניצולת',
   'עומס',
   'ביקוש',
   'ביקוש לא מסופק',
+  'פער ביקוש',
+  'מגבלת קיבולת',
   'צמיחה',
   'נוסעים',
   'המראות',
   'טיסות',
   'מושבים',
+  'מושבים להמראה',
+  'קבוצת ההשוואה',
+  'הסתייגויות',
   'השקעה',
   'דירוג',
   'להשוות',
-  'בוסטון',
-  'לוס אנג׳לס',
-  'סנטה אנה',
-  'אנקורג׳',
-  'סן פרנסיסקו',
-  'פורטלנד',
+  // The words the agent itself says. A caller repeats the term they just heard, so the
+  // glossary in prompt.js and this list have to name the same things: a metric the agent
+  // introduces in Hebrew that the transcriber was never told to expect comes back mangled
+  // on the next turn, and the mangling reads as the caller's fault rather than ours.
+  'מזג אוויר',
+  'טמפרטורה',
+  'רוח',
+  'משבי רוח',
+  'ראות',
+  'ערפל',
+  'בהיר',
+  'מעונן',
+  'גשם',
   'ניו אינגלנד',
+  'בוסטון',
+  // The rest of the place names come from the table above rather than being listed twice.
+  // BGR was in the pinned code list and not in this one, so the agent named Bangor out loud
+  // and could not hear it said back — one session recorded it as "מנהיג בם".
+  ...new Set(Object.values(HEBREW_AIRPORT_NAMES)),
 ]
 
 /** The words this domain uses that everyday speech does not. */
@@ -102,10 +152,21 @@ async function biasAirports(limit) {
  */
 const PROMPT_LIMIT = 1024
 
-export async function transcriptionPrompt(limit = 40) {
+export async function transcriptionPrompt(lang = 'he', limit = 40) {
   const airports = await biasAirports(limit)
   const codes = airports.map((a) => a.iata).join(', ')
   const cities = [...new Set(airports.map((a) => a.city.split('/')[0]))].join(', ')
+
+  /**
+   * The session's own language goes ahead of the other one.
+   *
+   * Both lists together no longer fit under the cap, so one of them is always truncated —
+   * and with a fixed order it was always the same one. Adding the Hebrew weather and
+   * New England terms pushed the hint to 1014 characters and silently took "load factor",
+   * "CAGR" and "T-100" out of every session, English ones included. Which list can afford
+   * to be cut is a property of the call, not of this file.
+   */
+  const bySession = lang === 'he' ? [HEBREW_TERMS, DOMAIN_TERMS] : [DOMAIN_TERMS, HEBREW_TERMS]
 
   // A bare vocabulary list, deliberately not sentences.
   //
@@ -119,7 +180,7 @@ export async function transcriptionPrompt(limit = 40) {
   // Comma-separated terms with no verbs and no framing keep the bias without giving the
   // model a sentence to finish. Codes first: they are what an answer is built on and what
   // a general transcriber most often mangles.
-  const full = `${codes}, ${cities}, ${HEBREW_TERMS.join(', ')}, ${DOMAIN_TERMS.join(', ')}`
+  const full = [codes, cities, ...bySession.map((terms) => terms.join(', '))].join(', ')
 
   if (full.length <= PROMPT_LIMIT) return full
 
@@ -127,13 +188,21 @@ export async function transcriptionPrompt(limit = 40) {
   return `${cut.slice(0, cut.lastIndexOf(','))}.`
 }
 
-/** A flat keyword list for ElevenLabs' `asr.keywords`. */
+/**
+ * A flat keyword list for ElevenLabs' `asr.keywords`.
+ *
+ * Hebrew ahead of the English terms, unlike the sentence above. This list is pushed once
+ * at sync time and is not per-language — the platform takes one `asr` block for the agent,
+ * whatever preset a session runs under — so its order has to favour the language this
+ * deployment actually opens in, and DEFAULT_LANG here is Hebrew. If the list is ever capped
+ * on their side, the terms that survive should be the ones being spoken.
+ */
 export async function asrKeywords(limit = 60) {
   const airports = await biasAirports(limit)
   return [
     ...airports.map((a) => a.iata),
     ...new Set(airports.map((a) => a.city.split('/')[0])),
-    ...DOMAIN_TERMS,
     ...HEBREW_TERMS,
+    ...DOMAIN_TERMS,
   ]
 }

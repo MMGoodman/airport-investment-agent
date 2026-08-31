@@ -75,7 +75,7 @@ export async function openai(turns, lang = 'en') {
     session: {
       type: 'realtime',
       output_modalities: ['text'],
-      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang),
+      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
       tools: toolSchemas.map((t) => ({
         type: 'function',
         name: t.name,

@@ -12,13 +12,23 @@
  */
 import { callTool, parseArgs } from './tools.js'
 
-/** Five handlers, generated from the tool names the agent was synced with. */
+/**
+ * One handler per tool the agent was synced with.
+ *
+ * Hand-kept, and it has to stay in step with toolSchemas in src/agent/tools.js: sync:agent
+ * declares the tools from there, so a name added there and forgotten here is registered
+ * with the platform, requested by the agent, and then unhandled in this browser — a failure
+ * that only shows up mid-call. Importing the schemas directly would close the gap, but
+ * tools.js reaches data/store.js and node:fs through it, which cannot be bundled.
+ */
 const TOOL_NAMES = [
   'list_supported_regions',
   'rank_airports',
   'compare_airports',
   'get_airport_profile',
   'get_flight_mix',
+  'get_airport_weather',
+  'end_call',
 ]
 
 export async function startElevenLabs({

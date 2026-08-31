@@ -58,6 +58,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const marks = useRef({})
   // Tools called since the last completed answer; they attach to the answer they produced.
   const pendingTools = useRef([])
+  // end_call is acknowledged by the server but performed here — closing a WebRTC session is
+  // something only this side can do. Hang up after the closing sentence has been spoken, not
+  // the instant the tool fires, or the caller hears the line cut off mid-word.
+  const endAfterReply = useRef(false)
+  const endTimer = useRef(null)
 
   const mark = useCallback((name) => {
     marks.current[name] = performance.now()
@@ -117,6 +122,8 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   )
 
   const stop = useCallback(async () => {
+    clearTimeout(endTimer.current)
+    endAfterReply.current = false
     const session = sessionRef.current
     sessionRef.current = null
     setPartial('')
@@ -190,9 +197,29 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           push('agent', text)
           onAppend({ role: 'assistant', content: text, toolCalls: pendingTools.current })
           pendingTools.current = []
+
+          if (endAfterReply.current) {
+            endAfterReply.current = false
+            clearTimeout(endTimer.current)
+            push('session', 'ending the call')
+            stop()
+          }
         },
         onToolCall: (record) => {
           pendingTools.current = [...pendingTools.current, record]
+
+          if (record.tool === 'end_call' && !record.failed) {
+            endAfterReply.current = true
+            // The closing line usually lands after the tool call, but a model that says it
+            // first leaves no sentence to wait for. Without this the session would stay
+            // open on a call both sides consider finished.
+            endTimer.current = setTimeout(() => {
+              if (!endAfterReply.current) return
+              endAfterReply.current = false
+              push('session', 'ending the call')
+              stop()
+            }, 6000)
+          }
           const args = Object.entries(record.args ?? {})
             .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
             .join(' · ')

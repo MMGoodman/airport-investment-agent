@@ -56,6 +56,47 @@ function meta(extra = []) {
   }
 }
 
+/**
+ * Weather carries its own provenance, deliberately not meta().
+ *
+ * Every other tool here answers from a file that shipped with the repo: same input, same
+ * output, forever. This one reads a live third-party feed. Letting it borrow the BTS
+ * `source` line would put a reading that expires in fifteen minutes and a scored figure
+ * from a frozen dataset under one claim of origin, and the tool trace is the only thing a
+ * reader has to tell them apart.
+ */
+const WEATHER_SOURCE = 'Open-Meteo current conditions (api.open-meteo.com), a live third-party feed'
+
+function weatherMeta(extra = []) {
+  return {
+    source: WEATHER_SOURCE,
+    period: 'current observation',
+    coverage: 'The 158 airports in this build, located by the coordinates in data/airports.json.',
+    assumptions: [
+      'Live reading, not a scored figure. It is not deterministic and it is not an input to any ranking.',
+      'Model output at the airport coordinates, not an official METAR from the field.',
+      ...extra,
+    ],
+  }
+}
+
+/** WMO weather codes, the subset an airport actually cares about. */
+const WMO = {
+  0: 'clear', 1: 'mainly clear', 2: 'partly cloudy', 3: 'overcast',
+  45: 'fog', 48: 'freezing fog',
+  51: 'light drizzle', 53: 'drizzle', 55: 'heavy drizzle',
+  56: 'light freezing drizzle', 57: 'freezing drizzle',
+  61: 'light rain', 63: 'rain', 65: 'heavy rain',
+  66: 'light freezing rain', 67: 'freezing rain',
+  71: 'light snow', 73: 'snow', 75: 'heavy snow', 77: 'snow grains',
+  80: 'light rain showers', 81: 'rain showers', 82: 'violent rain showers',
+  85: 'light snow showers', 86: 'heavy snow showers',
+  95: 'thunderstorm', 96: 'thunderstorm with hail', 99: 'thunderstorm with heavy hail',
+}
+
+/** A hung fetch would stall a spoken turn with no way for the caller to tell why. */
+const WEATHER_TIMEOUT_MS = 4000
+
 /** Merge caller-supplied weights over the configured ones and renormalise to sum 1. */
 function resolveWeights(base, override) {
   if (!override) return base
@@ -321,6 +362,119 @@ export const handlers = {
       meta: meta([profile.caveat]),
     }
   },
+
+  /**
+   * Live conditions at one covered airport.
+   *
+   * The airport list IS the access list. Coordinates come from data/airports.json, so an
+   * airport outside the 158 has none here and cannot be looked up — there is no free-text
+   * place name to pass through to the upstream service, and no way to turn this tool into
+   * a general weather lookup by asking it nicely.
+   *
+   * Open-Meteo needs no key and no account, which keeps the repo runnable from a clone.
+   * A failure returns a typed error naming the stage, never a plausible-looking reading.
+   */
+  async get_airport_weather({ iata } = {}) {
+    const store = await getStore()
+    const code = String(iata ?? '').toUpperCase()
+    const airport = store.byIata.get(code)
+
+    if (!airport) {
+      return {
+        data: {
+          error: 'unknown_airport',
+          requested: code,
+          hint: 'Weather is available only for the airports this build covers. Call list_supported_regions to see them.',
+        },
+        meta: weatherMeta(),
+      }
+    }
+
+    const url =
+      'https://api.open-meteo.com/v1/forecast' +
+      `?latitude=${airport.lat}&longitude=${airport.lon}` +
+      '&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,' +
+      'wind_gusts_10m,visibility,precipitation,cloud_cover,weather_code' +
+      '&wind_speed_unit=kn&timezone=auto'
+
+    let current
+    try {
+      const upstream = await fetch(url, { signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS) })
+      if (!upstream.ok) {
+        return {
+          data: { error: 'weather_feed_failed', requested: code, status: upstream.status, stage: 'upstream' },
+          meta: weatherMeta(),
+        }
+      }
+      current = (await upstream.json()).current
+    } catch (err) {
+      return {
+        data: {
+          error: 'weather_feed_unreachable',
+          requested: code,
+          stage: 'network',
+          why: err.name === 'TimeoutError' ? `No answer within ${WEATHER_TIMEOUT_MS} ms.` : err.message,
+        },
+        meta: weatherMeta(),
+      }
+    }
+
+    if (!current) {
+      return { data: { error: 'weather_feed_empty', requested: code }, meta: weatherMeta() }
+    }
+
+    // Both scales, computed here rather than left to the model: US airports are read in
+    // Fahrenheit and the caller may be thinking in Celsius, and a unit conversion is
+    // arithmetic the same rule covers — the model states figures, it does not derive them.
+    const f = (c) => (c == null ? null : round(c * 1.8 + 32, 1))
+
+    return {
+      data: {
+        ...describe(store, code),
+        observedAt: current.time ?? null,
+        conditions: WMO[current.weather_code] ?? `WMO code ${current.weather_code}`,
+        temperatureC: current.temperature_2m,
+        temperatureF: f(current.temperature_2m),
+        feelsLikeC: current.apparent_temperature,
+        feelsLikeF: f(current.apparent_temperature),
+        windKnots: current.wind_speed_10m,
+        windGustKnots: current.wind_gusts_10m,
+        windDirectionDegrees: current.wind_direction_10m,
+        visibilityMetres: current.visibility,
+        precipitationMm: current.precipitation,
+        cloudCoverPct: current.cloud_cover,
+      },
+      meta: weatherMeta(),
+    }
+  },
+
+  /**
+   * Close the session.
+   *
+   * A tool and not a prompt instruction, because "stop talking" has to actually tear down
+   * a WebRTC peer connection, and only the browser can do that. The handler is an
+   * acknowledgement with no side effect; LivePanel watches the tool trace for this name
+   * and hangs up once the closing sentence has finished playing.
+   *
+   * Reachable on the text path too, where it is inert — the model gets the acknowledgement
+   * and there is no session to close. That is the correct behaviour, not a gap: a typed
+   * chat has nothing to hang up.
+   */
+  async end_call({ reason } = {}) {
+    return {
+      data: {
+        ended: true,
+        reason: String(reason ?? 'unspecified').slice(0, 200),
+        note: 'Acknowledged. The client closes the session once the current sentence has finished.',
+      },
+      meta: {
+        source: 'session control — not data',
+        period: null,
+        coverage: null,
+        assumptions: ['No effect on a text conversation; there is no live session to end.'],
+      },
+    }
+  },
 }
 
 /** JSON-Schema tool declarations, shared by the model call and the HTTP layer. */
@@ -403,6 +557,33 @@ export const toolSchemas = [
         dimension: { type: 'string', enum: ['distance', 'carrier', 'destination'] },
       },
       required: ['iata'],
+    },
+  },
+  {
+    name: 'get_airport_weather',
+    description:
+      'Current weather at one covered airport, read live from a third-party feed. Use for "what is the weather at X" questions. It is an observation, not a scored figure, and it is not an input to any ranking — never use it to argue for or against an expansion.',
+    parameters: {
+      type: 'object',
+      properties: {
+        iata: { type: 'string', description: 'IATA code of a covered airport, e.g. "BOS".' },
+      },
+      required: ['iata'],
+    },
+  },
+  {
+    name: 'end_call',
+    description:
+      'End the live voice session. Say one short closing sentence first, then call this. Use it when the caller asks to hang up, when they are abusive, or when they have ignored several plain refusals and keep pressing for the same thing you have already said you cannot do. Never end a call merely because a question was out of scope or because the caller repeated themselves.',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'One short phrase recording why the call was ended, for the session log.',
+        },
+      },
+      required: ['reason'],
     },
   },
 ]

@@ -90,6 +90,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   // the instant the tool fires, or the caller hears the line cut off mid-word.
   const endAfterReply = useRef(false)
   const endTimer = useRef(null)
+  // The grace window: after the goodbye, the line stays open a beat, and speech cancels the
+  // hangup. The model reads a mid-conversation "אוקיי תודה" as a farewell often enough that
+  // two prompt rewrites did not cure it — so a wrong hangup is made cheap instead of rare:
+  // keep talking and the call simply continues, the way a person catches a closing door.
+  const endGrace = useRef(false)
 
   const mark = useCallback((name) => {
     marks.current[name] = performance.now()
@@ -151,6 +156,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const stop = useCallback(async () => {
     clearTimeout(endTimer.current)
     endAfterReply.current = false
+    endGrace.current = false
     const session = sessionRef.current
     sessionRef.current = null
     setPartial('')
@@ -198,6 +204,12 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           if (!RAW_NOISE.has(type)) push('raw', type)
         },
         onSpeaking: (who) => {
+          if (who === 'user' && (endGrace.current || endAfterReply.current)) {
+            endGrace.current = false
+            endAfterReply.current = false
+            clearTimeout(endTimer.current)
+            push('session', 'hang-up cancelled — you kept talking')
+          }
           setSpeaking(who)
           if (who === null && speechWasOpen.current) {
             speechWasOpen.current = false
@@ -269,8 +281,14 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           if (endAfterReply.current) {
             endAfterReply.current = false
             clearTimeout(endTimer.current)
-            push('session', 'ending the call')
-            stop()
+            endGrace.current = true
+            push('session', 'ending after this sentence — speak to stay on the line')
+            endTimer.current = setTimeout(() => {
+              if (!endGrace.current) return
+              endGrace.current = false
+              push('session', 'ending the call')
+              stop()
+            }, 2500)
           }
         },
         onToolCall: (record) => {

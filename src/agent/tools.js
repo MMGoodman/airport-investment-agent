@@ -574,7 +574,7 @@ export const toolSchemas = [
   {
     name: 'end_call',
     description:
-      'End the live voice session. Say one short closing sentence first, then call this. Use it when the caller asks to hang up, when they are abusive, or when they have ignored several plain refusals and keep pressing for the same thing you have already said you cannot do. Never end a call merely because a question was out of scope or because the caller repeated themselves.',
+      'End the live voice session. Call this the MOMENT the caller explicitly asks to hang up or says goodbye — before your own goodbye, because words never close the line and announcing the end without this tool strands the call open. Explicit means בי, להתראות, סיימתי, אפשר לסיים; a bare תודה or אוקיי after an answer is acknowledgement, not goodbye — never end on it. After it returns, say one short closing sentence; the session closes when that sentence ends. Also for abuse, or a third pressed attempt at something you have already refused twice. Never end a call merely because a question was out of scope or because the caller repeated themselves.',
     parameters: {
       type: 'object',
       properties: {

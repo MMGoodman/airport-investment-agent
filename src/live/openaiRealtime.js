@@ -11,6 +11,144 @@ import { callTool, parseArgs } from './tools.js'
 
 const SDP_ENDPOINT = 'https://api.openai.com/v1/realtime/calls'
 
+/**
+ * The data-channel state machine, lifted out of the connection so it can be tested.
+ *
+ * Everything subtle about this transport lives in here — batching parallel tool calls,
+ * deciding when to ask the model to speak, and dropping that request after a barge-in —
+ * and none of it was reachable by a test while it sat inside a WebRTC closure.
+ *
+ * `run` is the tool runner, injected so a test can control how long each call takes. That
+ * is the whole point: the bug this shape exists to prevent only appears when one tool
+ * returns before another.
+ */
+export function createEventHandler({
+  send,
+  run = callTool,
+  onRawEvent = () => {},
+  onUserTranscript = () => {},
+  onAssistantTranscript = () => {},
+  onToolCall = () => {},
+  onSpeaking = () => {},
+  onFirstToken = () => {},
+  onFirstAudio = () => {},
+  onError = () => {},
+}) {
+  // Reset each turn so every answer reports its own first-audio moment.
+  let audioReported = false
+
+  /**
+   * Tool calls belonging to the response currently being generated.
+   *
+   * One response can ask for several — "the weather at Boston and Portland" asks for two —
+   * and they arrive as separate events. Answering each one the moment it returned meant the
+   * fastest tool started the reply: the model was told to speak while the second lookup was
+   * still in flight, so it answered on half the data, and the second `response.create` then
+   * hit a response that was already active.
+   *
+   * They are collected here and settled together when the response that asked for them ends.
+   */
+  let pendingCalls = []
+
+  /**
+   * Whether the caller started talking again while this response was being handled.
+   *
+   * A barge-in makes the answer we were about to ask for stale before it exists. The tool
+   * outputs still go in — a function_call left without its output leaves the conversation
+   * item list malformed for every later turn — but the request to speak is dropped, because
+   * turn detection is about to open a new turn anyway.
+   */
+  let bargedIn = false
+
+  return async function handle(msg) {
+    // Everything the session emits, before we decide what to do with it. This is the
+    // raw feed the trace panel shows in verbose mode.
+    onRawEvent(msg.type, msg)
+
+    switch (msg.type) {
+      case 'response.created':
+        bargedIn = false
+        break
+
+      case 'input_audio_buffer.speech_started':
+        audioReported = false
+        bargedIn = true
+        onSpeaking('user')
+        break
+
+      // One model produces text and audio together, so first token and first audio land
+      // within a few milliseconds of each other. That is not measurement noise — it is
+      // exactly the difference between a native model and a cascade, made visible.
+      case 'response.output_audio.delta':
+        if (!audioReported) {
+          audioReported = true
+          onFirstAudio()
+        }
+        break
+      case 'input_audio_buffer.speech_stopped':
+        onSpeaking(null)
+        break
+
+      case 'conversation.item.input_audio_transcription.completed':
+        if (msg.transcript?.trim()) onUserTranscript(msg.transcript.trim())
+        break
+
+      case 'response.output_audio_transcript.delta':
+        onFirstToken()
+        onAssistantTranscript(msg.delta ?? '', false)
+        break
+      case 'response.output_audio_transcript.done':
+        onAssistantTranscript(msg.transcript ?? '', true)
+        break
+
+      // The model asked for a tool. Start it now; a function call ends the response, so
+      // there is nothing left to wait for except the tool itself.
+      case 'response.function_call_arguments.done':
+        pendingCalls.push(
+          run(msg.name, parseArgs(msg.arguments)).then((record) => {
+            onToolCall(record)
+            return { callId: msg.call_id, record }
+          }),
+        )
+        break
+
+      /**
+       * The response is over — which for a tool call is the point the model stopped, not a
+       * pause. Hand back every result it asked for, then ask for one new response built on
+       * the item list they were just added to.
+       */
+      case 'response.done': {
+        if (pendingCalls.length === 0) break
+        const batch = pendingCalls
+        pendingCalls = []
+
+        // Awaited together so a slow lookup cannot let a fast one answer on its own, and
+        // written in call order so the outputs sit in the list the way they were asked for.
+        for (const { callId, record } of await Promise.all(batch)) {
+          send({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: callId,
+              output: JSON.stringify(record.result),
+            },
+          })
+        }
+
+        // One request to speak, for the whole batch.
+        if (!bargedIn) send({ type: 'response.create' })
+        break
+      }
+
+      case 'error':
+        onError(new Error(msg.error?.message ?? 'Realtime error'))
+        break
+      default:
+        break
+    }
+  }
+}
+
 export async function startOpenAIRealtime({
   audioEl,
   lang = 'en',
@@ -50,75 +188,26 @@ export async function startOpenAIRealtime({
 
   dc.addEventListener('open', () => onStatus('live'))
 
-  // Reset each turn so every answer reports its own first-audio moment.
-  let audioReported = false
+  const handle = createEventHandler({
+    send,
+    onRawEvent,
+    onUserTranscript,
+    onAssistantTranscript,
+    onToolCall,
+    onSpeaking,
+    onFirstToken,
+    onFirstAudio,
+    onError,
+  })
 
-  dc.addEventListener('message', async (event) => {
+  dc.addEventListener('message', (event) => {
     let msg
     try {
       msg = JSON.parse(event.data)
     } catch {
       return
     }
-
-    // Everything the session emits, before we decide what to do with it. This is the
-    // raw feed the trace panel shows in verbose mode.
-    onRawEvent(msg.type, msg)
-
-    switch (msg.type) {
-      case 'input_audio_buffer.speech_started':
-        audioReported = false
-        onSpeaking('user')
-        break
-
-      // One model produces text and audio together, so first token and first audio land
-      // within a few milliseconds of each other. That is not measurement noise — it is
-      // exactly the difference between a native model and a cascade, made visible.
-      case 'response.output_audio.delta':
-        if (!audioReported) {
-          audioReported = true
-          onFirstAudio()
-        }
-        break
-      case 'input_audio_buffer.speech_stopped':
-        onSpeaking(null)
-        break
-
-      case 'conversation.item.input_audio_transcription.completed':
-        if (msg.transcript?.trim()) onUserTranscript(msg.transcript.trim())
-        break
-
-      case 'response.output_audio_transcript.delta':
-        onFirstToken()
-        onAssistantTranscript(msg.delta ?? '', false)
-        break
-      case 'response.output_audio_transcript.done':
-        onAssistantTranscript(msg.transcript ?? '', true)
-        break
-
-      // The model asked for a tool. Run it, report it, hand back the structured result.
-      case 'response.function_call_arguments.done': {
-        const record = await callTool(msg.name, parseArgs(msg.arguments))
-        onToolCall(record)
-        send({
-          type: 'conversation.item.create',
-          item: {
-            type: 'function_call_output',
-            call_id: msg.call_id,
-            output: JSON.stringify(record.result),
-          },
-        })
-        // Nudge the model to speak now that it has the numbers.
-        send({ type: 'response.create' })
-        break
-      }
-
-      case 'error':
-        onError(new Error(msg.error?.message ?? 'Realtime error'))
-        break
-      default:
-        break
-    }
+    handle(msg)
   })
 
   onStatus('connecting')

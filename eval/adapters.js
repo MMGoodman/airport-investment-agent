@@ -116,6 +116,16 @@ export async function openai(turns, lang = 'en') {
         }, ms)
       }
 
+      /**
+       * Tool calls from the response currently being generated.
+       *
+       * One response can ask for several, as separate events. Servicing each the moment it
+       * returned let the fastest one restart the model on its own — an answer built on part
+       * of the data, and a second `response.create` landing on an already-active response.
+       * The live path had the same shape and the same fault; see src/live/openaiRealtime.js.
+       */
+      let pendingCalls = []
+
       const onMessage = async (raw) => {
         const msg = JSON.parse(raw.toString())
 
@@ -126,21 +136,38 @@ export async function openai(turns, lang = 'en') {
 
         if (msg.type === 'response.function_call_arguments.done') {
           const args = msg.arguments ? JSON.parse(msg.arguments) : {}
-          const result = await runTool(msg.name, args)
-          const record = { tool: msg.name, args, result }
-          toolCalls.push(record)
-          lastTurnToolCalls.push(record)
-          send({
-            type: 'conversation.item.create',
-            item: { type: 'function_call_output', call_id: msg.call_id, output: JSON.stringify(result) },
-          })
-          send({ type: 'response.create' })
+          pendingCalls.push(
+            runTool(msg.name, args).then((result) => {
+              const record = { tool: msg.name, args, result }
+              toolCalls.push(record)
+              lastTurnToolCalls.push(record)
+              return { callId: msg.call_id, result }
+            }),
+          )
         }
 
         if (msg.type === 'response.output_text.done') text_ += `${msg.text ?? ''} `
 
-        // Quiet after a completed response means the turn is genuinely over.
-        if (msg.type === 'response.done' && text_.trim()) quietFor(1500)
+        if (msg.type === 'response.done') {
+          if (pendingCalls.length) {
+            const batch = pendingCalls
+            pendingCalls = []
+            // Together, in call order, then one request to continue.
+            for (const { callId, result } of await Promise.all(batch)) {
+              send({
+                type: 'conversation.item.create',
+                item: { type: 'function_call_output', call_id: callId, output: JSON.stringify(result) },
+              })
+            }
+            send({ type: 'response.create' })
+            // Deliberately no quietFor here: a response that asked for tools is a step in
+            // the turn, not the end of it, however much prose came before it. Settling on
+            // it would return the model's "let me pull that up" as the answer.
+          } else if (text_.trim()) {
+            // Quiet after a completed response with prose in it means the turn is over.
+            quietFor(1500)
+          }
+        }
 
         if (msg.type === 'error') {
           clearTimeout(timer)

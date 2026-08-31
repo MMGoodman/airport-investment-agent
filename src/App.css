@@ -9,6 +9,57 @@
   gap: 1rem;
 }
 
+/* A live call needs the width: the transcript on one side, the trace and the pipeline
+   board on the other. The typed path stays the narrow reading column it was. */
+.app:has(.workspace.split) {
+  max-width: 88rem;
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.workspace.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+/* Both columns take the full height and scroll on their own. `start` alignment left them
+   at content height over a sea of empty page, which read as broken rather than as layout. */
+.workspace.split > .messages,
+.workspace.split > .live {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Inside the live column the trace takes whatever height the switches leave. */
+.workspace.split > .live .ltrace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace.split > .live .ltrace-body {
+  flex: 1;
+  max-height: none;
+}
+
+/* One column again before the two get too narrow to read. */
+@media (max-width: 60rem) {
+  .workspace.split {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 /* ---------- top bar ---------- */
 
 .topbar {
@@ -728,6 +779,127 @@ kbd {
   margin: 0;
   font-size: 0.78rem;
   color: var(--text-dim);
+}
+
+/* The pipeline board. Two groups, each with its options stacked and their sub-settings
+   indented under the one they belong to — the flat row layout it replaced put both radios
+   of one group on different rows and left the reader to work out what nested under what. */
+.pipe {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.9rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.pipe:disabled {
+  opacity: 0.55;
+}
+.pipe legend {
+  padding: 0 0.4rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.pipe-group + .pipe-group {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+}
+.pipe-hint {
+  margin: -0.15rem 0 0.5rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.pipe-hint b,
+.pipe-opt em b {
+  font-weight: 600;
+  color: var(--text);
+}
+.pipe-opt code {
+  font: 500 0.7rem/1 var(--mono);
+  color: var(--text-dim);
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  background: var(--bg-sunk);
+}
+.pipe-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* One choice: control, then label over an explanation of when to reach for it. */
+.pipe-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.28rem 0;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.pipe-opt input {
+  margin-top: 0.2rem;
+  flex: none;
+}
+.pipe-opt b {
+  font-weight: 600;
+}
+.pipe-opt em {
+  display: block;
+  margin-top: 0.1rem;
+  font-style: normal;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+/* Settings that belong to the option above them, and only appear with it. */
+.pipe-sub {
+  margin: 0.15rem 1.35rem 0.5rem;
+  padding-inline-start: 0.7rem;
+  border-inline-start: 2px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.8rem;
+  font-size: 0.78rem;
+}
+.pipe-sub-label {
+  min-width: 5rem;
+  color: var(--text-dim);
+}
+.pipe-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+.pipe-slider {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+}
+.pipe-slider input[type='range'] {
+  width: 8rem;
+  flex: none;
+}
+.pipe-slider b {
+  min-width: 3.6rem;
+  font: 500 0.76rem/1 var(--mono);
+}
+.pipe-note {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.pipe-stale {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  color: var(--warn, #d7860b);
 }
 
 .live-tool code {

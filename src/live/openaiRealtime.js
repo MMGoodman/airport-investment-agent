@@ -152,6 +152,8 @@ export function createEventHandler({
 export async function startOpenAIRealtime({
   audioEl,
   lang = 'en',
+  /** Per-session pipeline settings from the control panel; the server clamps them. */
+  pipeline = {},
   onStatus = () => {},
   onRawEvent = () => {},
   onUserTranscript = () => {},
@@ -164,13 +166,20 @@ export async function startOpenAIRealtime({
 }) {
   onStatus('minting key')
 
-  const keyRes = await fetch(`/api/realtime/session?lang=${lang}`)
+  const params = new URLSearchParams({ lang })
+  for (const [k, v] of Object.entries(pipeline)) {
+    if (v !== undefined && v !== null && v !== '') params.set(k, String(v))
+  }
+
+  const keyRes = await fetch(`/api/realtime/session?${params}`)
   const keyBody = await keyRes.json()
   if (!keyRes.ok) throw new Error(keyBody.error ?? 'Could not mint a realtime key')
-  const { clientSecret, model, vad } = keyBody
-  // Record what turn detection this call ran under, so a pasted trace can be compared
-  // against another that was configured differently.
+  const { clientSecret, model, vad, vocabulary } = keyBody
+  // Record what this call ran under, so a pasted trace can be compared against another
+  // that was configured differently. The server reports what it USED, after clamping —
+  // not what was asked for.
   if (vad) onStatus(`turn detection: ${vad}`)
+  onStatus(`vocabulary bias: ${vocabulary ? 'on' : 'off'}`)
 
   onStatus('opening microphone')
   const mic = await navigator.mediaDevices.getUserMedia({ audio: true })

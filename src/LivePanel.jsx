@@ -39,6 +39,22 @@ const RAW_NOISE = new Set([
 
 const MAX_EVENTS = 300
 
+/**
+ * The pipeline settings a session can start under.
+ *
+ * Only what genuinely varies per session and per room belongs here: turn detection, whose
+ * right answer depends on the noise around the caller, and the vocabulary bias, whose
+ * effect can only be attributed by running a session without it. Model and voice choices
+ * stay deployment configuration — a switch nobody can act on is decoration.
+ */
+const PIPELINE_DEFAULTS = {
+  vad: 'semantic', // semantic: a model judges when the thought ended · server: a silence timer
+  eagerness: 'low',
+  threshold: 0.5,
+  silenceMs: 700,
+  vocabulary: 'on',
+}
+
 export default function LivePanel({ provider, lang, onAppend, onError }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
@@ -46,6 +62,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const [partial, setPartial] = useState('')
   const [events, setEvents] = useState([])
   const [verbose, setVerbose] = useState(false)
+  const [pipeline, setPipeline] = useState(PIPELINE_DEFAULTS)
+  // The pipeline the RUNNING call started under. Settings edited mid-call apply to the
+  // next one — the ephemeral key is bound to its config — and the UI has to say so rather
+  // than let a dead switch look live.
+  const [activePipeline, setActivePipeline] = useState(null)
 
   const sessionRef = useRef(null)
   const audioRef = useRef(null)
@@ -156,9 +177,17 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     push('session', `${provider.label} · ${lang === 'he' ? 'Hebrew' : 'English'}`)
 
     try {
+      setActivePipeline(pipeline)
       sessionRef.current = await STARTERS[provider.id]({
         audioEl: audioRef.current,
         lang,
+        pipeline: {
+          vad: pipeline.vad,
+          ...(pipeline.vad === 'semantic'
+            ? { eagerness: pipeline.eagerness }
+            : { threshold: pipeline.threshold, silenceMs: pipeline.silenceMs }),
+          vocabulary: pipeline.vocabulary,
+        },
         onStatus: (s) => {
           setStatus(s)
           push('session', s)
@@ -234,7 +263,6 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
               )
             })
           }
-
 
           if (endAfterReply.current) {
             endAfterReply.current = false
@@ -342,6 +370,145 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
       </p>
 
       {partial && <p className="live-partial">{partial}</p>}
+
+      {/* The pipeline board. Only for the provider whose session is configured per call:
+          the OpenAI path re-mints its config on every connect, so a switch here is real.
+          ElevenLabs takes its pipeline at sync time and Soniox hard-codes its own — a
+          panel over those would be dead switches, so they get none. */}
+      {/* ElevenLabs gets no switches, and the board says why instead of vanishing: its
+          pipeline is pushed at sync time, so a per-session switch would be a dead one. */}
+      {provider.id === 'elevenlabs' && (
+        <fieldset className="pipe" dir="rtl" disabled>
+          <legend>צינור העיבוד</legend>
+          <p className="pipe-hint">
+            אין כאן מתגים, וזו לא שכחה: ElevenLabs מקבל את התצורה שלו ב־
+            <code>npm run sync:agent</code>, לא בזמן חיבור. זיהוי תור, מתמלל ואוצר מילים
+            נעולים בצד שלהם עד הסנכרון הבא — זה המחיר של פלטפורמה מנוהלת.
+          </p>
+        </fieldset>
+      )}
+
+      {provider.id.startsWith('openai') && (
+        <fieldset className="pipe" dir="rtl" disabled={busy}>
+          <legend>צינור העיבוד · לשיחה הבאה</legend>
+
+          <div className="pipe-group">
+            <p className="pipe-title">זיהוי סוף תור</p>
+            <p className="pipe-hint">
+              שתי השיטות רצות אצל OpenAI, על אותו אודיו — זה סוג ה־VAD, לא הארכיטקטורה.
+              {provider.id === 'openai'
+                ? ' השרת שלך הנפיק כרטיס ויצא; '
+                : ' בנתיב הזה האודיו עובר דרך השרת שלך, אבל השיפוט עדיין אצלם; '}
+              השאלה היא רק <b>מה שופט</b> שסיימת לדבר.
+            </p>
+
+            <label className="pipe-opt">
+              <input
+                type="radio"
+                name="vad"
+                checked={pipeline.vad === 'semantic'}
+                onChange={() => setPipeline((p) => ({ ...p, vad: 'semantic' }))}
+              />
+              <span>
+                <b>מודל שופט את המשמעות</b> <code>semantic_vad</code>
+                <em>
+                  שואל אם המחשבה נגמרה. רוכב על נשימה באמצע משפט — אבל אין לו סף עוצמה, אז
+                  רעש ברקע יכול לקטוע תשובה.
+                </em>
+              </span>
+            </label>
+
+            {pipeline.vad === 'semantic' && (
+              <div className="pipe-sub">
+                <span className="pipe-sub-label">רגישות</span>
+                {[
+                  ['low', 'נמוכה'],
+                  ['medium', 'בינונית'],
+                  ['high', 'גבוהה'],
+                ].map(([value, label]) => (
+                  <label key={value} className="pipe-inline">
+                    <input
+                      type="radio"
+                      name="eagerness"
+                      checked={pipeline.eagerness === value}
+                      onChange={() => setPipeline((p) => ({ ...p, eagerness: value }))}
+                    />
+                    {label}
+                  </label>
+                ))}
+                <span className="pipe-note">נמוכה מחכה הכי הרבה לפני שהיא סוגרת תור</span>
+              </div>
+            )}
+
+            <label className="pipe-opt">
+              <input
+                type="radio"
+                name="vad"
+                checked={pipeline.vad === 'server'}
+                onChange={() => setPipeline((p) => ({ ...p, vad: 'server' }))}
+              />
+              <span>
+                <b>טיימר שקט מודד עוצמה</b> <code>server_vad</code>
+                <em>
+                  סופר מילישניות של שקט. גס לגבי משמעות, אבל הדרך היחידה להגיד ״תתעלם ממה
+                  שיותר שקט מזה״. ה־server בשם הוא <b>שלהם</b>, בניגוד לזיהוי שהדפדפן היה
+                  עושה בעצמו — לא השרת שלך.
+                </em>
+              </span>
+            </label>
+
+            {pipeline.vad === 'server' && (
+              <div className="pipe-sub">
+                <div className="pipe-slider">
+                  <span className="pipe-sub-label">סף עוצמה</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={pipeline.threshold}
+                    onChange={(e) => setPipeline((p) => ({ ...p, threshold: Number(e.target.value) }))}
+                  />
+                  <b>{Number(pipeline.threshold).toFixed(2)}</b>
+                  <span className="pipe-note">גבוה יותר מתעלם מרעש שקט יותר</span>
+                </div>
+                <div className="pipe-slider">
+                  <span className="pipe-sub-label">משך שקט</span>
+                  <input
+                    type="range"
+                    min="200"
+                    max="2000"
+                    step="100"
+                    value={pipeline.silenceMs}
+                    onChange={(e) => setPipeline((p) => ({ ...p, silenceMs: Number(e.target.value) }))}
+                  />
+                  <b>{pipeline.silenceMs} ms</b>
+                  <span className="pipe-note">כמה שקט סוגר תור. 200 פיצל שאלה אחת לארבעה שברים</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="pipe-group">
+            <p className="pipe-title">תמלול</p>
+            <label className="pipe-opt">
+              <input
+                type="checkbox"
+                checked={pipeline.vocabulary === 'on'}
+                onChange={(e) => setPipeline((p) => ({ ...p, vocabulary: e.target.checked ? 'on' : 'off' }))}
+              />
+              <span>
+                <b>הטיית אוצר מילים</b> — לכוון את המתמלל לשדות תעופה ולמונחי התחום
+                <em>תיקן קודים מרוסקים, אבל גם מושך מילים שמחוץ לתחום פנימה. כבה כדי למדוד.</em>
+              </span>
+            </label>
+          </div>
+
+          {connected && activePipeline && JSON.stringify(activePipeline) !== JSON.stringify(pipeline) && (
+            <p className="pipe-stale">השיחה הפעילה התחילה בהגדרות אחרות — אלה יחולו מהשיחה הבאה.</p>
+          )}
+        </fieldset>
+      )}
 
       <LiveTrace
         events={events}

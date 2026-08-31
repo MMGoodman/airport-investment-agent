@@ -37,29 +37,64 @@ const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcri
  * Reach for `server` with a high threshold when a room is noisy; keep `semantic` when it
  * is quiet and sentences are long.
  */
-const VAD_TYPE = process.env.OPENAI_VAD_TYPE === 'server' ? 'server_vad' : 'semantic_vad'
-const OPENAI_VAD_EAGERNESS = process.env.OPENAI_VAD_EAGERNESS || 'low'
 const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback)
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 
-const turnDetection =
-  VAD_TYPE === 'semantic_vad'
-    ? { type: 'semantic_vad', eagerness: OPENAI_VAD_EAGERNESS }
-    : {
-        type: 'server_vad',
-        // Higher ignores quieter sound. The lever semantic VAD does not have.
-        threshold: num(process.env.OPENAI_VAD_THRESHOLD, 0.5),
-        // How long a pause before the turn is considered over. The 200 ms default is the
-        // one that chopped sentences apart.
-        silence_duration_ms: num(process.env.OPENAI_VAD_SILENCE_MS, 700),
-        // Audio kept from before speech was detected, so the first syllable survives.
-        prefix_padding_ms: num(process.env.OPENAI_VAD_PREFIX_MS, 300),
-      }
+/**
+ * The env values are the deployment's defaults, not the session's settings.
+ *
+ * They used to be both: read once at startup and baked into every call, so comparing two
+ * turn-detection settings meant editing .env and restarting between them — by which point
+ * the room, the speaker and the question had all moved. A caller now overrides them per
+ * session and the trace records what it ran under, which is what makes two runs comparable.
+ */
+const VAD_DEFAULTS = {
+  type: process.env.OPENAI_VAD_TYPE === 'server' ? 'server' : 'semantic',
+  eagerness: process.env.OPENAI_VAD_EAGERNESS || 'low',
+  threshold: clamp(num(process.env.OPENAI_VAD_THRESHOLD, 0.5), 0, 1),
+  silenceMs: clamp(num(process.env.OPENAI_VAD_SILENCE_MS, 700), 100, 5000),
+  prefixMs: clamp(num(process.env.OPENAI_VAD_PREFIX_MS, 300), 0, 2000),
+}
 
-/** Human-readable, for the session trace — so a comparison records what it was run under. */
-const vadSummary =
-  VAD_TYPE === 'semantic_vad'
-    ? `semantic_vad · eagerness ${OPENAI_VAD_EAGERNESS}`
-    : `server_vad · threshold ${turnDetection.threshold} · silence ${turnDetection.silence_duration_ms}ms`
+const EAGERNESS = ['low', 'medium', 'high', 'auto']
+
+/**
+ * Build one session's turn detection from the request, falling back to the deployment.
+ *
+ * Every number is clamped: these arrive on a query string, and a silence window of NaN or
+ * of ten minutes is a call that never answers. Returns the summary alongside the config so
+ * the trace can state the setting rather than the reader having to infer it.
+ */
+function turnDetectionFor(q = {}) {
+  const asked = q.vad === 'server' || q.vad === 'semantic' ? q.vad : VAD_DEFAULTS.type
+
+  if (asked === 'semantic') {
+    // A model judges whether the THOUGHT is finished. Rides through a breath mid-sentence,
+    // but offers no volume threshold, so room noise can still truncate an answer.
+    const eagerness = EAGERNESS.includes(q.eagerness) ? q.eagerness : VAD_DEFAULTS.eagerness
+    return {
+      config: { type: 'semantic_vad', eagerness },
+      summary: `semantic_vad · eagerness ${eagerness}`,
+    }
+  }
+
+  // A silence timer with a loudness threshold. Crude about meaning — the 200 ms default
+  // split one question into four fragments — but the only way to say "ignore anything
+  // quieter than this".
+  const threshold = clamp(num(q.threshold, VAD_DEFAULTS.threshold), 0, 1)
+  const silence = clamp(num(q.silenceMs, VAD_DEFAULTS.silenceMs), 100, 5000)
+  const prefix = clamp(num(q.prefixMs, VAD_DEFAULTS.prefixMs), 0, 2000)
+  return {
+    config: {
+      type: 'server_vad',
+      threshold,
+      silence_duration_ms: silence,
+      // Audio kept from before speech was detected, so the first syllable survives.
+      prefix_padding_ms: prefix,
+    },
+    summary: `server_vad · threshold ${threshold} · silence ${silence}ms`,
+  }
+}
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const SONIOX_STT = process.env.SONIOX_STT_MODEL || 'stt-rt-v5'
 const SONIOX_FUNDED = process.env.SONIOX_FUNDED === 'true'
@@ -83,6 +118,7 @@ const realtimeTools = toolSchemas.map((t) => ({
       ? t.parameters
       : { type: 'object', properties: {} },
 }))
+
 
 export function mountVoiceRoutes(app) {
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
@@ -157,6 +193,17 @@ export function mountVoiceRoutes(app) {
     // "correcting" Hebrew speech into phonetic English, which then derails the answer.
     const lang = req.query.lang === 'he' ? 'he' : 'en'
 
+    // Per-session turn detection. ?vad=server&threshold=0.7&silenceMs=900, or nothing for
+    // the deployment's defaults — see turnDetectionFor.
+    const vad = turnDetectionFor(req.query)
+
+    // The vocabulary hint is on a switch so its effect can be MEASURED, not assumed. It
+    // fixed mangled airport codes and then caused two failures of its own — a phantom
+    // transcript assembled out of the hint, and out-of-domain words snapped to domain ones
+    // ("קופנהגן" came back as "תן לי את המאזן"). The only way to attribute a mishearing to
+    // the hint is a session identical but for this flag.
+    const useVocabulary = req.query.vocabulary !== 'off'
+
     try {
       const upstream = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
         method: 'POST',
@@ -183,12 +230,11 @@ export function mountVoiceRoutes(app) {
                 //
                 // `prompt` biases recognition toward this domain's vocabulary, built from
                 // data/ rather than hand-listed. See src/agent/vocabulary.js.
-                transcription: { model: TRANSCRIBE_MODEL, prompt: await transcriptionPrompt(lang) },
-                // Semantic turn detection, not a silence timer. The 200 ms server-VAD
-                // default ended the turn on an ordinary mid-sentence breath: one question
-                // arrived as four fragments, each cancelling the answer to the one before.
-                // Semantic VAD judges whether the thought is finished; 'low' waits longer.
-                turn_detection: turnDetection,
+                transcription: {
+                  model: TRANSCRIBE_MODEL,
+                  ...(useVocabulary ? { prompt: await transcriptionPrompt(lang) } : {}),
+                },
+                turn_detection: vad.config,
               },
               output: { voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE },
             },
@@ -207,7 +253,8 @@ export function mountVoiceRoutes(app) {
         expiresAt: body.expires_at,
         model: OPENAI_MODEL,
         lang,
-        vad: vadSummary,
+        vad: vad.summary,
+        vocabulary: useVocabulary,
       })
     } catch (err) {
       res.status(500).json({ error: err.message })

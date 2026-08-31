@@ -248,7 +248,11 @@ function App() {
         </div>
       </header>
 
-      <main className="messages">
+      {/* Side by side while a call is live: the trace and the pipeline board are for
+          reading WHILE talking, and stacked below the transcript they were always the
+          half of the screen you could not see. Stacks again under 60rem. */}
+      <div className={`workspace${live ? ' split' : ''}`}>
+        <main className="messages">
         {messages.length === 0 && !loading && (
           <div className="welcome">
             <h2>Ask about US airport expansion candidates</h2>
@@ -300,12 +304,15 @@ function App() {
           </div>
         )}
 
-        <div ref={bottomRef} />
-      </main>
+          <div ref={bottomRef} />
+        </main>
 
-      {live ? (
-        <LivePanel provider={activeProvider} lang={lang} onAppend={appendLive} onError={setError} />
-      ) : (
+        {live && (
+          <LivePanel provider={activeProvider} lang={lang} onAppend={appendLive} onError={setError} />
+        )}
+      </div>
+
+      {!live && (
       <form
         className="composer"
         onSubmit={(event) => {

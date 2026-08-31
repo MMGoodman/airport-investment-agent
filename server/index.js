@@ -6,6 +6,8 @@ import { runTool } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile } from './toolLog.js'
+import { attachRelay } from './relay.js'
+import { createServer } from 'node:http'
 
 const app = express()
 // The audit headers are custom, so a cross-origin caller cannot read them unless they are
@@ -174,6 +176,10 @@ app.post('/api/chat', async (req, res) => {
   }
 })
 
-app.listen(PORT, () => {
+// A plain http server rather than app.listen, so the realtime relay can take WebSocket
+// upgrades on the same port the HTTP API answers on.
+const server = createServer(app)
+attachRelay(server)
+server.listen(PORT, () => {
   console.log(`API server listening on http://localhost:${PORT}  (model: ${MODEL})`)
 })

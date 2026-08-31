@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
+      // ws: true carries the relay path's WebSocket upgrade through to the API server —
+      // the string shorthand proxies HTTP only, and the socket would die at Vite.
+      '/api': { target: 'http://localhost:3001', ws: true },
       '/health': 'http://localhost:3001',
     },
   },

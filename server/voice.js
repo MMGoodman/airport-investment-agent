@@ -119,6 +119,43 @@ const realtimeTools = toolSchemas.map((t) => ({
       : { type: 'object', properties: {} },
 }))
 
+/**
+ * One realtime session config, built from a request's query.
+ *
+ * Exported because two transports need the identical session: the WebRTC path mints it
+ * into an ephemeral key, and the server relay opens it over a WebSocket. Building it in
+ * both places is how the two paths would drift apart — and the whole point of running
+ * them side by side is that the ONLY difference is where the connection lives.
+ */
+export async function buildRealtimeSession(query = {}) {
+  const lang = query.lang === 'he' ? 'he' : 'en'
+  const vad = turnDetectionFor(query)
+  const useVocabulary = query.vocabulary !== 'off'
+
+  return {
+    lang,
+    vadSummary: vad.summary,
+    useVocabulary,
+    model: OPENAI_MODEL,
+    session: {
+      type: 'realtime',
+      model: OPENAI_MODEL,
+      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
+      tools: realtimeTools,
+      tool_choice: 'auto',
+      audio: {
+        input: {
+          transcription: {
+            model: TRANSCRIBE_MODEL,
+            ...(useVocabulary ? { prompt: await transcriptionPrompt(lang) } : {}),
+          },
+          turn_detection: vad.config,
+        },
+        output: { voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE },
+      },
+    },
+  }
+}
 
 export function mountVoiceRoutes(app) {
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
@@ -146,6 +183,19 @@ export function mountVoiceRoutes(app) {
           model: OPENAI_MODEL,
           pipeline: `${OPENAI_MODEL} (native speech-to-speech)`,
           transport: 'WebRTC · speech-to-speech',
+        },
+        {
+          id: 'openai-relay',
+          // The same model and the same session config — the ONLY change is where the
+          // connection lives. This is the architecture experiment: audio relayed through
+          // our server, tools run in-process, the browser reduced to a microphone and a
+          // speaker. Same session, one variable, so the latency difference IS the answer.
+          label: `${OPENAI_MODEL} · voice · via your server`,
+          mode: 'live',
+          available: Boolean(process.env.OPENAI_API_KEY),
+          model: OPENAI_MODEL,
+          pipeline: `${OPENAI_MODEL} — relayed: audio through your server, tools in-process`,
+          transport: 'WebSocket · browser → your server → OpenAI',
         },
         {
           id: 'soniox',
@@ -189,57 +239,18 @@ export function mountVoiceRoutes(app) {
       return res.status(503).json({ error: 'OPENAI_API_KEY is not set in .env.' })
     }
 
-    // Steering the transcriber at the same language as the reply stops it from
-    // "correcting" Hebrew speech into phonetic English, which then derails the answer.
-    const lang = req.query.lang === 'he' ? 'he' : 'en'
-
-    // Per-session turn detection. ?vad=server&threshold=0.7&silenceMs=900, or nothing for
-    // the deployment's defaults — see turnDetectionFor.
-    const vad = turnDetectionFor(req.query)
-
-    // The vocabulary hint is on a switch so its effect can be MEASURED, not assumed. It
-    // fixed mangled airport codes and then caused two failures of its own — a phantom
-    // transcript assembled out of the hint, and out-of-domain words snapped to domain ones
-    // ("קופנהגן" came back as "תן לי את המאזן"). The only way to attribute a mishearing to
-    // the hint is a session identical but for this flag.
-    const useVocabulary = req.query.vocabulary !== 'off'
-
     try {
+      // Everything session-shaped lives in buildRealtimeSession, shared verbatim with the
+      // server-relay transport. See the comment there for why sharing it is the point.
+      const built = await buildRealtimeSession(req.query)
+
       const upstream = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          session: {
-            type: 'realtime',
-            model: OPENAI_MODEL,
-            instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
-            tools: realtimeTools,
-            tool_choice: 'auto',
-            audio: {
-              input: {
-                // gpt-4o-transcribe rather than whisper-1: whisper turned a spelled-out
-                // airport code into nonsense and dropped words around pauses.
-                //
-                // No `language`: the selector governs the REPLY language, not what the
-                // speaker uses. Pinning it to English mangled Hebrew questions from a user
-                // who wanted English answers — a combination they asked for out loud.
-                // Auto-detection handles a session that mixes the two.
-                //
-                // `prompt` biases recognition toward this domain's vocabulary, built from
-                // data/ rather than hand-listed. See src/agent/vocabulary.js.
-                transcription: {
-                  model: TRANSCRIBE_MODEL,
-                  ...(useVocabulary ? { prompt: await transcriptionPrompt(lang) } : {}),
-                },
-                turn_detection: vad.config,
-              },
-              output: { voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE },
-            },
-          },
-        }),
+        body: JSON.stringify({ session: built.session }),
       })
 
       const body = await upstream.json()
@@ -251,10 +262,10 @@ export function mountVoiceRoutes(app) {
       res.json({
         clientSecret: body.value,
         expiresAt: body.expires_at,
-        model: OPENAI_MODEL,
-        lang,
-        vad: vad.summary,
-        vocabulary: useVocabulary,
+        model: built.model,
+        lang: built.lang,
+        vad: built.vadSummary,
+        vocabulary: built.useVocabulary,
       })
     } catch (err) {
       res.status(500).json({ error: err.message })

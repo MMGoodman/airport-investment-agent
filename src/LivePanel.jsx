@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { startOpenAIRealtime } from './live/openaiRealtime.js'
+import { startOpenAIRelay } from './live/openaiRelay.js'
 import { startElevenLabs } from './live/elevenlabs.js'
 import { startSoniox } from './live/soniox.js'
 import LiveTrace from './LiveTrace.jsx'
@@ -16,6 +17,7 @@ import { setToolSession, reconcileTools } from './live/tools.js'
 
 const STARTERS = {
   openai: startOpenAIRealtime,
+  'openai-relay': startOpenAIRelay,
   elevenlabs: startElevenLabs,
   soniox: startSoniox,
 }

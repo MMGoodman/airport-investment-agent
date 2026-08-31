@@ -21,6 +21,11 @@ export function setToolSession(id) {
   sessionId = id
 }
 
+/** The relay passes this to the server so its in-process tools land in the same log. */
+export function getToolSession() {
+  return sessionId
+}
+
 export async function callTool(name, args) {
   const started = performance.now()
   try {

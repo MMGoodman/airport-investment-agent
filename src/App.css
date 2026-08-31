@@ -868,6 +868,12 @@ kbd {
 .ltrace-row.raw { opacity: 0.45; }
 .ltrace-row.error .ltrace-mark,
 .ltrace-row.error .ltrace-text { color: var(--danger); }
+/* The reconciliation line. Green is the normal case, so it must not shout; a mismatch
+   is the one thing in this panel that has to be impossible to scroll past. */
+.ltrace-row.audit .ltrace-mark { color: var(--live); }
+.ltrace-row.audit .ltrace-text { color: var(--text-dim); }
+.ltrace-row.audit.bad .ltrace-mark,
+.ltrace-row.audit.bad .ltrace-text { color: var(--danger); font-weight: 600; }
 
 /* The one number that decides whether a voice agent feels live. */
 .ltrace-row.timing .ltrace-mark,

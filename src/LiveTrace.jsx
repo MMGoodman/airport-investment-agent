@@ -18,6 +18,7 @@ const KIND_MARK = {
   result: '↩',
   timing: '⏱',
   raw: '·',
+  audit: '✓',
   error: '✕',
 }
 
@@ -124,7 +125,7 @@ export default function LiveTrace({ events, verbose, onVerbose, onClear, provide
         {shown.length === 0 && <p className="ltrace-empty">Start a call and it fills in as you talk.</p>}
 
         {shown.map((e) => (
-          <div key={e.id} className={`ltrace-row ${e.kind}`}>
+          <div key={e.id} className={`ltrace-row ${e.kind}${e.bad ? ' bad' : ''}`}>
             <span className="ltrace-t">{e.t.toFixed(1)}s</span>
             <span className="ltrace-mark">{KIND_MARK[e.kind] ?? '·'}</span>
             <span className="ltrace-text">{e.text}</span>

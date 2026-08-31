@@ -5,9 +5,13 @@ import { runAgent } from '../src/agent/agent.js'
 import { runTool } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { mountVoiceRoutes } from './voice.js'
+import { recordToolCall, callsForSession, reconcile } from './toolLog.js'
 
 const app = express()
-app.use(cors())
+// The audit headers are custom, so a cross-origin caller cannot read them unless they are
+// named here. Same-origin (the Vite proxy in dev) never needed it; a deployed split origin
+// would have failed the reconciliation silently, which is the worst way for it to fail.
+app.use(cors({ exposedHeaders: ['x-tool-call-id', 'x-tool-digest'] }))
 app.use(express.json({ limit: '1mb' }))
 
 const PORT = process.env.PORT || 3001
@@ -105,14 +109,51 @@ app.get('/api/rankings', async (req, res) => {
   }
 })
 
-/** Escape hatch for the demo: call any tool directly and see the raw structured result. */
+/**
+ * The tool endpoint, and the only loop that leaves this process.
+ *
+ * Every call is recorded before the result goes out, and the entry's id and digest ride
+ * back on headers rather than in the body — the body is read verbatim into the model's
+ * context, and audit metadata does not belong there costing tokens and inviting the model
+ * to narrate it.
+ */
 app.post('/api/tool', async (req, res) => {
   const { name, args } = req.body ?? {}
+  const session = req.get('x-session-id') || null
+  const started = Date.now()
+
   try {
-    res.json(await runTool(name, args))
+    const result = await runTool(name, args)
+    const entry = recordToolCall({
+      session,
+      tool: name,
+      args,
+      result,
+      ms: Date.now() - started,
+      failed: Boolean(result?.data?.error),
+    })
+    res.setHeader('x-tool-call-id', entry.callId)
+    res.setHeader('x-tool-digest', entry.digest)
+    res.json(result)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+/**
+ * What this server actually ran for a session, and whether the client's account of it
+ * agrees. POST a claimed trace to check it; GET to just read the record.
+ */
+app.get('/api/tool-log', (req, res) => {
+  const session = req.query.session
+  if (!session) return res.status(400).json({ error: 'Pass ?session=<id>' })
+  res.json({ session, calls: callsForSession(session) })
+})
+
+app.post('/api/tool-log/reconcile', (req, res) => {
+  const { session, claimed } = req.body ?? {}
+  if (!session) return res.status(400).json({ error: 'Body must be { session, claimed: [] }' })
+  res.json(reconcile(session, Array.isArray(claimed) ? claimed : []))
 })
 
 app.post('/api/chat', async (req, res) => {

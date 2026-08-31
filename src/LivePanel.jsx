@@ -3,6 +3,7 @@ import { startOpenAIRealtime } from './live/openaiRealtime.js'
 import { startElevenLabs } from './live/elevenlabs.js'
 import { startSoniox } from './live/soniox.js'
 import LiveTrace from './LiveTrace.jsx'
+import { setToolSession, reconcileTools } from './live/tools.js'
 
 /**
  * The live-voice control surface.
@@ -58,6 +59,9 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const marks = useRef({})
   // Tools called since the last completed answer; they attach to the answer they produced.
   const pendingTools = useRef([])
+  // Every claim made this session, for the audit — the server log is session-wide, so the
+  // comparison has to be too.
+  const claimedTools = useRef([])
   // end_call is acknowledged by the server but performed here — closing a WebRTC session is
   // something only this side can do. Hang up after the closing sentence has been spoken, not
   // the instant the tool fires, or the caller hears the line cut off mid-word.
@@ -145,6 +149,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     setEvents([])
     setStatus('minting key')
     pendingTools.current = []
+    claimedTools.current = []
+    // Tags every tool call this call makes, so the server's record of them can be looked up
+    // as a set afterwards rather than one at a time.
+    setToolSession(crypto.randomUUID())
     push('session', `${provider.label} · ${lang === 'he' ? 'Hebrew' : 'English'}`)
 
     try {
@@ -195,8 +203,38 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           }
           setPartial('')
           push('agent', text)
-          onAppend({ role: 'assistant', content: text, toolCalls: pendingTools.current })
+          const attached = pendingTools.current
+          onAppend({ role: 'assistant', content: text, toolCalls: attached })
           pendingTools.current = []
+
+          // Check the session's trace against the server's own record. The engine ran here
+          // either way — what is being verified is that the trace the reader is looking at
+          // describes the calls that actually happened, and not a set the client composed.
+          //
+          // The whole session's claims, not this answer's: the server log is per session,
+          // and comparing one answer against it flagged every EARLIER answer's calls as
+          // hidden — a red audit line on a session doing everything right.
+          if (attached.length) {
+            claimedTools.current = [...claimedTools.current, ...attached]
+            reconcileTools(claimedTools.current).then((audit) => {
+              if (!audit) return
+              push(
+                'audit',
+                audit.ok
+                  ? `${audit.serverCalls} tool ${audit.serverCalls === 1 ? 'call' : 'calls'} match the server log`
+                  : `trace does not match the server log — ` +
+                      [
+                        audit.fabricated.length && `${audit.fabricated.length} not run`,
+                        audit.altered.length && `${audit.altered.length} altered`,
+                        audit.omitted.length && `${audit.omitted.length} hidden`,
+                      ]
+                        .filter(Boolean)
+                        .join(', '),
+                { bad: !audit.ok },
+              )
+            })
+          }
+
 
           if (endAfterReply.current) {
             endAfterReply.current = false

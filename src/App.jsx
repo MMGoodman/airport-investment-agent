@@ -62,8 +62,9 @@ function App() {
     if (!readAloud || messages.length <= spokenThrough.current) return
     spokenThrough.current = messages.length
     const last = messages[messages.length - 1]
-    if (last?.role === 'assistant') speak(toPlainText(last.content))
-  }, [messages, readAloud, speak])
+    // Live-path answers arrive marked spoken: the provider's voice already said them.
+    if (last?.role === 'assistant' && !last.spoken) speak(toPlainText(last.content), lang)
+  }, [messages, readAloud, speak, lang])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -115,8 +116,11 @@ function App() {
   }
 
   // A live turn lands in the same list a typed one does, so ToolTrace renders it the same.
+  // Marked as already spoken: the provider's own voice said it, and the read-aloud effect
+  // reading it AGAIN put a hardcoded en-US browser voice on top of a Hebrew answer — the
+  // session played every reply twice, in two languages at once.
   const appendLive = useCallback((message) => {
-    setMessages((prev) => [...prev, message])
+    setMessages((prev) => [...prev, { ...message, spoken: true }])
     setError(null)
   }, [])
 

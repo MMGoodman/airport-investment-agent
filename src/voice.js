@@ -115,14 +115,16 @@ export function useSpeech() {
     setSpeaking(false)
   }, [])
 
-  const speak = useCallback((text) => {
+  const speak = useCallback((text, lang = 'en') => {
     if (!speechSupported || !text?.trim()) return
     window.speechSynthesis.cancel()
 
     const chunks = intoChunks(text)
     chunks.forEach((chunk, i) => {
       const utterance = new SpeechSynthesisUtterance(chunk)
-      utterance.lang = 'en-US'
+      // Follow the session language. This was hardcoded to en-US, which put an
+      // English-accented browser voice on Hebrew answers.
+      utterance.lang = lang === 'he' ? 'he-IL' : 'en-US'
       utterance.rate = 1.05
       if (i === chunks.length - 1) {
         utterance.onend = () => setSpeaking(false)

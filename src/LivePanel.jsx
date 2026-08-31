@@ -278,8 +278,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           if (endAfterReply.current) {
             endAfterReply.current = false
             clearTimeout(endTimer.current)
-            push('session', 'ending the call')
+            push('session', 'closing sentence done — hanging up')
             stop()
+              .then(() => push('session', 'session closed'))
+              .catch((err) => push('error', `hang-up failed: ${err.message}`))
           }
         },
         onToolCall: (record) => {
@@ -287,14 +289,17 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
 
           if (record.tool === 'end_call' && !record.failed) {
             endAfterReply.current = true
+            push('session', 'end_call seen — waiting for the closing sentence')
             // The closing line usually lands after the tool call, but a model that says it
             // first leaves no sentence to wait for. Without this the session would stay
             // open on a call both sides consider finished.
             endTimer.current = setTimeout(() => {
               if (!endAfterReply.current) return
               endAfterReply.current = false
-              push('session', 'ending the call')
+              push('session', 'no closing sentence arrived — hanging up anyway')
               stop()
+                .then(() => push('session', 'session closed'))
+                .catch((err) => push('error', `hang-up failed: ${err.message}`))
             }, 6000)
           }
           const args = Object.entries(record.args ?? {})

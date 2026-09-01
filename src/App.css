@@ -915,6 +915,23 @@ kbd {
 
 /* What the live call is actually on. Quiet when it matches the switches — it is only
    reassurance then — and the warning colour above takes over when they have drifted. */
+/* Hold-to-talk. Sits beside Mute because it replaces the reason you would reach for it. */
+.live-ptt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  color: var(--muted, #6b6b6b);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.live-ptt input {
+  accent-color: var(--live);
+  cursor: pointer;
+}
+
 .pipe-running {
   margin: 0.5rem 0 0;
   font-size: 0.74rem;

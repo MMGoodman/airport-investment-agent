@@ -82,6 +82,8 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const [pipeline, setPipeline] = useState(PIPELINE_DEFAULTS)
   /** What this connection can reach, as the transport reported it. */
   const [toolLine, setToolLine] = useState(null)
+  /** Microphone closed unless a key is held. Survives across calls — it is how you test. */
+  const [pushToTalk, setPushToTalk] = useState(false)
   // The pipeline the RUNNING call started under. Settings edited mid-call apply to the
   // next one — the ephemeral key is bound to its config — and the UI has to say so rather
   // than let a dead switch look live.
@@ -402,11 +404,66 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     }
   }
 
-  function toggleMute() {
-    const next = !muted
+  const applyMute = useCallback((next) => {
     setMuted(next)
     sessionRef.current?.setMuted(next)
+  }, [])
+
+  function toggleMute() {
+    applyMute(!muted)
   }
+
+  /**
+   * Hold to talk — the microphone is closed except while a key is down.
+   *
+   * A mute button asks you to remember to press it twice per question, and the turn it is
+   * forgotten on is the one a neighbour's conversation opens. Under semantic_vad there is
+   * no loudness threshold at all, so anything that sounds like speech becomes a turn: the
+   * only reliable way to test in a room with other people in it is for the microphone to be
+   * shut by default.
+   *
+   * Space, because it is the one key nothing else here uses, and repeat events are ignored
+   * so holding it does not thrash the track. Released on blur as well as keyup: a window
+   * that loses focus mid-hold would otherwise leave the microphone open with nobody
+   * watching it.
+   */
+  useEffect(() => {
+    // `status`, not the `connected` derived below it — a hook cannot reach past its own
+    // position in the component body, and referencing it here blanked the page.
+    if (!pushToTalk || status !== 'live') return undefined
+
+    applyMute(true)
+    let held = false
+
+    const down = (e) => {
+      if (e.code !== 'Space' || e.repeat || held) return
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      e.preventDefault()
+      held = true
+      applyMute(false)
+    }
+    const up = (e) => {
+      if (e.code !== 'Space' || !held) return
+      held = false
+      applyMute(true)
+    }
+    const release = () => {
+      if (!held) return
+      held = false
+      applyMute(true)
+    }
+
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    window.addEventListener('blur', release)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', release)
+      release()
+    }
+  }, [pushToTalk, status, applyMute])
 
   const connected = status === 'live'
   const busy = status !== 'idle' && !connected
@@ -444,6 +501,14 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
             {muted ? 'Unmute' : 'Mute'}
           </button>
         )}
+        <label className="live-ptt" title="Microphone stays closed unless you hold Space">
+          <input
+            type="checkbox"
+            checked={pushToTalk}
+            onChange={(e) => setPushToTalk(e.target.checked)}
+          />
+          <span>{pushToTalk ? 'hold Space to talk' : 'push to talk'}</span>
+        </label>
       </div>
 
       <p className="live-hint">

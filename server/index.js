@@ -4,6 +4,7 @@ import cors from 'cors'
 import { runAgent } from '../src/agent/agent.js'
 import { runTool, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
+import { describeUpstreamError } from '../src/upstreamError.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile } from './toolLog.js'
 import { attachRelay } from './relay.js'
@@ -84,7 +85,7 @@ app.get('/api/airports', async (req, res) => {
       store.airports.map(({ iata, name, city, state, region }) => ({ iata, name, city, state, region })),
     )
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: describeUpstreamError(err, 'the airport dataset') })
   }
 })
 
@@ -107,7 +108,7 @@ app.get('/api/rankings', async (req, res) => {
     })
     res.json(result)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: describeUpstreamError(err, 'the scoring engine') })
   }
 })
 
@@ -155,7 +156,7 @@ app.post('/api/tool', async (req, res) => {
     res.setHeader('x-tool-digest', entry.digest)
     res.json(result)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: describeUpstreamError(err, 'the tool') })
   }
 })
 
@@ -189,7 +190,7 @@ app.post('/api/chat', async (req, res) => {
     // Fail loudly: surface the real status and message, never a fake answer.
     const status = err?.status ?? 500
     console.error('agent error:', status, err?.message)
-    res.status(status).json({ error: err?.message ?? 'Unknown server error' })
+    res.status(status).json({ error: describeUpstreamError(err, 'the model') })
   }
 })
 

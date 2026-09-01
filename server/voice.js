@@ -12,6 +12,7 @@
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { attachSideband, detachSideband } from './sideband.js'
+import { describeUpstreamError } from '../src/upstreamError.js'
 
 /**
  * Ephemeral keys awaiting their sideband, by the browser's session id.
@@ -445,7 +446,7 @@ export function mountVoiceRoutes(app) {
         hintTerms: built.hintTerms,
       })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(500).json({ error: describeUpstreamError(err, 'OpenAI') })
     }
   })
 
@@ -486,7 +487,7 @@ export function mountVoiceRoutes(app) {
         sttModel: process.env.SONIOX_STT_MODEL || 'stt-rt-v5',
       })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(500).json({ error: describeUpstreamError(err, 'Soniox') })
     }
   })
 
@@ -598,7 +599,7 @@ export function mountVoiceRoutes(app) {
         prompt: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
       })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(500).json({ error: describeUpstreamError(err, 'ElevenLabs') })
     }
   })
 }

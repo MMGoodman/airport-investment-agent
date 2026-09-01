@@ -206,3 +206,27 @@ export async function asrKeywords(limit = 60) {
     ...DOMAIN_TERMS,
   ]
 }
+
+/**
+ * How many of the hint's own terms a transcript repeats.
+ *
+ * The vocabulary hint is a prior, and on a stretch of near-silence a transcriber given a
+ * prior and nothing to describe can emit the prior itself. One session recorded every IATA
+ * code and every Hebrew term in list order as a caller's utterance — the hint, read back.
+ *
+ * Nobody says ten domain terms in one breath, so the count separates the phantom from real
+ * speech cleanly: a genuine question about Boston's load factor hits two or three.
+ */
+export async function hintTermsEchoed(transcript, lang = 'he') {
+  if (!transcript || transcript.length < 60) return 0
+  const hint = await transcriptionPrompt(lang)
+  const terms = hint
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => t.length > 2)
+  const text = transcript.toLowerCase()
+  return new Set(terms.filter((t) => text.includes(t.toLowerCase()))).size
+}
+
+/** Above this, the transcript is the hint talking, not the caller. */
+export const PHANTOM_TERM_THRESHOLD = 10

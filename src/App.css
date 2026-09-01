@@ -1046,6 +1046,10 @@ kbd {
 .ltrace-row.audit .ltrace-text { color: var(--text-dim); }
 .ltrace-row.audit.bad .ltrace-mark,
 .ltrace-row.audit.bad .ltrace-text { color: var(--danger); font-weight: 600; }
+/* A transcript dropped as the hint talking. Visible on purpose: a silently swallowed
+   transcript would read as the session missing a question. */
+.ltrace-row.phantom .ltrace-mark,
+.ltrace-row.phantom .ltrace-text { color: var(--warn, #d7860b); }
 
 /* The one number that decides whether a voice agent feels live. */
 .ltrace-row.timing .ltrace-mark,

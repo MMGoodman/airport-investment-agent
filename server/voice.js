@@ -132,10 +132,14 @@ export async function buildRealtimeSession(query = {}) {
   const vad = turnDetectionFor(query)
   const useVocabulary = query.vocabulary !== 'off'
 
+  const hint = useVocabulary ? await transcriptionPrompt(lang) : ''
+
   return {
     lang,
     vadSummary: vad.summary,
     useVocabulary,
+    // The hint's own terms, so the browser can recognise it being read back at it.
+    hintTerms: hint.split(',').map((t) => t.trim()).filter((t) => t.length > 2),
     model: OPENAI_MODEL,
     session: {
       type: 'realtime',
@@ -147,7 +151,7 @@ export async function buildRealtimeSession(query = {}) {
         input: {
           transcription: {
             model: TRANSCRIBE_MODEL,
-            ...(useVocabulary ? { prompt: await transcriptionPrompt(lang) } : {}),
+            ...(useVocabulary ? { prompt: hint } : {}),
           },
           turn_detection: vad.config,
         },
@@ -266,6 +270,7 @@ export function mountVoiceRoutes(app) {
         lang: built.lang,
         vad: built.vadSummary,
         vocabulary: built.useVocabulary,
+        hintTerms: built.hintTerms,
       })
     } catch (err) {
       res.status(500).json({ error: err.message })

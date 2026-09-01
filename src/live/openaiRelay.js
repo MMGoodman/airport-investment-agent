@@ -25,6 +25,7 @@ export async function startOpenAIRelay({
   onSpeaking = () => {},
   onFirstToken = () => {},
   onFirstAudio = () => {},
+  onResponseStart = () => {},
   onError = () => {},
 }) {
   onStatus('connecting')
@@ -124,6 +125,9 @@ export async function startOpenAIRelay({
         break
       case 'ready':
         onStatus('live')
+        break
+      case 'responseStart':
+        onResponseStart()
         break
       case 'speaking':
         if (msg.who === 'user') {

@@ -18,6 +18,7 @@ const KIND_MARK = {
   result: '↩',
   timing: '⏱',
   raw: '·',
+  phantom: '⊘',
   audit: '✓',
   error: '✕',
 }

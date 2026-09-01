@@ -115,7 +115,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
       // Every stage is scoped to one answer, and an answer starts with a question. The
       // agent's opening greeting has no question in front of it, so it is not a turn and
       // has nothing to time.
-      if (marks.current.transcript == null) return
+      if (marks.current.transcript == null && from !== 'responseStart') return
       const a = marks.current[from]
       const b = marks.current[to]
       if (a == null || b == null) return
@@ -142,7 +142,26 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     (final) => {
       if (marks.current.firstToken) return
       mark('firstToken')
-      stage(final ? 'generate (full answer)' : 'think (to first word)', 'transcript', 'firstToken')
+
+      // "Thinking" is only meaningful if the model waited for the transcript. On a native
+      // speech-to-speech model it does not: response.created lands BEFORE the transcription
+      // event, because the transcriber is a second listener running alongside the model, not
+      // a stage in front of it. Measuring transcript -> firstToken there timed the gap
+      // between two unrelated events and reported 6 ms and 13 ms as thinking time.
+      const startedBeforeTranscript =
+        marks.current.responseStart != null &&
+        marks.current.transcript != null &&
+        marks.current.responseStart < marks.current.transcript
+
+      if (startedBeforeTranscript) {
+        // Time it from where generation actually began. Nothing is hidden: the label says
+        // which boundary it used, so two paths are never silently compared on different ones.
+        stage('generate (from audio, not transcript)', 'responseStart', 'firstToken')
+      } else {
+        stage(final ? 'generate (full answer)' : 'think (to first word)', 'transcript', 'firstToken')
+      }
+
+      // The number that actually matters either way: silence to first word.
       stage('answer', marks.current.speechEnd ? 'speechEnd' : 'transcript', 'firstToken')
     },
     [mark, stage],
@@ -219,6 +238,13 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           stage('recognise', 'speechEnd', 'transcript')
         },
 
+        onResponseStart: () => {
+          if (marks.current.responseStart == null) mark('responseStart')
+        },
+        onPhantom: (text) =>
+          push('phantom', `dropped — the vocabulary hint read back: ${text.slice(0, 60)}…`, {
+            bad: true,
+          }),
         onFirstToken: () => noteFirstToken(false),
         onFirstAudio: () => {
           mark('firstAudio')

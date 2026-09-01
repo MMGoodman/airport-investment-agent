@@ -100,6 +100,7 @@ export function attachRelay(httpServer) {
 
         case 'response.created':
           bargedIn = false
+          tell({ type: 'responseStart' })
           break
 
         case 'input_audio_buffer.speech_started':

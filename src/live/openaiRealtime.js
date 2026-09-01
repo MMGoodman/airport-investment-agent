@@ -331,17 +331,24 @@ export async function startOpenAIRealtime({
    * whole feature is here to improve.
    */
   /**
-   * Fire and forget, with a deadline.
+   * Fire and forget, once the session is actually live.
    *
-   * This must never gate the call. It used to be awaited, which meant a secondary
-   * connection that was slow, hung or unreachable held up the session handle the panel
-   * needs — the same shape as an earlier bug where startOpenAIRealtime never returned and
-   * hanging up had nothing to close. Audio is already flowing by this point; the sideband
-   * only decides who answers one tool.
+   * Two things this got wrong on the first live attempt. It was awaited, so a secondary
+   * connection that stalled held up the session handle the panel needs — the same shape as
+   * an earlier bug in this file where startOpenAIRealtime never returned and hanging up had
+   * nothing to close. And it fired the moment setRemoteDescription resolved, which is before
+   * the call exists as far as the other end is concerned: the data channel opened 700 ms
+   * later, and the attach had already spent its deadline waiting for a session that was not
+   * yet there.
+   *
+   * So: after the data channel opens, never awaited, and if it fails the call is exactly
+   * what it was before this existed — the tool withheld, and the model saying which switch
+   * to use. That fallback is proven; this is the upgrade on top of it.
    */
-  if (callId && withheldTools.length) {
+  const attachSideband = () => {
+    if (!callId || withheldTools.length === 0) return
     const deadline = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('timed out after 4s')), 4000),
+      setTimeout(() => reject(new Error('no answer in 8s')), 8000),
     )
     Promise.race([
       fetch('/api/realtime/sideband', {
@@ -360,11 +367,12 @@ export async function startOpenAIRealtime({
         onStatus(`tools: ${(body.tools ?? []).join(', ')} now run on your server — same session`)
       })
       .catch((err) => {
-        // Not an error for the call: this is exactly the behaviour before the sideband
-        // existed, and the model already has instructions for saying so.
         onStatus(`tools: sideband did not attach (${err.message}) — ${withheldTools.join(', ')} stays withheld`)
       })
   }
+
+  if (dc.readyState === 'open') attachSideband()
+  else dc.addEventListener('open', attachSideband, { once: true })
 
   return {
     /** Which call this is, so the server can be told to let go of it. */
@@ -396,6 +404,17 @@ export async function startOpenAIRealtime({
         ['microphone', () => mic.getTracks().forEach((t) => t.stop())],
         ['audio element', () => {
           if (audioEl) audioEl.srcObject = null
+        }],
+        // Tell the server to drop its half. OpenAI tears the sideband down with the call,
+        // but not always promptly, and a socket left sitting on a finished session is a
+        // second listener nobody asked for.
+        ['sideband', () => {
+          if (!callId) return
+          fetch('/api/realtime/sideband/detach', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ callId }),
+          }).catch(() => {})
         }],
       ]
       for (const [what, run] of steps) {

@@ -77,15 +77,39 @@ export function attachSideband({ callId, session, apiKey, onEvent = () => {} }) 
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event))
   }
 
+  const openedAt = Date.now()
+  const since = () => `${Date.now() - openedAt}ms`
+
   entry.ready = new Promise((resolve, reject) => {
     const fail = (err) => {
       attached.delete(callId)
       reject(err)
     }
 
-    ws.once('error', (err) => fail(new Error(`sideband could not attach: ${err.message}`)))
+    /**
+     * Say what happened, on the server, where the answer actually is.
+     *
+     * The first live attempt timed out at the browser's four-second deadline with nothing
+     * to show for it: a client-side timeout says only that no answer arrived, never why. A
+     * handshake that stalls, one refused with a status, and one that opens and is closed
+     * again are three different faults with one symptom.
+     */
+    ws.once('unexpected-response', (_req, res) => {
+      console.log(`sideband ${callId}: refused after ${since()} — HTTP ${res.statusCode}`)
+      fail(new Error(`OpenAI refused the sideband: HTTP ${res.statusCode}`))
+    })
+
+    ws.once('error', (err) => {
+      console.log(`sideband ${callId}: error after ${since()} — ${err.message}`)
+      fail(new Error(`sideband could not attach: ${err.message}`))
+    })
+
+    ws.once('close', (code, reason) => {
+      console.log(`sideband ${callId}: closed after ${since()} — ${code} ${reason?.toString() ?? ''}`)
+    })
 
     ws.once('open', () => {
+      console.log(`sideband ${callId}: open after ${since()}`)
       /**
        * Add the tools to the session the browser is already talking on.
        *
@@ -109,6 +133,7 @@ export function attachSideband({ callId, session, apiKey, onEvent = () => {} }) 
           })),
         },
       })
+      console.log(`sideband ${callId}: declared ${tools.map((t) => t.name).join(', ')}`)
       resolve({ attached: true, tools: tools.map((t) => t.name) })
     })
   })
@@ -171,6 +196,7 @@ export function attachSideband({ callId, session, apiKey, onEvent = () => {} }) 
     // for the answer that uses the result.
     send({ type: 'response.create' })
 
+    console.log(`sideband ${callId}: ran ${msg.name} in ${ms}ms → ${entryLog.callId}`)
     onEvent({ tool: msg.name, args, ms, callId: entryLog.callId, digest: entryLog.digest })
   })
 

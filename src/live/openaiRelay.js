@@ -124,6 +124,17 @@ export async function startOpenAIRelay({
   let audioReported = false
 
   /**
+   * Drop incoming audio until the next response starts.
+   *
+   * stopPlayback() silences what is already queued, and that used to be the whole
+   * barge-in: a one-shot stop, after which every frame still in flight was scheduled and
+   * played anyway. Cancelling upstream stops new frames at the source, but the ones
+   * already on the wire keep arriving, so the local gate has to hold until a new response
+   * begins rather than firing once.
+   */
+  let suppressAudio = false
+
+  /**
    * Set the instant stop() is called, and checked before anything is acted on.
    *
    * A socket close is a handshake, not a switch: frames already in flight still arrive,
@@ -137,6 +148,7 @@ export async function startOpenAIRelay({
   ws.onmessage = (event) => {
     if (closed) return
     if (event.data instanceof ArrayBuffer) {
+      if (suppressAudio) return
       if (!audioReported) {
         audioReported = true
         onFirstAudio()
@@ -160,13 +172,16 @@ export async function startOpenAIRelay({
         onStatus('live')
         break
       case 'responseStart':
+        // A new answer is starting, so the gate opens again.
+        suppressAudio = false
         onResponseStart()
         break
       case 'speaking':
         if (msg.who === 'user') {
-          // Barge-in: OpenAI stops generating; the frames already queued here have to be
-          // silenced locally or the agent talks over the caller from the buffer.
+          // Barge-in. The server cancels the response upstream; this silences what is
+          // already queued and gates whatever is still on the wire until the next one.
           audioReported = false
+          suppressAudio = true
           stopPlayback()
         }
         onSpeaking(msg.who)

@@ -69,6 +69,13 @@ export function attachRelay(httpServer) {
     // drops the request to speak but never the outputs.
     let pendingCalls = []
     let bargedIn = false
+    /**
+     * Whether a response is being generated right now.
+     *
+     * Needed because cancelling one that has already finished is an error, and a barge-in
+     * often lands in the gap between two responses.
+     */
+    let responseActive = false
 
     upstream.on('open', () => {
       // The model is fixed by the URL; session.update carries everything else.
@@ -100,11 +107,28 @@ export function attachRelay(httpServer) {
 
         case 'response.created':
           bargedIn = false
+          responseActive = true
           tell({ type: 'responseStart' })
           break
 
         case 'input_audio_buffer.speech_started':
           bargedIn = true
+          /**
+           * Cancel out loud. Over WebRTC OpenAI owns the audio track, knows how much of the
+           * answer was actually heard, and truncates on its own — which is why interrupting
+           * works there without a line of code. Over a WebSocket it knows none of that: it
+           * keeps generating, keeps sending frames, and the agent talks over the caller.
+           *
+           * Caveat this cannot fix from here: the model's context still holds the whole
+           * sentence it generated, not the part that was heard. WebRTC gets that right
+           * because it tracks playback; a relay would have to report the played position
+           * back with conversation.item.truncate, and the browser is the only side that
+           * knows it.
+           */
+          if (responseActive) {
+            up({ type: 'response.cancel' })
+            responseActive = false
+          }
           tell({ type: 'speaking', who: 'user' })
           break
         case 'input_audio_buffer.speech_stopped':
@@ -155,6 +179,7 @@ export function attachRelay(httpServer) {
         }
 
         case 'response.done': {
+          responseActive = false
           if (pendingCalls.length === 0) break
           const batch = pendingCalls
           pendingCalls = []

@@ -309,7 +309,8 @@ export function mountVoiceRoutes(app) {
   /**
    * Mint an ephemeral OpenAI Realtime key. The real key stays on this server; the
    * browser gets a token that expires in minutes and is bound to this session config —
-   * including our prompt and our five tools, so the browser cannot widen either.
+   * including our prompt and the tool list this transport is allowed, so the browser can
+   * neither widen it nor reach past it.
    */
   app.get('/api/realtime/session', async (req, res) => {
     if (!process.env.OPENAI_API_KEY) {

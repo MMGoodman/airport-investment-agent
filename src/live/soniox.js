@@ -7,7 +7,7 @@
  * that can say *which stage* was slow rather than that the whole turn was.
  *
  *   mic ──WebSocket──> Soniox STT ──> POST /api/chat ──> POST /api/voice/speak ──> audio
- *                                      (same agent, same five tools, same numbers)
+ *                                      (same agent, same tools, same numbers)
  *
  * Three vendors, one per stage: Soniox recognises because it switches language
  * mid-sentence unprompted, our agent thinks, OpenAI synthesises because Soniox has no TTS

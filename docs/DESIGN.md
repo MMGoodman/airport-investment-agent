@@ -130,7 +130,9 @@ Three layers, one rule between them: **the model never crosses into the right-ha
 - `src/ingest/run.js` — one-shot pull from BTS + OurAirports into `data/*.json`. Idempotent,
   caches raw responses, prints a summary, fails loudly with the HTTP status and body.
 - `src/scoring/` — pure functions. No I/O, no clock, no randomness. Unit-tested.
-- `src/agent/` — five tools over the scoring engine, plus the tool-calling loop.
+- `src/agent/` — seven tools over the scoring engine, plus the tool-calling loop. Each
+  carries a `placement`: `get_airport_weather` runs only where the server holds the
+  session, so the direct WebRTC line is built with six.
 - `server/` + `src/` (React) — HTTP surface and UI, including browser-native voice
   (`src/voice.js`) layered over the same `/api/chat` call.
 
@@ -155,7 +157,8 @@ header.
 
 The rule that governs them is the one that governs everything else: **a new transport may
 not bring its own numbers.** Both live providers are handed the same `SYSTEM_PROMPT` and the
-same five `toolSchemas` the text path imports, and when either asks for a tool the browser
+same `toolSchemas` the text path imports — minus anything placed on the server — and when
+either asks for a tool the browser
 calls `POST /api/tool` — the endpoint that already existed. Not one line of `src/scoring/`
 or `src/agent/tools.js` changed to add either of them.
 

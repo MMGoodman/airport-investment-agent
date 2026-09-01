@@ -75,6 +75,8 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   const [events, setEvents] = useState([])
   const [verbose, setVerbose] = useState(false)
   const [pipeline, setPipeline] = useState(PIPELINE_DEFAULTS)
+  /** What this connection can reach, as the transport reported it. */
+  const [toolLine, setToolLine] = useState(null)
   // The pipeline the RUNNING call started under. Settings edited mid-call apply to the
   // next one — the ephemeral key is bound to its config — and the UI has to say so rather
   // than let a dead switch look live.
@@ -212,6 +214,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     reportsSpeech.current = false
     setEvents([])
     resetTotals()
+    setToolLine(null)
     setStatus('minting key')
     pendingTools.current = []
     claimedTools.current = []
@@ -233,6 +236,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           vocabulary: pipeline.vocabulary,
         },
         onStatus: (s) => {
+          // Both transports announce what this connection can reach, once, at the start.
+          // Held here because the header used to claim "same five tools" — there are seven,
+          // six of them on the direct line, and a number baked into a sentence goes stale
+          // the moment the tool surface moves.
+          if (s.startsWith('tools:')) setToolLine(s.slice('tools:'.length).trim())
           setStatus(s)
           push('session', s)
         },
@@ -441,7 +449,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         ) : speaking === 'assistant' ? (
           'speaking — interrupt any time, it will stop and listen'
         ) : connected ? (
-          'Ask out loud. Same five tools, same numbers as the text path.'
+          `Ask out loud. Same engine and same numbers as the text path${toolLine ? ` · ${toolLine}` : ''}.`
         ) : (
           `${provider.pipeline ?? provider.model} · the model still computes nothing`
         )}

@@ -28,6 +28,16 @@ const STARTERS = {
   soniox: startSoniox,
 }
 
+/**
+ * The connection's states. Anything a transport reports that is not one of these is a
+ * notice about the session, not a state of it.
+ *
+ * The distinction was implicit and then it broke: the sideband reports whether it attached,
+ * which happens AFTER the data channel opens, and that line landed in `status`. So the
+ * panel went live, said "End call", and a moment later decided it was mid-connection again
+ * and offered "Cancel" — with the call running the whole time. One field was carrying the
+ * state machine and the commentary at once, and the commentary won because it came last.
+ */
 const STATUS_LABEL = {
   idle: 'not connected',
   'minting key': 'authorising…',
@@ -35,6 +45,7 @@ const STATUS_LABEL = {
   connecting: 'connecting…',
   live: 'live',
 }
+const IS_STATE = (s) => Object.hasOwn(STATUS_LABEL, s)
 
 /** Raw provider events that say nothing a reader needs; they drown the useful ones. */
 const RAW_NOISE = new Set([
@@ -248,7 +259,9 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           // six of them on the direct line, and a number baked into a sentence goes stale
           // the moment the tool surface moves.
           if (s.startsWith('tools:')) setToolLine(s.slice('tools:'.length).trim())
-          setStatus(s)
+          // Only a real state moves the state machine. A notice goes to the trace and
+          // nowhere else, so a line that arrives after "live" cannot un-connect the call.
+          if (IS_STATE(s)) setStatus(s)
           push('session', s)
         },
         onRawEvent: (type) => {

@@ -53,6 +53,20 @@ export async function startOpenAIRelay({
    *
    * A promise created here cannot miss the event, whatever is awaited later.
    */
+  /**
+   * Hold everything that arrives before the handler below is wired.
+   *
+   * The server reports the session's settings — which turn detection, whether the
+   * vocabulary bias is on — the moment the socket connects, and the handler is only
+   * attached after getUserMedia, which takes hundreds of milliseconds. Those two lines
+   * were being delivered to nobody, so the trace never said what the call was running
+   * under and there was no way to tell a changed setting from an ignored one. Same shape
+   * as the open event below: subscribe first, act later.
+   */
+  const early = []
+  const queueEarly = (event) => early.push(event)
+  ws.addEventListener('message', queueEarly)
+
   const opened = new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true })
     ws.addEventListener(
@@ -155,7 +169,7 @@ export async function startOpenAIRelay({
    */
   let closed = false
 
-  ws.onmessage = (event) => {
+  const onMessage = (event) => {
     if (closed) return
     if (event.data instanceof ArrayBuffer) {
       if (suppressAudio) return
@@ -220,6 +234,11 @@ export async function startOpenAIRelay({
         break
     }
   }
+
+  // Take over, then replay what arrived while the microphone was opening.
+  ws.removeEventListener('message', queueEarly)
+  ws.addEventListener('message', onMessage)
+  early.splice(0).forEach(onMessage)
 
   ws.onclose = () => onStatus('idle')
 

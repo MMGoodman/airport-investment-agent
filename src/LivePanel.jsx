@@ -158,7 +158,12 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         // which boundary it used, so two paths are never silently compared on different ones.
         stage('generate (from audio, not transcript)', 'responseStart', 'firstToken')
       } else {
-        stage(final ? 'generate (full answer)' : 'think (to first word)', 'transcript', 'firstToken')
+        // From the later of the two boundaries. A caller who keeps talking produces a
+        // transcript early in a long speech window, and timing from it reported 8,623 ms
+        // of thinking for an answer that began 300 ms after they stopped.
+        const from =
+          marks.current.speechEnd > marks.current.transcript ? 'speechEnd' : 'transcript'
+        stage(final ? 'generate (full answer)' : 'think (to first word)', from, 'firstToken')
       }
 
       // The number that actually matters either way: silence to first word.

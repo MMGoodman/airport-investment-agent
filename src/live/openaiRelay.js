@@ -41,6 +41,27 @@ export async function startOpenAIRelay({
   const ws = new WebSocket(`${proto}://${location.host}/api/relay?${params}`)
   ws.binaryType = 'arraybuffer'
 
+  /**
+   * Subscribe to the open BEFORE anything is awaited.
+   *
+   * This used to be built at the bottom of the function, after getUserMedia — which takes
+   * long enough that a localhost socket is already open by then. The `open` event had come
+   * and gone with no listener, so the promise never settled and this function never
+   * returned. The session still worked, because ws.onmessage was live: audio flowed, tools
+   * ran, answers came back. What never happened was the caller receiving the session
+   * handle, so hanging up had nothing to close and said so — "no live session was held".
+   *
+   * A promise created here cannot miss the event, whatever is awaited later.
+   */
+  const opened = new Promise((resolve, reject) => {
+    ws.addEventListener('open', resolve, { once: true })
+    ws.addEventListener(
+      'error',
+      () => reject(new Error('Could not reach the relay — is the API server up?')),
+      { once: true },
+    )
+  })
+
   const ctx = new AudioContext({ sampleRate: 24000 })
 
   // ---- playback: schedule each frame right after the previous one
@@ -177,10 +198,7 @@ export async function startOpenAIRelay({
 
   ws.onclose = () => onStatus('idle')
 
-  await new Promise((resolve, reject) => {
-    ws.onopen = resolve
-    ws.onerror = () => reject(new Error('Could not reach the relay — is the API server up?'))
-  })
+  await opened
 
   return {
     /** Type instead of talk — the server injects it as a user message. */

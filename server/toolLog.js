@@ -23,7 +23,7 @@
  * file when TOOL_LOG_FILE is set, which is what an audit trail needs to be readable as.
  */
 import { createHash } from 'node:crypto'
-import { appendFile } from 'node:fs/promises'
+import { appendFile, readFile } from 'node:fs/promises'
 
 /** Enough to cover any single conversation several times over, and bounded. */
 const MAX_ENTRIES = 500
@@ -32,6 +32,45 @@ const entries = []
 let seq = 0
 
 const LOG_FILE = process.env.TOOL_LOG_FILE || null
+
+/**
+ * Reload the trail on boot, so a restart does not turn history into a forgery.
+ *
+ * The ring is memory, and a server restart used to empty it while a browser kept its
+ * session — the calls from before the restart were then absent from the record and the
+ * panel reported them fabricated, in red, on a session that had done nothing wrong. That
+ * is the worst failure mode an audit can have: crying wolf teaches people to ignore it.
+ *
+ * Only the tail is kept, matching the ring. A malformed line is skipped rather than
+ * throwing: a truncated last write from a kill -9 must not stop the server from starting.
+ */
+async function restore() {
+  if (!LOG_FILE) return
+  try {
+    const lines = (await readFile(LOG_FILE, 'utf8'))
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .slice(-MAX_ENTRIES)
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line)
+        if (entry?.callId) {
+          entries.push(entry)
+          const n = Number(String(entry.callId).replace(/^t/, ''))
+          if (Number.isFinite(n) && n > seq) seq = n
+        }
+      } catch {
+        /* a half-written line from an interrupted process */
+      }
+    }
+    if (entries.length) console.log(`tool log: restored ${entries.length} entries from ${LOG_FILE}`)
+  } catch (err) {
+    // A missing file is the normal first run; anything else is worth seeing.
+    if (err.code !== 'ENOENT') console.error('tool log restore failed:', err.message)
+  }
+}
+
+await restore()
 
 /** Short digest of the exact bytes handed back, so a substituted payload does not match. */
 function digestOf(result) {

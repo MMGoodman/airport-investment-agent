@@ -66,7 +66,7 @@ const fullToolList = () => toolSchemasFor('relay').tools
  * Returns as soon as the socket is open and the tools have been declared, so the caller can
  * tell the browser the sideband is live rather than leaving it to guess.
  */
-export function attachSideband({ callId, session, ephemeralKey, onEvent = () => {} }) {
+export function attachSideband({ callId, session, ephemeralKey, instructions, onEvent = () => {} }) {
   if (attached.has(callId)) return attached.get(callId).ready
 
   const tools = serverTools()
@@ -142,6 +142,20 @@ export function attachSideband({ callId, session, ephemeralKey, onEvent = () => 
         type: 'session.update',
         session: {
           type: 'realtime',
+          /**
+           * The instructions have to change with the tools, or the model refuses a tool it
+           * now holds.
+           *
+           * The session was minted with a note saying get_airport_weather is not offered on
+           * this line and telling the caller which switch to use — the honest thing to say
+           * for the seconds before this connection exists. Adding the tool without lifting
+           * the note produced exactly that: the sideband attached, declared seven tools, and
+           * the model still answered "the weather tool is not available in this call".
+           *
+           * These are the relay-flavoured instructions: same prompt, no withheld note,
+           * because from the model's side the two situations are now identical.
+           */
+          ...(instructions ? { instructions } : {}),
           tools: fullToolList().map((t) => ({
             type: 'function',
             name: t.name,

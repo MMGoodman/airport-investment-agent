@@ -22,8 +22,8 @@ import { attachSideband, detachSideband } from './sideband.js'
 const pendingSecrets = new Map()
 const SECRET_TTL_MS = 120_000
 
-function rememberSecret(session, secret) {
-  pendingSecrets.set(session, { secret, at: Date.now() })
+function rememberSecret(session, secret, query) {
+  pendingSecrets.set(session, { secret, query, at: Date.now() })
   for (const [k, v] of pendingSecrets) {
     if (Date.now() - v.at > SECRET_TTL_MS) pendingSecrets.delete(k)
   }
@@ -354,10 +354,14 @@ export function mountVoiceRoutes(app) {
       return res.status(409).json({ error: 'no ephemeral key held for this session' })
     }
     try {
+      // Rebuilt as the relayed variant: the same prompt without the paragraph explaining
+      // that the weather tool is missing, which stops being true the moment this attaches.
+      const relayed = await buildRealtimeSession(held.query ?? {}, 'relay')
       const out = await attachSideband({
         callId,
         session: session || null,
         ephemeralKey: held.secret,
+        instructions: relayed.session.instructions,
       })
       res.json(out)
     } catch (err) {
@@ -407,7 +411,7 @@ export function mountVoiceRoutes(app) {
        * credentials should not outlive the calls that need them.
        */
       if (req.query.session) {
-        rememberSecret(String(req.query.session), body.value)
+        rememberSecret(String(req.query.session), body.value, { ...req.query })
       }
 
       // Only the ephemeral value crosses to the browser — never the account key.

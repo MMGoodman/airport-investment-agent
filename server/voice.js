@@ -11,6 +11,7 @@
  */
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
+import { attachSideband, detachSideband } from './sideband.js'
 import { transcriptionPrompt } from '../src/agent/vocabulary.js'
 
 const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
@@ -312,6 +313,45 @@ export function mountVoiceRoutes(app) {
    * including our prompt and the tool list this transport is allowed, so the browser can
    * neither widen it nor reach past it.
    */
+  /**
+   * Take over a live WebRTC session's server-placed tools.
+   *
+   * The browser reads the call id out of the Location header on its SDP exchange — OpenAI
+   * lists it in Access-Control-Expose-Headers, so a page can read it cross-origin — and
+   * hands it here. This server then opens its own WebSocket to the same session and
+   * declares the withheld tools on it.
+   *
+   * The result: audio stays on the direct peer connection at full speed, and a tool the
+   * browser must not invoke is invoked here instead, against this process's credentials.
+   * The browser is not trusted with the call id in any meaningful sense — it identifies a
+   * session OpenAI already knows about, and this route only ever adds our own tools to it.
+   */
+  app.post('/api/realtime/sideband', async (req, res) => {
+    const { callId, session } = req.body ?? {}
+    if (!/^rtc_[A-Za-z0-9_-]+$/.test(callId ?? '')) {
+      return res.status(400).json({ error: 'a call id like rtc_… is required' })
+    }
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(503).json({ error: 'no OpenAI key on this server' })
+    }
+    try {
+      const out = await attachSideband({
+        callId,
+        session: session || null,
+        apiKey: process.env.OPENAI_API_KEY,
+      })
+      res.json(out)
+    } catch (err) {
+      res.status(502).json({ error: err.message })
+    }
+  })
+
+  /** Let go of a session the caller has hung up on, rather than waiting for the timeout. */
+  app.post('/api/realtime/sideband/detach', (req, res) => {
+    const { callId } = req.body ?? {}
+    res.json({ detached: detachSideband(callId) })
+  })
+
   app.get('/api/realtime/session', async (req, res) => {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(503).json({ error: 'OPENAI_API_KEY is not set in .env.' })

@@ -7,7 +7,7 @@
  *
  * The model narrates. It never computes — it has no tool that would let it.
  */
-import { callTool, parseArgs } from './tools.js'
+import { callTool, getToolSession, parseArgs } from './tools.js'
 import { isHintEcho } from '../agent/phantom.js'
 
 const SDP_ENDPOINT = 'https://api.openai.com/v1/realtime/calls'
@@ -37,8 +37,18 @@ export function createEventHandler({
   onFirstAudio = () => {},
   onResponseStart = () => {},
   onPhantom = () => {},
+  onServerToolCall = () => {},
   /** The vocabulary hint's own terms, for spotting it read back. */
   hintTerms = [],
+  /**
+   * Tools this side must NOT answer.
+   *
+   * Once the sideband is attached, the server is on the same session and answers these. Both
+   * sides answering would put two function_call_output items under one call_id and leave the
+   * conversation item list malformed for every later turn. The browser also cannot run them:
+   * POST /api/tool refuses a server-placed tool outright.
+   */
+  serverTools = [],
   // Whether turn detection was configured to cancel a response when speech is detected.
   // With it off, speech is not a barge-in: the model keeps talking, so nothing about this
   // turn is stale and the request to speak after a tool must still go out.
@@ -129,6 +139,13 @@ export function createEventHandler({
       // The model asked for a tool. Start it now; a function call ends the response, so
       // there is nothing left to wait for except the tool itself.
       case 'response.function_call_arguments.done':
+        // Not ours. The server is attached to this same session and is answering it there,
+        // against its own credentials — the whole point of the sideband. Reported so the
+        // trace still shows the call happened, then dropped.
+        if (serverTools.includes(msg.name)) {
+          onServerToolCall(msg.name, parseArgs(msg.arguments))
+          break
+        }
         pendingCalls.push(
           run(msg.name, parseArgs(msg.arguments)).then((record) => {
             onToolCall(record)
@@ -240,8 +257,19 @@ export async function startOpenAIRealtime({
 
   dc.addEventListener('open', () => onStatus('live'))
 
+  /**
+   * Filled in once the sideband attaches, which happens after this handler exists.
+   *
+   * A live array rather than a value: the handler reads it at call time, so the set can grow
+   * mid-session without rebuilding the handler around it.
+   */
+  const serverToolNames = []
+  const adoptServerTools = (names) => serverToolNames.push(...names)
+
   const handle = createEventHandler({
     send,
+    serverTools: serverToolNames,
+    onServerToolCall: (name, args) => onToolCall({ tool: name, args, ranOn: 'server', ms: null }),
     onRawEvent,
     onUserTranscript,
     onAssistantTranscript,
@@ -281,9 +309,66 @@ export async function startOpenAIRealtime({
     throw new Error(`SDP exchange failed (${sdpRes.status}): ${(await sdpRes.text()).slice(0, 200)}`)
   }
 
+  /**
+   * The call id, so this server can join the same session.
+   *
+   * OpenAI returns it as "Location: /v1/realtime/calls/rtc_…" and lists Location in
+   * Access-Control-Expose-Headers, which is the only reason a page can read it at all.
+   * Verified against the live API rather than assumed — a header that is not exposed is
+   * invisible to fetch() no matter what the response contains.
+   */
+  const callId = (sdpRes.headers.get('location') ?? '').split('/').pop() || null
+
   await pc.setRemoteDescription({ type: 'answer', sdp: await sdpRes.text() })
 
+  /**
+   * Hand the call to the server so it can take over the tools this side must not run.
+   *
+   * Deliberately after setRemoteDescription and deliberately not awaited into the critical
+   * path of failure: if the sideband cannot attach, the call still works — it works the way
+   * it did before this existed, with the tool withheld and the model saying so. A voice call
+   * that dies because a secondary connection failed would be a worse trade than the one this
+   * whole feature is here to improve.
+   */
+  /**
+   * Fire and forget, with a deadline.
+   *
+   * This must never gate the call. It used to be awaited, which meant a secondary
+   * connection that was slow, hung or unreachable held up the session handle the panel
+   * needs — the same shape as an earlier bug where startOpenAIRealtime never returned and
+   * hanging up had nothing to close. Audio is already flowing by this point; the sideband
+   * only decides who answers one tool.
+   */
+  if (callId && withheldTools.length) {
+    const deadline = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timed out after 4s')), 4000),
+    )
+    Promise.race([
+      fetch('/api/realtime/sideband', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callId, session: getToolSession() }),
+      }).then(async (res) => {
+        const body = await res.json()
+        if (!res.ok || !body.attached) throw new Error(body.error ?? 'declined')
+        return body
+      }),
+      deadline,
+    ])
+      .then((body) => {
+        adoptServerTools(body.tools ?? [])
+        onStatus(`tools: ${(body.tools ?? []).join(', ')} now run on your server — same session`)
+      })
+      .catch((err) => {
+        // Not an error for the call: this is exactly the behaviour before the sideband
+        // existed, and the model already has instructions for saying so.
+        onStatus(`tools: sideband did not attach (${err.message}) — ${withheldTools.join(', ')} stays withheld`)
+      })
+  }
+
   return {
+    /** Which call this is, so the server can be told to let go of it. */
+    callId,
     /** Type instead of talk — same session, same tools. */
     sendText(text) {
       send({

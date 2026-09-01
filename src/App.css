@@ -896,6 +896,17 @@ kbd {
   color: var(--text-dim);
 }
 
+/* The one line that answers "someone near me is talking" — it has to be findable while a
+   call is live and the room is the problem. */
+.pipe-when {
+  display: block;
+  margin-top: 0.25rem;
+  font-style: normal;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--warn, #d7860b);
+}
+
 .pipe-stale {
   margin: 0.5rem 0 0;
   font-size: 0.74rem;

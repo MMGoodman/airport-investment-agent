@@ -97,7 +97,17 @@ export async function startOpenAIRelay({
 
   // ---- capture
   onStatus('opening microphone')
-  const mic = await navigator.mediaDevices.getUserMedia({ audio: true })
+  const mic = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      // Asked for explicitly rather than left to the browser's defaults. These are the only
+      // filtering this build gets: turn detection judges whatever arrives, so a voice the
+      // capture stage lets through becomes a turn. They help with steady room noise; they
+      // do not remove a nearby conversation, which is speech and survives every one of them.
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    },
+  })
   const micSource = ctx.createMediaStreamSource(mic)
   const processor = ctx.createScriptProcessor(4096, 1, 1)
   // A ScriptProcessor only runs while wired to the destination; the zero gain keeps the

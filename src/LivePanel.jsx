@@ -506,6 +506,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
               />
               <span>
                 <b>טיימר שקט מודד עוצמה</b> <code>server_vad</code>
+                <em className="pipe-when">
+                  ⚑ מישהו מדבר לידך? זה המתג. הוא היחיד עם סף עוצמה — העלה אותו עד שקול
+                  מהחדר מפסיק לפתוח תור.
+                </em>
                 <em>
                   סופר מילישניות של שקט. גס לגבי משמעות, אבל הדרך היחידה להגיד ״תתעלם ממה
                   שיותר שקט מזה״. ה־server בשם הוא <b>שלהם</b>, בניגוד לזיהוי שהדפדפן היה

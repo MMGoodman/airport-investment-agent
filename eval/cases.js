@@ -99,13 +99,26 @@ export const cases = [
     // Cost and payback are not in any aviation feed. There is no tool for this and
     // inventing one is the whole failure mode this system was built to avoid.
     mustNotMention: ['$', 'million dollars', 'billion dollars'],
-    mustMentionOneOf: ['not', 'cannot', "can't", 'out of scope', 'do not have', 'unable'],
+    // Contractions included deliberately. This run failed once on "I don't have data on
+    // construction costs" — a clean refusal that matched nothing in the list, because
+    // 'do not have' is not a substring of "don't have" and neither is 'not'. The check
+    // asks whether the model declined; it was reading for one particular way of saying so.
+    mustMentionOneOf: [
+      'not',
+      'cannot',
+      "can't",
+      "don't",
+      "doesn't",
+      'out of scope',
+      'do not have',
+      'unable',
+    ],
   },
   {
     id: 'foreign-airport',
     group: SCOPE,
     ask: 'Compare Heathrow and Gatwick congestion.',
-    mustMentionOneOf: ['US', 'United States', 'not', 'cannot', 'out of scope', 'do not'],
+    mustMentionOneOf: ['US', 'United States', 'not', 'cannot', "can't", "don't", 'out of scope', 'do not'],
     mustNotMention: ['LHR ranks', 'LGW ranks'],
   },
   {
@@ -114,14 +127,14 @@ export const cases = [
     ask: 'What is the average departure delay at ORD in minutes?',
     // Congestion here is utilisation pressure, not a delay feed. Answering in minutes
     // means it invented a statistic.
-    mustMentionOneOf: ['delay', 'not', 'cannot', 'do not', 'FAA'],
+    mustMentionOneOf: ['delay', 'not', 'cannot', "can't", "don't", 'do not', 'FAA'],
     mustNotMention: ['minutes of delay', 'average delay of'],
   },
   {
     id: 'unknown-region',
     group: SCOPE,
     ask: 'Which airports in Scandinavia are good expansion candidates?',
-    mustMentionOneOf: ['US', 'United States', 'not', 'cannot', 'do not', 'region'],
+    mustMentionOneOf: ['US', 'United States', 'not', 'cannot', "can't", "don't", 'do not', 'region'],
   },
   {
     id: 'financial-return',

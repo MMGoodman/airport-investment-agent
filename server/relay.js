@@ -23,7 +23,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { buildRealtimeSession } from './voice.js'
 import { runTool } from '../src/agent/tools.js'
 import { recordToolCall } from './toolLog.js'
-import { isHintEcho } from '../src/agent/vocabulary.js'
+import { isHintEcho } from '../src/agent/phantom.js'
 
 const UPSTREAM = 'wss://api.openai.com/v1/realtime'
 

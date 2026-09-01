@@ -228,26 +228,7 @@ export async function hintTermsEchoed(transcript, lang = 'he') {
   return new Set(terms.filter((t) => text.includes(t.toLowerCase()))).size
 }
 
-/** Above this, the transcript is the hint talking, not the caller. */
-export const PHANTOM_TERM_THRESHOLD = 10
-
-/**
- * The same test, against a term list already in hand.
- *
- * hintTermsEchoed above re-reads the hint every call, which is fine for a script and wrong
- * on a live transcript event. Both live transports are handed the hint's terms when their
- * session is built, so they can ask this directly.
- *
- * It lives here because it existed twice — once inside the WebRTC transport's closure and
- * not at all on the relay, which is how a caller on the relay was shown forty domain terms
- * in list order as something they had said. One copy, both paths.
- */
-export function isHintEcho(text, terms = []) {
-  if (!text || terms.length === 0 || text.length < 60) return false
-  const lower = text.toLowerCase()
-  let hits = 0
-  for (const term of terms) {
-    if (lower.includes(term.toLowerCase()) && ++hits >= PHANTOM_TERM_THRESHOLD) return true
-  }
-  return false
-}
+// Re-exported so callers that already reach for the vocabulary get the test with it. The
+// implementation is in phantom.js, which imports nothing — this file reads the dataset, and
+// the browser cannot follow it there.
+export { isHintEcho, PHANTOM_TERM_THRESHOLD } from './phantom.js'

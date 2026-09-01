@@ -8,7 +8,7 @@
  * The model narrates. It never computes — it has no tool that would let it.
  */
 import { callTool, parseArgs } from './tools.js'
-import { isHintEcho } from '../agent/vocabulary.js'
+import { isHintEcho } from '../agent/phantom.js'
 
 const SDP_ENDPOINT = 'https://api.openai.com/v1/realtime/calls'
 

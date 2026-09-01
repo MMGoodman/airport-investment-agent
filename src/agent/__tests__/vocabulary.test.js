@@ -12,7 +12,8 @@
  * worse than the phantom it was added for.
  */
 import { describe, it, expect, beforeAll } from 'vitest'
-import { isHintEcho, transcriptionPrompt, PHANTOM_TERM_THRESHOLD } from '../vocabulary.js'
+import { transcriptionPrompt } from '../vocabulary.js'
+import { isHintEcho, PHANTOM_TERM_THRESHOLD } from '../phantom.js'
 
 let terms = []
 beforeAll(async () => {

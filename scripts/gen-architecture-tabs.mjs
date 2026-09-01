@@ -216,168 +216,71 @@ cell(
 
 const tab9 = cells.join('\n')
 
-/* ───────────────────── TAB 10 — where the hybrid sits ───────────────────── */
+/* TAB 10 — where the hybrid sits */
 cells = []
 id = 0
 
-cell('Where the hybrid sits — placement is the tool list', S.h1, 40, 24, 1600, 40)
+cell('Where the hybrid sits — three places a tool can run', S.h1, 40, 24, 1600, 40)
 cell(
-  'The hybrid is not a third transport. It is that the two connections are built with different tool lists, and the server decides which.',
-  S.sub,
-  40,
-  68,
-  1600,
-  22,
+  'A Realtime session takes two connections: the browser holds the audio, and this server can hold a second one addressed by call id. Placement is not "which transport" — it is who answers the function call, on the same session.',
+  S.sub, 40, 68, 1600, 22,
 )
 
-cell('THE CONSTRAINT — protocol shape, not a preference', S.cap, 40, 110, 1500, 16)
+cell('CORRECTING WHAT THIS TAB USED TO SAY', S.cap, 40, 110, 1500, 16)
 cell(
-  'WebRTC   model —function_call→ BROWSER data channel → browser runs it → browser injects the result.    The server is never in that loop.\nRelay     model —function_call→ YOUR SERVER → server runs it in-process → server injects the result.    The browser never sees it.\n\nSo a tool the browser must not see is a tool WebRTC cannot offer. Placement removes it from that line rather than hiding it there.',
-  S.boxGrey,
-  40,
-  132,
-  1510,
-  76,
+  'It said a tool the browser must not invoke could only be withheld from the WebRTC line, because the function call lands on the browser data channel and the server is never in that loop. That is wrong. OpenAI calls the second connection a sideband control channel: either side can answer a tool call, and the side that does not simply ignores it.',
+  S.boxGrey, 40, 132, 1510, 46,
 )
 
-const dl = cell('DIRECT LINE — gpt-realtime · voice   (WebRTC)', S.laneBlue, 40, 240, 730, 470)
-cell('SESSION BUILT WITH 6 TOOLS', S.cap, 18, 48, 690, 16, dl)
-cell(
-  'list_supported_regions · rank_airports · compare_airports\nget_airport_profile · get_flight_mix · end_call',
-  S.boxBlue,
-  18,
-  68,
-  690,
-  40,
-  dl,
-)
-cell('get_airport_weather — NOT DECLARED HERE', S.block, 18, 116, 690, 26, dl)
-cell('WHO RUNS THEM', S.cap, 18, 152, 690, 16, dl)
-cell(
-  'The browser. live/tools.js → POST /api/tool → engine → result injected back into the data channel.',
-  S.boxBlue,
-  18,
-  172,
-  690,
-  32,
-  dl,
-)
-cell('WHAT THE MODEL IS TOLD', S.cap, 18, 214, 690, 16, dl)
-cell(
-  'NOT AVAILABLE ON THIS CONNECTION — get_airport_weather is not offered on this line. Say so\nin one sentence and name the switch.\nWithout this, a model handed six tools where its instructions imply seven answers the seventh from\nmemory — which is how a caller who asked for the weather got a score summary.',
-  S.boxBlue,
-  18,
-  234,
-  690,
-  72,
-  dl,
-)
-cell('LATENCY', S.cap, 18, 318, 690, 16, dl)
-cell(
-  'Roughly 340–900 ms to first sound. Echo cancellation, jitter buffering and loss concealment come free.',
-  S.ok,
-  18,
-  338,
-  690,
-  32,
-  dl,
-)
-cell(
-  rtl(
-    '<b>מה הדפדפן רואה:</b> כל קריאת כלי וכל תוצאה שהמודל מקבל.<br>זה לא ניתן לשינוי בטרנספורט הזה — ולכן כלי רגיש פשוט לא מוצע כאן.',
-  ),
-  S.he,
-  18,
-  382,
-  690,
-  70,
-  dl,
-)
+const l1 = cell('1 · BROWSER-RUN   placement: anywhere', S.laneBlue, 40, 200, 480, 400)
+cell('WHO ANSWERS', S.cap, 18, 48, 440, 16, l1)
+cell('The browser. live/tools.js → POST /api/tool → engine →\nresult injected back into the data channel.', S.boxBlue, 18, 68, 440, 40, l1)
+cell('WHAT THE BROWSER SEES', S.cap, 18, 120, 440, 16, l1)
+cell('The call, the arguments and the result. It runs the tool.', S.boxBlue, 18, 140, 440, 30, l1)
+cell('LATENCY', S.cap, 18, 182, 440, 16, l1)
+cell('Full speed. Audio never leaves the direct peer connection.', S.ok, 18, 202, 440, 30, l1)
+cell('WHICH TOOLS', S.cap, 18, 244, 440, 16, l1)
+cell('list_supported_regions · rank_airports · compare_airports\nget_airport_profile · get_flight_mix · end_call', S.boxBlue, 18, 264, 440, 40, l1)
+cell(rtl('כולם קריאה טהורה ממאגר מקומי. אין שום מחיר בכך שהדפדפן רואה את התוצאה.'), S.he, 18, 316, 440, 56, l1)
 
-const sl = cell('RELAYED LINE — via your server   (WebSocket)', S.laneGreen, 810, 240, 730, 470)
-cell('SESSION BUILT WITH ALL 7 TOOLS', S.cap, 18, 48, 690, 16, sl)
-cell('the six above, plus:', S.boxGreen, 18, 68, 690, 24, sl)
-cell('get_airport_weather — runs here, in-process', S.ok, 18, 100, 690, 26, sl)
-cell('WHO RUNS THEM', S.cap, 18, 136, 690, 16, sl)
-cell(
-  'The server. relay.js calls runTool() directly. Nothing crosses to the browser but audio.',
-  S.boxGreen,
-  18,
-  156,
-  690,
-  32,
-  sl,
-)
-cell('WHAT THE MODEL IS TOLD', S.cap, 18, 198, 690, 16, sl)
-cell('Nothing extra. Nothing is withheld, so there is no gap to explain.', S.boxGreen, 18, 218, 690, 28, sl)
-cell('LATENCY', S.cap, 18, 258, 690, 16, sl)
-cell(
-  'Four to five times the direct line — 1,611 ms measured against roughly 340 ms. Echo cancellation and\njitter buffering are lost. conversation.item.truncate is not sent on barge-in, because only the browser\nknows where playback actually stopped.',
-  S.boxGreen,
-  18,
-  278,
-  690,
-  60,
-  sl,
-)
-cell(
-  rtl(
-    '<b>מה הדפדפן רואה:</b> אודיו בלבד. התמלול, התשובות וקריאות הכלים — כולם בשרת.<br>זה המחיר וזו גם התמורה.',
-  ),
-  S.he,
-  18,
-  352,
-  690,
-  70,
-  sl,
-)
+const l2 = cell('2 · SIDEBAND   placement: server', S.laneGreen, 545, 200, 480, 400)
+cell('WHO ANSWERS', S.cap, 18, 48, 440, 16, l2)
+cell('This server, on its own WebSocket to the SAME session.\nrunTool() in-process, against this process credentials.', S.boxGreen, 18, 68, 440, 40, l2)
+cell('WHAT THE BROWSER SEES', S.cap, 18, 120, 440, 16, l2)
+cell('That the call happened, and the result the model was given.\nIt does not run it, and POST /api/tool refuses it 403.', S.boxGreen, 18, 140, 440, 40, l2)
+cell('LATENCY', S.cap, 18, 192, 440, 16, l2)
+cell('Full speed — the audio path is untouched.\nAttach measured at 559 ms, the tool at 302 ms.', S.ok, 18, 212, 440, 40, l2)
+cell('WHICH TOOLS', S.cap, 18, 264, 440, 16, l2)
+cell('get_airport_weather — the one call that leaves the building', S.ok, 18, 284, 440, 28, l2)
+cell(rtl('נקודת קצה שהדפדפן קורא לה לשירות חיצוני היא פרוקסי פתוח דרך כתובת השרת שלך. זה הקו.'), S.he, 18, 324, 440, 56, l2)
 
-cell('ENFORCED IN THREE PLACES — any one alone is theatre', S.cap, 40, 740, 1500, 16)
-cell(
-  '1.  THE SESSION\nbuildRealtimeSession(query, "browser") returns six tools,\nso the model cannot ask for the seventh.',
-  S.boxGrey,
-  40,
-  762,
-  480,
-  70,
-)
-cell(
-  '2.  THE DOOR\nPOST /api/tool returns 403 for placement:"server" — every\ncaller, always. That endpoint IS how a browser would reach it.',
-  S.gate,
-  550,
-  762,
-  490,
-  70,
-)
-cell(
-  '3.  THE MODEL\nTold what is withheld and which switch moves the call to the\nline where it works, so the gap is named rather than improvised.',
-  S.boxGrey,
-  1070,
-  762,
-  480,
-  70,
-)
+const l3 = cell('3 · RELAYED   the session itself is here', S.laneGrey, 1050, 200, 500, 400)
+cell('WHO ANSWERS', S.cap, 18, 48, 460, 16, l3)
+cell('This server, which also holds the model connection.\nNothing crosses to the browser but audio.', S.boxGrey, 18, 68, 460, 40, l3)
+cell('WHAT THE BROWSER SEES', S.cap, 18, 120, 460, 16, l3)
+cell('Audio. Not the transcript, not the answers, not the calls.', S.boxGrey, 18, 140, 460, 30, l3)
+cell('LATENCY', S.cap, 18, 182, 460, 16, l3)
+cell('Four to five times the direct line — 1,611 ms against ~340 ms.\nEcho cancellation and jitter buffering are lost.', S.boxGrey, 18, 202, 460, 42, l3)
+cell('WHEN IT IS THE ONLY ANSWER', S.cap, 18, 256, 460, 16, l3)
+cell('When a result must not reach the client AT ALL. The sideband\nhides who runs a tool, not what it returned.', S.boxGrey, 18, 276, 460, 40, l3)
+cell(rtl('זה המחיר האמיתי של סודיות מלאה, ולכן זו לא ברירת המחדל.'), S.he, 18, 328, 460, 46, l3)
 
-cell('WHY get_airport_weather AND NOTHING ELSE', S.cap, 40, 852, 1500, 16)
+cell('ENFORCED IN THREE PLACES — any one alone is theatre', S.cap, 40, 630, 1500, 16)
+cell('1.  THE SESSION\nMinted with six tools, so nothing can hand the browser the\nseventh before the sideband has taken responsibility for it.', S.boxGrey, 40, 652, 480, 70)
+cell('2.  THE DOOR\nPOST /api/tool returns 403 for placement:"server" — every\ncaller, always. That endpoint IS how a browser would reach it.', S.gate, 550, 652, 490, 70)
+cell('3.  THE HANDLER\nThe browser skips a function call for a tool it does not own.\nBoth sides answering puts two outputs under one call_id.', S.boxGrey, 1070, 652, 480, 70)
+
+cell('WHAT MOVES A TOOL', S.cap, 40, 748, 1500, 16)
 cell(
-  'Every other tool is a pure read over a local, read-only dataset — the browser seeing that result costs nothing. get_airport_weather is the one call that leaves the building, so a browser-reachable endpoint for it is an open proxy through this server address.\nThat is the line: a tool is server-placed when the risk is in the CALL, not in the answer.',
-  S.boxGrey,
-  40,
-  874,
-  1510,
-  54,
+  "One line in src/agent/tools.js:   placement: 'server'   — all three enforcement points follow from it, along with what the model is told while the sideband is still attaching.\nWhere a tool runs is deliberately NOT a model decision. It is set before the conversation starts and lives in the tool list rather than the instructions, because anything the model can be persuaded to do can also be injected into it.",
+  S.boxGrey, 40, 770, 1510, 56,
 )
 
 cell(
-  rtl(
-    '<b>עדיין פתוח:</b> ל-POST /api/tool אין אימות כלל. הוא יסרב עכשיו למזג אוויר לכל קורא, אבל את ששת כלי הקריאה הוא מריץ לכל מי שמגיע לפורט, וה-session id שהוא רושם ביומן נוצר בדפדפן ולכן אינו ראיה לכלום. התיקון: טוקן קצר-חיים שנטבע יחד עם המפתח הזמני, נדרש בנקודת הקצה, ומשמש כמזהה הסשן האמיתי.',
-  ),
-  S.he,
-  40,
-  946,
-  1510,
-  80,
+  rtl('<b>עדיין פתוח:</b> ל-POST /api/tool אין אימות. הוא מסרב למזג אוויר לכל קורא, אבל את ששת כלי הקריאה הוא מריץ לכל מי שמגיע לפורט, וה-session id שנרשם ביומן נוצר בדפדפן ולכן אינו ראיה. התיקון: טוקן קצר-חיים שנטבע יחד עם המפתח הזמני ומשמש כמזהה הסשן האמיתי.'),
+  S.he, 40, 846, 1510, 74,
 )
+
 
 const tab10 = cells.join('\n')
 
@@ -400,7 +303,7 @@ xml = xml.replace(/ {2}<diagram id="(project-today|hybrid-placement)"[\s\S]*?<\/
 const added =
   wrap('project-today', '9 - The project today', tab9, 1700, 940) +
   '\n' +
-  wrap('hybrid-placement', '10 - Where the hybrid sits', tab10, 1700, 1080) +
+  wrap('hybrid-placement', '10 - Where the hybrid sits', tab10, 1700, 980) +
   '\n'
 
 writeFileSync(FILE, xml.replace('</mxfile>', added + '</mxfile>'))

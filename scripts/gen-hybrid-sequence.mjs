@@ -1,12 +1,13 @@
 /**
- * Tab 11 — the hybrid tool placement, as a sequence.
+ * Tab 11 — the hybrid, as a sequence.
  *
- * Tab 10 lays the two connections side by side; this one runs a single story down the
- * lifelines, because the point only lands in order: on the direct line a normal tool call
- * physically passes through the browser, and the withheld one never becomes a function call
- * at all. Same style vocabulary as tab 8 so the two read as one set.
+ * Rewritten. The first version said a tool the browser must not invoke could only be
+ * withheld from the WebRTC line, because the function call lands on the browser's data
+ * channel and the server is never in that loop. That is wrong: a Realtime session takes a
+ * second connection from an application server, addressed by call id, and either side can
+ * answer a tool call. The sequence below is the one that was actually observed running.
  *
- * Re-running replaces the tab rather than stacking a copy.
+ * Same style vocabulary as tab 8 so the two read as one set. Re-running replaces the tab.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -27,7 +28,6 @@ const box = (value, style, x, y, w, h) => {
   return i
 }
 
-/** A straight arrow between two x positions at one y, the way tab 8 draws them. */
 const msg = (x1, x2, y, label, style = '') => {
   const i = nid()
   cells.push(
@@ -45,7 +45,14 @@ const lifeline = (x, yTop, yBottom) => {
 }
 
 const phase = (label, x, y, w, h) =>
-  box(label, 'rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;', x, y, w, h)
+  box(
+    label,
+    'rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;',
+    x,
+    y,
+    w,
+    h,
+  )
 
 const HEAD_BLUE =
   'rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;'
@@ -55,8 +62,6 @@ const HEAD_RED =
   'rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;'
 const ACT_GREEN =
   'rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;'
-const ACT_RED =
-  'rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;'
 const ACT_BLUE =
   'rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;'
 const ACT_GATE =
@@ -65,15 +70,21 @@ const FOOT =
   'rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;'
 const rtlBox = (html) => `<div dir='rtl' style='text-align:right'>${html}</div>`
 
-/* ── lifelines ───────────────────────────────────────────────────────────── */
-const BR = 300 // browser
-const SV = 760 // your server
-const OA = 1210 // openai
-const OM = 1580 // open-meteo
+const BR = 300
+const SV = 760
+const OA = 1210
+const OM = 1580
 
-box('gpt-realtime — the hybrid: who runs which tool', 'text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;', 40, 24, 1600, 40)
 box(
-  'One question on the direct line, then the same question on the relayed one. The model never sees a seventh tool on the first — so it never asks, and there is nothing to intercept.',
+  'gpt-realtime — one session, two connections',
+  'text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;',
+  40,
+  24,
+  1600,
+  40,
+)
+box(
+  'The browser holds the audio. The server holds a second connection to the same session and answers the tools the browser must not invoke. Observed end to end — the step numbers below are the run, not a design.',
   'text;html=1;fontSize=13;align=left;verticalAlign=middle;fontColor=#6b6b6b;',
   40,
   66,
@@ -86,132 +97,130 @@ box(rtlBox('השרת שלך'), HEAD_GREEN, SV - 110, 108, 220, 42)
 box('openai', HEAD_RED, OA - 110, 108, 220, 42)
 box('open-meteo', HEAD_RED, OM - 100, 108, 200, 42)
 
-for (const x of [BR, SV, OA, OM]) lifeline(x, 152, 1545)
+for (const x of [BR, SV, OA, OM]) lifeline(x, 152, 1495)
 
-/* ── phase 1: the connection is built with SIX tools ─────────────────────── */
-phase(rtlBox('התחברות — הרשימה נקבעת כאן, פעם אחת'), 100, 180, 1560, 190)
-
-msg(BR, SV, 222, '1 · GET /api/realtime/session')
-box(
-  rtlBox('<b>2 · buildRealtimeSession(query, "browser")</b><br>6 כלים — get_airport_weather לא נכלל'),
-  ACT_GREEN,
-  SV - 200,
-  244,
-  400,
-  50,
-)
-msg(SV, OA, 320, '3 · mint client_secret + prompt + 6 tools')
-msg(OA, BR, 352, '4 · ephemeral key → WebRTC session live', 'exitX=0;exitY=0.5;')
-
-/* ── phase 2: an ordinary tool — the browser IS in the loop ──────────────── */
-phase(rtlBox('שאלה ראשונה — "דרג לי את ניו אינגלנד"  ·  כלי רגיל'), 100, 400, 1560, 330)
-
-msg(BR, OA, 442, '5 · audio, straight to OpenAI')
-msg(OA, BR, 480, '6 · function_call_arguments.done — rank_airports', 'exitX=0;exitY=0.5;')
-box(
-  rtlBox('<b>הקריאה נוחתת בדפדפן.</b><br>השרת לא רואה אותה — זו צורת הפרוטוקול'),
-  ACT_BLUE,
-  BR - 200,
-  500,
-  400,
-  46,
-)
-msg(BR, SV, 578, '7 · POST /api/tool')
-box(
-  rtlBox('<b>8 · placement = anywhere</b> → runTool()<br>נרשם עם callId + חתימת SHA-256'),
-  ACT_GREEN,
-  SV - 200,
-  598,
-  400,
-  50,
-)
-msg(SV, BR, 678, '9 · result + x-tool-call-id + x-tool-digest', 'exitX=0;exitY=0.5;')
-msg(BR, OA, 710, '10 · function_call_output + response.create')
-
-/* ── phase 3: the withheld tool — no function call ever happens ──────────── */
-phase(rtlBox('שאלה שנייה — "מה מזג האוויר בבוסטון?"  ·  כלי שמור לשרת'), 100, 760, 1560, 330)
-
-msg(BR, OA, 802, '11 · audio, straight to OpenAI')
+/* phase 1 — the session is minted deliberately short */
+phase(rtlBox('התחברות — הרשימה נקבעת פעמיים, וזה בכוונה'), 100, 180, 1560, 230)
+msg(BR, SV, 222, '1 · GET /api/realtime/session?session=…')
 box(
   rtlBox(
-    '<b>12 · אין כלי מזג אוויר ברשימה שלו.</b><br>לכן אין function_call בכלל — אין מה ליירט',
+    '<b>2 · buildRealtimeSession(query, "browser")</b><br>6 כלים · והפרומט אומר שמזג האוויר לא זמין בקו הזה<br>המפתח הזמני נשמר לשתי דקות',
   ),
-  ACT_RED,
-  OA - 230,
-  822,
-  460,
-  50,
+  ACT_GREEN,
+  SV - 210,
+  242,
+  420,
+  62,
 )
-msg(OA, BR, 904, '13 · audio — "זה דורש את הקו של השרת, החלף ל־via your server"', 'exitX=0;exitY=0.5;')
+msg(SV, OA, 328, '3 · mint client_secret')
+msg(OA, BR, 360, '4 · ephemeral key', 'exitX=0;exitY=0.5;')
+msg(BR, OA, 392, '5 · POST /v1/realtime/calls — SDP offer')
+
+/* phase 2 — the sideband joins */
+phase(rtlBox('ההצמדה — אחרי שהשיחה קיימת, לא לפני'), 100, 425, 1560, 275)
+msg(OA, BR, 467, '6 · SDP answer  +  Location: /v1/realtime/calls/rtc_…', 'exitX=0;exitY=0.5;')
 box(
   rtlBox(
-    '<b>14 · ואם משהו בכל זאת ינסה:</b>  POST /api/tool  →  <b>403</b><br>הסירוב חל על כל קורא, תמיד — הנקודה הזאת היא איך שדפדפן היה מגיע לכלי',
+    '<b>7 · הדפדפן קורא את ה-call_id מהכותרת</b><br>אפשרי רק כי Location מופיע ב-Access-Control-Expose-Headers',
+  ),
+  ACT_BLUE,
+  BR - 220,
+  487,
+  440,
+  50,
+)
+msg(BR, SV, 561, '8 · POST /api/realtime/sideband { callId }')
+msg(SV, OA, 593, '9 · wss ?call_id=rtc_…  —  Bearer THE EPHEMERAL KEY')
+box(
+  rtlBox(
+    '<b>10 · session.update</b> — כל 7 הכלים, ופרומט בלי הפסקה על מה שחסר<br>כלים והוראות זזים יחד, אחרת המודל מסרב לכלי שכבר יש לו',
+  ),
+  ACT_GREEN,
+  SV - 250,
+  613,
+  500,
+  50,
+)
+
+/* phase 3 — a browser tool */
+phase(rtlBox('כלי של הדפדפן — הדפדפן בלולאה'), 100, 715, 1560, 235)
+msg(BR, OA, 757, '11 · audio, ישירות')
+msg(OA, BR, 789, '12 · function_call — rank_airports', 'exitX=0;exitY=0.5;')
+msg(BR, SV, 821, '13 · POST /api/tool')
+box(
+  rtlBox('<b>14 · placement = anywhere</b> → runTool · callId + חתימה'),
+  ACT_GREEN,
+  SV - 210,
+  841,
+  420,
+  36,
+)
+msg(SV, BR, 895, '15 · result', 'exitX=0;exitY=0.5;')
+msg(BR, OA, 927, '16 · function_call_output')
+
+/* phase 4 — the server tool, on the same session */
+phase(rtlBox('כלי של השרת — אותו סשן, הדפדפן מחוץ ללולאה'), 100, 965, 1560, 330)
+msg(BR, OA, 1007, '17 · audio — "מה מזג האוויר בבוסטון?"')
+box(
+  rtlBox(
+    '<b>18 · הקריאה משודרת לשני החיבורים.</b> הדפדפן רואה אותה ו<b>לא</b> עונה —<br>שני צדדים שעונים ייצרו שני outputs לאותו call_id',
+  ),
+  ACT_BLUE,
+  BR - 250,
+  1027,
+  500,
+  50,
+)
+msg(OA, SV, 1101, '19 · function_call — get_airport_weather', 'exitX=0;exitY=0.5;')
+box(rtlBox('<b>20 · runTool בתהליך של השרת</b>'), ACT_GREEN, SV - 160, 1121, 320, 36)
+msg(SV, OM, 1183, '21 · GET /v1/forecast')
+msg(OM, SV, 1215, '22 · current conditions', 'exitX=0;exitY=0.5;')
+msg(SV, OA, 1247, '23 · function_call_output + response.create')
+msg(OA, BR, 1279, '24 · audio — התשובה, בקו הישיר', 'exitX=0;exitY=0.5;')
+
+box(
+  rtlBox(
+    '<b>25 · ומי שינסה לעקוף:</b>  POST /api/tool  get_airport_weather  →  <b>403</b>, לכל קורא, תמיד',
   ),
   ACT_GATE,
   SV - 300,
-  946,
+  1320,
   600,
-  56,
+  38,
 )
+
+/* what was measured */
 box(
   rtlBox(
-    'ההוראה שמונעת מהמודל להמציא: <b>NOT AVAILABLE ON THIS CONNECTION</b> — בלעדיה, מודל שקיבל 6 כלים כשההוראות מרמזות על 7 עונה על השביעי מהזיכרון.',
+    '<b>מה שנמדד בפועל</b><br>' +
+      'sideband נפתח אחרי <b>559ms</b> · הכריז 7 כלים · הריץ get_airport_weather ב-<b>302ms</b> → t1 ביומן הביקורת.<br>' +
+      'הדפדפן ראה את הקריאה: <b>כן</b>. הדפדפן ענה על קריאת כלי: <b>לא</b>.<br>' +
+      'התשובה: "בבוסטון לוגן כרגע מעונן לגמרי, הטמפרטורה בערך 19.4 מעלות…"',
   ),
-  'rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=middle;',
-  140,
-  1016,
-  1480,
-  46,
+  'rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;',
+  100,
+  1380,
+  1560,
+  90,
 )
 
-/* ── phase 4: the same question on the relayed line ──────────────────────── */
-phase(rtlBox('אותה שאלה, אחרי מעבר ל־"via your server"  ·  הדפדפן יוצא מהלולאה'), 100, 1120, 1560, 425)
-
-msg(BR, SV, 1162, '15 · PCM16 frames')
-box(
-  rtlBox('<b>16 · buildRealtimeSession(query, "relay")</b><br>7 כלים — הכול זמין'),
-  ACT_GREEN,
-  SV - 200,
-  1182,
-  400,
-  50,
-)
-msg(SV, OA, 1262, '17 · input_audio_buffer.append')
-msg(OA, SV, 1296, '18 · function_call_arguments.done — get_airport_weather', 'exitX=0;exitY=0.5;')
-box(
-  rtlBox('<b>19 · runTool() בתוך התהליך</b>'),
-  ACT_GREEN,
-  SV - 160,
-  1316,
-  320,
-  36,
-)
-msg(SV, OM, 1382, '20 · GET /v1/forecast')
-msg(OM, SV, 1414, '21 · current conditions', 'exitX=0;exitY=0.5;')
-msg(SV, OA, 1446, '22 · function_call_output + response.create')
-msg(OA, SV, 1478, '23 · output_audio.delta', 'exitX=0;exitY=0.5;')
-msg(SV, BR, 1510, '24 · PCM16 — הדפדפן קיבל אודיו בלבד', 'exitX=0;exitY=0.5;')
-
-/* ── the point ───────────────────────────────────────────────────────────── */
 box(
   rtlBox(
-    '<b>למה זה המודל היחיד שעובד — ומה זה עולה</b><br>' +
-      '<b>1. אי אפשר "להסתיר" כלי בקו הישיר.</b> ב-WebRTC ה-function_call נוחת על ערוץ הנתונים של הדפדפן והשרת לא בלולאה. לכן כלי שהדפדפן לא אמור לראות הוא כלי שהקו הזה לא יכול להציע — הוא מוסר מהרשימה, לא מוחבא מאחוריה.<br>' +
-      '<b>2. שלוש נקודות אכיפה, כי כל אחת לבד היא תיאטרון.</b> הסשן (6 כלים) · הדלת (403) · המודל (יודע מה נמנע ואיזה מתג מזיז את השיחה).<br>' +
-      '<b>3. הקו הוא הסיכון בקריאה, לא בתשובה.</b> ששת האחרים הם קריאה טהורה ממאגר מקומי — אין מחיר בכך שהדפדפן רואה את התוצאה. get_airport_weather הוא היחיד שיוצא מהבניין, ונקודת קצה שהדפדפן קורא לה היא פרוקסי פתוח דרך כתובת השרת שלך.<br>' +
-      '<b>4. המחיר:</b> שלב 15–24 עולה פי 4–5 בלטנסי — 1,611ms מול כ-340ms, נמדד. מזג אוויר עולה יותר בקו הזה, וזו בדיוק הבחירה.<br>' +
-      '<b>5. מה שעדיין פתוח:</b> ל-POST /api/tool אין אימות. שלב 14 חוסם את מזג האוויר לכל קורא, אבל שלב 7 עדיין ירוץ לכל מי שמגיע לפורט, וה-session id שנרשם ביומן נוצר בדפדפן ולכן אינו ראיה.',
+    '<b>מה זה קונה, ומה זה עדיין לא</b><br>' +
+      '<b>1. אין החלפת ערוץ.</b> אותו סשן, אותה שיחה. המהירות של החיבור הישיר, והכלי הרגיש רץ בשרת. הבחירה של המשתמש בין שני קווים הייתה fallback, לא עיצוב.<br>' +
+      '<b>2. ניתוב הוא לא החלטה של המודל.</b> הגבול נקבע לפני שהשיחה מתחילה ויושב ברשימת הכלים, לא בהוראות — מה שאפשר לשכנע את המודל לעשות, אפשר גם להזריק לו.<br>' +
+      '<b>3. זה לא מסתיר את החילוף.</b> שני החיבורים על סשן אחד: הדפדפן רואה שהקריאה קרתה ומה המודל קיבל. תוצאה שאסור שתגיע ללקוח בכלל דורשת שה-session עצמו יהיה בשרת — זה טאב 8, ופי 4-5 בלטנסי.<br>' +
+      '<b>4. עדיין פתוח:</b> ל-POST /api/tool אין אימות. שלב 25 חוסם את מזג האוויר לכל קורא, אבל שלב 13 ירוץ לכל מי שמגיע לפורט.',
   ),
   FOOT,
   100,
+  1490,
   1560,
-  1560,
-  180,
+  150,
 )
 
-/* ── write ───────────────────────────────────────────────────────────────── */
 const tab = `  <diagram id="seq-hybrid" name="11 - Sequence: the hybrid">
-    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1800" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1700" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>

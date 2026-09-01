@@ -913,6 +913,14 @@ kbd {
   color: var(--warn, #d7860b);
 }
 
+/* What the live call is actually on. Quiet when it matches the switches — it is only
+   reassurance then — and the warning colour above takes over when they have drifted. */
+.pipe-running {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  color: var(--live);
+}
+
 .live-tool code {
   font: 500 0.75rem/1 var(--mono);
   color: var(--accent);

@@ -49,6 +49,14 @@ const MAX_EVENTS = 300
  * effect can only be attributed by running a session without it. Model and voice choices
  * stay deployment configuration — a switch nobody can act on is decoration.
  */
+/** One line naming a pipeline, for saying what a running call is actually on. */
+const describePipeline = (p) =>
+  p.vad === 'semantic'
+    ? `מודל שופט משמעות · רגישות ${{ low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[p.eagerness] ?? p.eagerness}` +
+      `${p.vocabulary === 'on' ? ' · הטיית אוצר מילים' : ''}`
+    : `טיימר שקט · סף ${Number(p.threshold).toFixed(2)} · ${p.silenceMs}ms` +
+      `${p.vocabulary === 'on' ? ' · הטיית אוצר מילים' : ''}`
+
 const PIPELINE_DEFAULTS = {
   vad: 'semantic', // semantic: a model judges when the thought ended · server: a silence timer
   eagerness: 'low',
@@ -570,8 +578,23 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
             </label>
           </div>
 
-          {connected && activePipeline && JSON.stringify(activePipeline) !== JSON.stringify(pipeline) && (
-            <p className="pipe-stale">השיחה הפעילה התחילה בהגדרות אחרות — אלה יחולו מהשיחה הבאה.</p>
+          {/* What the RUNNING call is on, not what the switches show.
+              The board is titled "for the next call" and the switches keep whatever was
+              last clicked, so a session started before a change — or with nothing clicked
+              — looked configured when it was not. Reading the trace was the only way to
+              find out, and only after the fact. */}
+          {connected && activePipeline && (
+            <p
+              className={
+                JSON.stringify(activePipeline) === JSON.stringify(pipeline)
+                  ? 'pipe-running'
+                  : 'pipe-stale'
+              }
+            >
+              {JSON.stringify(activePipeline) === JSON.stringify(pipeline)
+                ? `השיחה הפעילה רצה על ${describePipeline(activePipeline)}`
+                : `השיחה הפעילה רצה על ${describePipeline(activePipeline)} — השינויים שלמעלה יחולו מהשיחה הבאה.`}
+            </p>
           )}
         </fieldset>
       )}

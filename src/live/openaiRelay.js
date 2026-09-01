@@ -26,6 +26,7 @@ export async function startOpenAIRelay({
   onFirstToken = () => {},
   onFirstAudio = () => {},
   onResponseStart = () => {},
+  onPhantom = () => {},
   onError = () => {},
 }) {
   onStatus('connecting')
@@ -215,6 +216,9 @@ export async function startOpenAIRelay({
         break
       case 'userTranscript':
         onUserTranscript(msg.text)
+        break
+      case 'phantom':
+        onPhantom(msg.text)
         break
       case 'assistantDelta':
         onFirstToken()

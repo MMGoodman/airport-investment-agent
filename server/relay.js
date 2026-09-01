@@ -23,6 +23,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { buildRealtimeSession } from './voice.js'
 import { runTool } from '../src/agent/tools.js'
 import { recordToolCall } from './toolLog.js'
+import { isHintEcho } from '../src/agent/vocabulary.js'
 
 const UPSTREAM = 'wss://api.openai.com/v1/realtime'
 
@@ -137,9 +138,29 @@ export function attachRelay(httpServer) {
           tell({ type: 'speaking', who: null })
           break
 
-        case 'conversation.item.input_audio_transcription.completed':
-          if (msg.transcript?.trim()) tell({ type: 'userTranscript', text: msg.transcript.trim() })
+        case 'conversation.item.input_audio_transcription.completed': {
+          const heard = msg.transcript?.trim()
+          if (!heard) break
+          /**
+           * The vocabulary hint being read back at the caller.
+           *
+           * The hint is a prior. Given one and a stretch of near-silence to describe, the
+           * transcriber can emit the prior itself: one relayed session showed all forty
+           * domain terms in list order, ending in "לוס אנג׳לס", attributed to a caller who
+           * had said one word. The guard existed on WebRTC and had never been added here.
+           *
+           * Only the transcript is dropped, and the model never had it: the transcriber is
+           * a second listener running alongside, so what reached the model was the audio.
+           * Reported rather than swallowed — a transcript that vanishes silently makes the
+           * session look like it missed a question.
+           */
+          if (isHintEcho(heard, built.hintTerms)) {
+            tell({ type: 'phantom', text: heard })
+            break
+          }
+          tell({ type: 'userTranscript', text: heard })
           break
+        }
 
         case 'response.output_audio_transcript.delta':
           tell({ type: 'assistantDelta', text: msg.delta ?? '' })

@@ -8,11 +8,11 @@
  * The model narrates. It never computes — it has no tool that would let it.
  */
 import { callTool, parseArgs } from './tools.js'
+import { isHintEcho } from '../agent/vocabulary.js'
 
 const SDP_ENDPOINT = 'https://api.openai.com/v1/realtime/calls'
 
 /** Distinct hint terms in one transcript above which it is the hint, not a caller. */
-const PHANTOM_TERMS = 10
 
 /**
  * The data-channel state machine, lifted out of the connection so it can be tested.
@@ -71,24 +71,6 @@ export function createEventHandler({
    */
   let bargedIn = false
 
-  /**
-   * Is this transcript the vocabulary hint being read back?
-   *
-   * The hint is a prior, and on a stretch of near-silence a transcriber given a prior and
-   * nothing to describe can emit the prior itself — one session recorded every airport code
-   * and Hebrew term in list order as something the caller had said. Nobody says ten domain
-   * terms in one breath, so the count separates the two cleanly.
-   */
-  const isHintEcho = (text) => {
-    if (hintTerms.length === 0 || !text || text.length < 60) return false
-    const lower = text.toLowerCase()
-    let hits = 0
-    for (const term of hintTerms) {
-      if (lower.includes(term.toLowerCase()) && ++hits >= PHANTOM_TERMS) return true
-    }
-    return false
-  }
-
   return async function handle(msg) {
     // Everything the session emits, before we decide what to do with it. This is the
     // raw feed the trace panel shows in verbose mode.
@@ -126,7 +108,7 @@ export function createEventHandler({
       case 'conversation.item.input_audio_transcription.completed': {
         const heard = msg.transcript?.trim()
         if (!heard) break
-        if (isHintEcho(heard)) {
+        if (isHintEcho(heard, hintTerms)) {
           // Reported, not silently swallowed: a dropped transcript the reader cannot see
           // would make the session look like it missed a question.
           onPhantom(heard)

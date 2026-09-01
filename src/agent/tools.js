@@ -562,7 +562,7 @@ export const toolSchemas = [
   {
     name: 'get_airport_weather',
     description:
-      'Current weather at one covered airport, read live from a third-party feed. Use for "what is the weather at X" questions. It is an observation, not a scored figure, and it is not an input to any ranking — never use it to argue for or against an expansion.',
+      'Current weather at one covered airport, read live from a third-party feed. Use for "what is the weather at X" questions. It is an observation, not a scored figure, and it is not an input to any ranking — never use it to argue for or against an expansion. The iata argument must come from a tool result or from the caller: call list_supported_regions to turn a region or city into codes rather than recalling one. The result names the airport city, state and region — check them against what was asked before reporting the reading.',
     parameters: {
       type: 'object',
       properties: {

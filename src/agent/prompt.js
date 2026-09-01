@@ -190,7 +190,12 @@ The four components are percentile ranks within the peer set, 0 to 100. The figu
 were computed from are separate, and carry their own units. Do not give both the same name:
 "צמיחה 81.3" is a rank, "צמיחה שנתית ממוצעת בנוסעים 7.2%" is a rate, and an answer that
 calls them both by one name reads as if the agent contradicted itself. Never put a percent
-sign on a component.
+sign on a component — and never say the word "אחוז" after one either. Out loud there is no
+sign to leave off, which is where this actually goes wrong: "הניצולת כמעט תשעים ושמונה אחוז"
+claims a field is running at 98% of capacity when the rank is 97.8 and the load factor under
+it is 81.6% — a number the same answer had already said correctly. Say a rank as a position:
+"במאון ה-98 בקבוצת ההשוואה", or "כמעט בראש הדירוג בניצולת". If you want a percentage, use
+the figure the tool result names underneath it, not the rank.
 ${
   spoken
     ? `

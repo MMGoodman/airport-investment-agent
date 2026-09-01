@@ -174,6 +174,7 @@ export const handlers = {
       score: s.score,
       rank: s.rank,
       components: s.components,
+      componentsAre: COMPONENTS_ARE,
       ...explain(s, ctx, store.knownConstraints),
     }))
 
@@ -244,6 +245,7 @@ export const handlers = {
         score: entry?.score ?? null,
         nationalRank: entry?.rank ?? null,
         components: entry?.components ?? null,
+        componentsAre: COMPONENTS_ARE,
         metrics: values,
         constraintNote: store.knownConstraints[iata]?.note ?? null,
       }
@@ -316,6 +318,7 @@ export const handlers = {
         score: entry?.score ?? null,
         nationalRank: entry?.rank ?? null,
         components: entry?.components ?? null,
+        componentsAre: COMPONENTS_ARE,
         explanation: entry ? explain(entry, ctx, store.knownConstraints) : null,
         constraintNote: store.knownConstraints[code]?.note ?? null,
       },
@@ -587,6 +590,20 @@ export const toolSchemas = [
     },
   },
 ]
+
+/**
+ * What the four component numbers are, carried in the payload beside them.
+ *
+ * They are percentile ranks, and nothing in the shape said so. A live answer reported
+ * "utilization is almost 98 percent" for LAX — the rank is 97.8, the load factor under it
+ * is 81.6%, and the same answer had already said 81.6. Two numbers for one idea, in one
+ * breath, and only one of them meant anything.
+ *
+ * The prompt carried the rule; the data carried nothing. Now the reader is told inside the
+ * result, where it cannot be a paragraph away from the number it governs.
+ */
+const COMPONENTS_ARE =
+  'percentile ranks against this peer set, 0-100. Not percentages, and not the figures they were computed from.'
 
 export async function runTool(name, args) {
   const handler = handlers[name]

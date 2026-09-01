@@ -181,6 +181,15 @@ export async function buildRealtimeSession(query = {}) {
         input: {
           transcription: {
             model: TRANSCRIBE_MODEL,
+            /**
+             * Say which language is being spoken. Never used to be set at all — the
+             * language was pinned only as a side effect of the vocabulary hint, whose
+             * terms happen to be Hebrew. Turned the hint off, as the pipeline board now
+             * lets a caller do, and nothing was left to say what to expect: one session
+             * transcribed Hebrew speech into Greek, then Thai. The hint is a domain prior
+             * and this is a language pin; they were never the same setting.
+             */
+            language: lang,
             ...(useVocabulary ? { prompt: hint } : {}),
           },
           turn_detection: vad.config,

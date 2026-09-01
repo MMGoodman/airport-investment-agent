@@ -15,11 +15,12 @@ import { createEventHandler } from '../openaiRealtime.js'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 /** Collects everything the handler tried to send back over the channel. */
-function harness({ delays = {} } = {}) {
+function harness({ delays = {}, interrupts = true } = {}) {
   const sent = []
   const toolOrder = []
   const handle = createEventHandler({
     send: (payload) => sent.push(payload),
+    interrupts,
     run: async (name, args) => {
       await sleep(delays[name] ?? 0)
       toolOrder.push(name)
@@ -88,6 +89,21 @@ describe('realtime tool batching', () => {
     expect(outputs(sent)).toHaveLength(1)
     // But nothing is asked for — turn detection is about to open a new turn.
     expect(creates(sent)).toHaveLength(0)
+  })
+
+  it('still answers the tool when speech was configured not to interrupt', async () => {
+    // From a trace in a noisy room: the caller asked for a comparison, the tool ran, the
+    // response carrying its result was created — and 300 ms later a neighbour's voice
+    // opened a turn and it was gone. Turning interruption off has to reach this decision
+    // too, or the answer is still dropped by a voice that never stopped the model.
+    const { handle, sent } = harness({ interrupts: false })
+    await handle({ type: 'response.created' })
+    await handle(call('rank_airports', 'c1'))
+    await handle({ type: 'input_audio_buffer.speech_started' })
+    await handle({ type: 'response.done' })
+
+    expect(outputs(sent)).toHaveLength(1)
+    expect(creates(sent)).toHaveLength(1)
   })
 
   it('treats each response separately', async () => {

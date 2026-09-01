@@ -201,9 +201,12 @@ export async function startOpenAIRelay({
         onResponseStart()
         break
       case 'speaking':
-        if (msg.who === 'user') {
-          // Barge-in. The server cancels the response upstream; this silences what is
-          // already queued and gates whatever is still on the wire until the next one.
+        // `interrupts: false` means turn detection was told not to cancel the response, so
+        // the model keeps speaking and this side must not silence it. Absent, it interrupts
+        // — that is the default and the only behaviour older sessions had.
+        if (msg.who === 'user' && msg.interrupts !== false) {
+          // Barge-in. The model stops upstream; this silences what is already queued and
+          // gates whatever is still on the wire until the next response begins.
           audioReported = false
           suppressAudio = true
           stopPlayback()

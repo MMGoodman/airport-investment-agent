@@ -68,13 +68,29 @@ const EAGERNESS = ['low', 'medium', 'high', 'auto']
 function turnDetectionFor(q = {}) {
   const asked = q.vad === 'server' || q.vad === 'semantic' ? q.vad : VAD_DEFAULTS.type
 
+  /**
+   * Whether detected speech cancels the answer already being spoken.
+   *
+   * On by default, and it has to be: an agent that talks over you is unusable. But it is a
+   * separate decision from WHERE the turn boundary is, and no threshold reaches it —
+   * semantic_vad has none, so on that setting a nearby conversation cancels every answer
+   * with nothing to tune. One trace from a noisy room: three of four responses cancelled
+   * within 600 ms of being created, including the one carrying the tool result the caller
+   * had asked for. The answer was generated, paid for, and never spoken.
+   *
+   * Off, the agent finishes its sentence and the caller waits. That is the trade, and it is
+   * theirs to make — which is why it is a switch and not a constant.
+   */
+  const interrupt = q.interrupt !== 'off'
+  const interruptSummary = interrupt ? '' : ' · no interrupt'
+
   if (asked === 'semantic') {
     // A model judges whether the THOUGHT is finished. Rides through a breath mid-sentence,
     // but offers no volume threshold, so room noise can still truncate an answer.
     const eagerness = EAGERNESS.includes(q.eagerness) ? q.eagerness : VAD_DEFAULTS.eagerness
     return {
-      config: { type: 'semantic_vad', eagerness },
-      summary: `semantic_vad · eagerness ${eagerness}`,
+      config: { type: 'semantic_vad', eagerness, interrupt_response: interrupt },
+      summary: `semantic_vad · eagerness ${eagerness}${interruptSummary}`,
     }
   }
 
@@ -91,8 +107,9 @@ function turnDetectionFor(q = {}) {
       silence_duration_ms: silence,
       // Audio kept from before speech was detected, so the first syllable survives.
       prefix_padding_ms: prefix,
+      interrupt_response: interrupt,
     },
-    summary: `server_vad · threshold ${threshold} · silence ${silence}ms`,
+    summary: `server_vad · threshold ${threshold} · silence ${silence}ms${interruptSummary}`,
   }
 }
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
@@ -147,6 +164,9 @@ export async function buildRealtimeSession(query = {}) {
   return {
     lang,
     vadSummary: vad.summary,
+    // Read back off the config rather than re-derived from the query, so the browser and
+    // the model can never be told two different things about the same session.
+    interrupts: vad.config.interrupt_response !== false,
     useVocabulary,
     // The hint's own terms, so the browser can recognise it being read back at it.
     hintTerms: hint.split(',').map((t) => t.trim()).filter((t) => t.length > 2),
@@ -282,6 +302,7 @@ export function mountVoiceRoutes(app) {
         lang: built.lang,
         vad: built.vadSummary,
         vocabulary: built.useVocabulary,
+        interrupts: built.interrupts,
         hintTerms: built.hintTerms,
       })
     } catch (err) {

@@ -123,8 +123,15 @@ export function attachRelay(httpServer) {
          * conversation.item.truncate, and only the browser knows it.
          */
         case 'input_audio_buffer.speech_started':
-          bargedIn = true
-          tell({ type: 'speaking', who: 'user' })
+          // Only a barge-in if it actually cancels something. Otherwise the answer after a
+          // tool call is dropped by a voice that never stopped the model — which is how a
+          // caller asks for a comparison, watches the tool run, and hears nothing back.
+          if (built.interrupts) bargedIn = true
+          // Whether this cancels the answer is the session's setting, and the browser has
+          // to be told: it silences its own playback on this event, so with interruption
+          // turned off it would mute an answer OpenAI is still speaking and the switch
+          // would look broken while working.
+          tell({ type: 'speaking', who: 'user', interrupts: built.interrupts })
           break
         case 'input_audio_buffer.speech_stopped':
           tell({ type: 'speaking', who: null })

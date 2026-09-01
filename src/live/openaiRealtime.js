@@ -39,6 +39,10 @@ export function createEventHandler({
   onPhantom = () => {},
   /** The vocabulary hint's own terms, for spotting it read back. */
   hintTerms = [],
+  // Whether turn detection was configured to cancel a response when speech is detected.
+  // With it off, speech is not a barge-in: the model keeps talking, so nothing about this
+  // turn is stale and the request to speak after a tool must still go out.
+  interrupts = true,
   onError = () => {},
 }) {
   // Reset each turn so every answer reports its own first-audio moment.
@@ -102,7 +106,7 @@ export function createEventHandler({
 
       case 'input_audio_buffer.speech_started':
         audioReported = false
-        bargedIn = true
+        if (interrupts) bargedIn = true
         onSpeaking('user')
         break
 
@@ -215,7 +219,7 @@ export async function startOpenAIRealtime({
   const keyRes = await fetch(`/api/realtime/session?${params}`)
   const keyBody = await keyRes.json()
   if (!keyRes.ok) throw new Error(keyBody.error ?? 'Could not mint a realtime key')
-  const { clientSecret, model, vad, vocabulary, hintTerms = [] } = keyBody
+  const { clientSecret, model, vad, vocabulary, hintTerms = [], interrupts = true } = keyBody
   // Record what this call ran under, so a pasted trace can be compared against another
   // that was configured differently. The server reports what it USED, after clamping —
   // not what was asked for.
@@ -260,6 +264,7 @@ export async function startOpenAIRealtime({
     onResponseStart,
     onPhantom,
     hintTerms,
+    interrupts,
     onError,
   })
 

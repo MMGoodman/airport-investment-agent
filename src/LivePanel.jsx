@@ -51,17 +51,18 @@ const MAX_EVENTS = 300
  */
 /** One line naming a pipeline, for saying what a running call is actually on. */
 const describePipeline = (p) =>
-  p.vad === 'semantic'
-    ? `מודל שופט משמעות · רגישות ${{ low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[p.eagerness] ?? p.eagerness}` +
-      `${p.vocabulary === 'on' ? ' · הטיית אוצר מילים' : ''}`
-    : `טיימר שקט · סף ${Number(p.threshold).toFixed(2)} · ${p.silenceMs}ms` +
-      `${p.vocabulary === 'on' ? ' · הטיית אוצר מילים' : ''}`
+  (p.vad === 'semantic'
+    ? `מודל שופט משמעות · רגישות ${{ low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[p.eagerness] ?? p.eagerness}`
+    : `טיימר שקט · סף ${Number(p.threshold).toFixed(2)} · ${p.silenceMs}ms`) +
+  `${p.interrupt === 'on' ? '' : ' · בלי קטיעה'}` +
+  `${p.vocabulary === 'on' ? ' · הטיית אוצר מילים' : ''}`
 
 const PIPELINE_DEFAULTS = {
   vad: 'semantic', // semantic: a model judges when the thought ended · server: a silence timer
   eagerness: 'low',
   threshold: 0.5,
   silenceMs: 700,
+  interrupt: 'on', // whether detected speech cancels the answer already being spoken
   vocabulary: 'on',
 }
 
@@ -96,6 +97,9 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   // end_call is acknowledged by the server but performed here — closing a WebRTC session is
   // something only this side can do. Hang up after the closing sentence has been spoken, not
   // the instant the tool fires, or the caller hears the line cut off mid-word.
+  // Set the first time a provider says someone started talking. The cascade never does,
+  // and the two need opposite handling of a transcript that arrives during an answer.
+  const reportsSpeech = useRef(false)
   const endAfterReply = useRef(false)
   const endTimer = useRef(null)
 
@@ -207,6 +211,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     // A stopwatch left running from the last call measured across both of them and
     // reported 25 seconds of synthesis before anyone had spoken.
     marks.current = {}
+    reportsSpeech.current = false
     setEvents([])
     setStatus('minting key')
     pendingTools.current = []
@@ -242,15 +247,19 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
             mark('speechEnd')
           }
           if (who === 'user') {
+            reportsSpeech.current = true
             speechWasOpen.current = true
             marks.current = {} // new turn, new stopwatch
           }
         },
         onUserTranscript: (text) => {
-          // A transcript arriving after an answer means a new turn. OpenAI resets on
-          // speech_started, but the cascade never reports that a person began talking, so
-          // its opening greeting set firstToken once and nothing was ever measured again.
-          if (marks.current.firstToken) marks.current = {}
+          // A transcript arriving after an answer means a new turn — but ONLY on a provider
+          // that cannot tell us a turn began. OpenAI reports speech_started and resets
+          // there; its transcripts routinely land mid-answer, because the transcriber runs
+          // alongside the model rather than in front of it. Resetting on those wiped a live
+          // response's marks, and the next delta re-marked firstToken against the
+          // just-written transcript: 1 ms of thinking, printed under a real 471 ms one.
+          if (!reportsSpeech.current && marks.current.firstToken) marks.current = {}
           mark('transcript')
           push('you', text)
           onAppend({ role: 'user', content: text })
@@ -561,6 +570,24 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
                 </div>
               </div>
             )}
+
+            <label className="pipe-opt pipe-opt-flat">
+              <input
+                type="checkbox"
+                checked={pipeline.interrupt === 'on'}
+                onChange={(e) =>
+                  setPipeline((p) => ({ ...p, interrupt: e.target.checked ? 'on' : 'off' }))
+                }
+              />
+              <span>
+                <b>דיבור קוטע את התשובה</b>
+                <em>
+                  ברירת המחדל. כל מה שזוהה כדיבור מבטל מיד את התשובה שנאמרת — גם קול של מישהו
+                  אחר בחדר. בטרייס מחדר רועש שלוש מתוך ארבע תשובות מתו תוך פחות משש מאות
+                  מילישניות, כולל זו שאחרי קריאת הכלי. כבה כאן כדי שהסוכן יסיים משפט.
+                </em>
+              </span>
+            </label>
           </div>
 
           <div className="pipe-group">

@@ -39,14 +39,22 @@ function line(e) {
  * Everything needed to diagnose a session elsewhere: what was running, and what happened.
  * Raw events are always included even when the panel is filtering them out — they are the
  * most useful half when something went wrong.
+ *
+ * The summary lines come from `totals`, counted as the session ran, not from the events
+ * still in the list. The list is a ring: a busy session pushes its early rows out, and a
+ * header computed from what is left described a different session from the one that
+ * happened — "tool payloads: none" printed above "✓ audit 2 tool calls match the server
+ * log", both true of their own source and only one of them true of the call. A trace that
+ * disagrees with itself is worse than a short one, so the header now counts the session and
+ * the body says plainly how much of it it can show.
  */
-function buildReport(events, provider, lang) {
-  const timings = events.filter((e) => e.kind === 'timing')
-  const firstWord = timings.filter((e) => e.text === 'answer').map((e) => e.ms)
-  const byStage = {}
-  for (const t of timings) (byStage[t.text] ??= []).push(t.ms)
+function buildReport(events, provider, lang, totals) {
   const mean = (xs) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length)
-  const payloads = events.filter((e) => e.bytes != null)
+  const firstWord = totals?.answers ?? []
+  const byStage = totals?.stages ?? {}
+  const payloads = totals?.payloads ?? []
+  const seen = totals?.events ?? events.length
+  const dropped = Math.max(0, seen - events.length)
 
   return [
     'airport-investment-agent — live session trace',
@@ -66,13 +74,15 @@ function buildReport(events, provider, lang) {
     payloads.length
       ? `tool payloads: ${payloads.map((p) => `${p.text.split(' ')[0]} ${fmtBytes(p.bytes)}`).join(', ')}`
       : 'tool payloads: none',
-    `events: ${events.length}`,
+    dropped
+      ? `events: ${seen} — showing the last ${events.length}; ${dropped} earlier rows have scrolled out`
+      : `events: ${seen}`,
     '',
     ...events.map(line),
   ].join('\n')
 }
 
-export default function LiveTrace({ events, verbose, onVerbose, onClear, provider, lang }) {
+export default function LiveTrace({ events, verbose, onVerbose, onClear, provider, lang, totals }) {
   const endRef = useRef(null)
   const [copied, setCopied] = useState(false)
 
@@ -81,7 +91,7 @@ export default function LiveTrace({ events, verbose, onVerbose, onClear, provide
   }, [events])
 
   async function copy() {
-    const report = buildReport(events, provider, lang)
+    const report = buildReport(events, provider, lang, totals?.current)
     try {
       await navigator.clipboard.writeText(report)
     } catch {

@@ -100,6 +100,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
   // Set the first time a provider says someone started talking. The cascade never does,
   // and the two need opposite handling of a transcript that arrives during an answer.
   const reportsSpeech = useRef(false)
+  /** What the whole session did, counted as it happens so the 300-event ring cannot lose it. */
+  const sessionTotals = useRef({ events: 0, answers: [], stages: {}, payloads: [] })
+  const resetTotals = useCallback(() => {
+    sessionTotals.current = { events: 0, answers: [], stages: {}, payloads: [] }
+  }, [])
   const endAfterReply = useRef(false)
   const endTimer = useRef(null)
 
@@ -109,6 +114,20 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
 
   const push = useCallback((kind, text, extra = {}) => {
     const t = (performance.now() - t0.current) / 1000
+
+    // Accumulate before the ring can drop it. The trace header used to be computed from
+    // whatever survived MAX_EVENTS, so a session whose tool rows had scrolled out reported
+    // "tool payloads: none" and "answer latency: not measured" three lines above
+    // "✓ audit 2 tool calls match the server log" — the same report contradicting itself
+    // about the same session, in a file whose whole job is to be believed.
+    const totals = sessionTotals.current
+    totals.events += 1
+    if (kind === 'timing' && extra.ms != null) {
+      ;(totals.stages[text] ??= []).push(extra.ms)
+      if (text === 'answer') totals.answers.push(extra.ms)
+    }
+    if (extra.bytes != null) totals.payloads.push({ text, bytes: extra.bytes })
+
     setEvents((prev) => {
       const next = [...prev, { id: ++seq.current, t, kind, text, ...extra }]
       return next.length > MAX_EVENTS ? next.slice(-MAX_EVENTS) : next
@@ -213,6 +232,7 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     marks.current = {}
     reportsSpeech.current = false
     setEvents([])
+    resetTotals()
     setStatus('minting key')
     pendingTools.current = []
     claimedTools.current = []
@@ -630,7 +650,11 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         events={events}
         verbose={verbose}
         onVerbose={setVerbose}
-        onClear={() => setEvents([])}
+        onClear={() => {
+          setEvents([])
+          resetTotals()
+        }}
+        totals={sessionTotals}
         provider={provider}
         lang={lang}
       />

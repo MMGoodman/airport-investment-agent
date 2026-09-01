@@ -372,8 +372,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
                 .catch((err) => push('error', `hang-up failed: ${err.message}`))
             }, 6000)
           }
+          // An object argument used to render as "[object Object]" — weights, which is the
+          // one argument whose value would actually explain a surprising ranking.
           const args = Object.entries(record.args ?? {})
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
             .join(' · ')
           push('tool', `${record.tool}${args ? `  ${args}` : ''}`)
           // Payload size is usually the reason a spoken answer was slow to start.

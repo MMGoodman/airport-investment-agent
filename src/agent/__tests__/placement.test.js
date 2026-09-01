@@ -48,3 +48,30 @@ describe('tool placement', () => {
     expect(server).toEqual(['get_airport_weather'])
   })
 })
+
+describe('rank_airports order', () => {
+  it('returns the weakest airports, worst first, with absolute ranks', async () => {
+    // There was no way to ask for this. A model asked for the three lowest-ranked US
+    // airports called rank_airports twenty-four times walking every region twice, then
+    // named two airports that are not in the dataset and a third at rank 103 as last.
+    // A tool surface that cannot express the question gets improvised around.
+    const { runTool } = await import('../tools.js')
+    const bottom = (await runTool('rank_airports', { topN: 3, order: 'bottom' })).data.ranked
+    const all = (await runTool('rank_airports', { topN: 500 })).data.ranked
+
+    expect(bottom).toHaveLength(3)
+    // Worst first, and the ranks are positions in the whole set — not 1, 2, 3.
+    expect(bottom[0].rank).toBe(all.length)
+    expect(bottom.map((a) => a.iata)).toEqual(
+      all.slice(-3).reverse().map((a) => a.iata),
+    )
+    expect(bottom[0].score).toBeLessThan(bottom[2].score)
+  })
+
+  it('still returns the strongest by default', async () => {
+    const { runTool } = await import('../tools.js')
+    const top = (await runTool('rank_airports', { topN: 3 })).data.ranked
+    expect(top[0].rank).toBe(1)
+    expect(top[0].score).toBeGreaterThan(top[2].score)
+  })
+})

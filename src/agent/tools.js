@@ -133,7 +133,7 @@ export const handlers = {
     }
   },
 
-  async rank_airports({ region, state, iataList, weights, topN } = {}) {
+  async rank_airports({ region, state, iataList, weights, topN, order } = {}) {
     const store = await getStore()
 
     let resolvedRegion = null
@@ -169,7 +169,24 @@ export const handlers = {
       peerSetLabel: label,
     })
 
-    const ranked = ctx.scored.slice(0, topN ?? 10).map((s) => ({
+    /**
+     * Which end of the ranking to return.
+     *
+     * There was no way to ask for the bottom, and a model asked for something the tool
+     * surface cannot express does not refuse — it improvises. One session went looking for
+     * the three lowest-scoring US airports, called this twenty-four times walking every
+     * region twice, never saw them, and answered with two airports that are not in the
+     * dataset at all and a third at rank 103 reported as last, each with a score it made up.
+     * Twenty-seven seconds, twenty-four calls, and a fabricated answer, because the question
+     * was answerable in one call that did not exist.
+     *
+     * Ranks stay absolute either way: the bottom three of 158 are ranks 156-158, not 1-3.
+     */
+    const wanted = topN ?? 10
+    const fromBottom = order === 'bottom'
+    const window = fromBottom ? ctx.scored.slice(-wanted).reverse() : ctx.scored.slice(0, wanted)
+
+    const ranked = window.map((s) => ({
       ...describe(store, s.iata),
       score: s.score,
       rank: s.rank,
@@ -524,6 +541,12 @@ export const toolSchemas = [
           description: 'Explicit IATA codes to rank against each other.',
         },
         topN: { type: 'integer', description: 'How many to return. Default 10.' },
+        order: {
+          type: 'string',
+          enum: ['top', 'bottom'],
+          description:
+            'Which end of the ranking. "top" (default) returns the strongest candidates; "bottom" returns the weakest, worst first. Use "bottom" for "which are the weakest / lowest ranked" — never assemble that from several "top" calls.',
+        },
         weights: {
           type: 'object',
           description:

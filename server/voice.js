@@ -12,6 +12,7 @@
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { attachSideband, detachSideband } from './sideband.js'
+import { turnsForSession } from './sessionLog.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 
 /**
@@ -385,6 +386,24 @@ export function mountVoiceRoutes(app) {
     } catch (err) {
       res.status(502).json({ error: err.message })
     }
+  })
+
+  /**
+   * What was said on a call, as this server heard it.
+   *
+   * Only populated where the server is on the session — the relayed transport, or a direct
+   * one with a sideband attached. On a plain browser-held call there is nothing here, and
+   * that absence is the honest answer rather than a silently empty list: the flag says
+   * which.
+   */
+  app.get('/api/session-log', (req, res) => {
+    const session = String(req.query.session ?? '')
+    const recorded = turnsForSession(session)
+    res.json({
+      session,
+      serverHeard: recorded.length > 0,
+      turns: recorded,
+    })
   })
 
   /** Let go of a session the caller has hung up on, rather than waiting for the timeout. */

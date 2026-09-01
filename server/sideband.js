@@ -34,6 +34,7 @@
 import { WebSocket } from 'ws'
 import { runTool, placementOf, toolSchemasFor } from '../src/agent/tools.js'
 import { recordToolCall } from './toolLog.js'
+import { recordTurn } from './sessionLog.js'
 
 const UPSTREAM = 'wss://api.openai.com/v1/realtime'
 
@@ -181,6 +182,23 @@ export function attachSideband({ callId, session, ephemeralKey, instructions, on
     try {
       msg = JSON.parse(raw.toString())
     } catch {
+      return
+    }
+
+    /**
+     * Keep the turns, on the server, where the browser cannot edit them.
+     *
+     * This connection sees everything the session emits and used to act on exactly one
+     * event and drop the rest. The relayed transport records the conversation because the
+     * server sits in the middle of it; on the direct transport nothing did, so what the
+     * agent told a caller was answerable only from the page.
+     */
+    if (msg.type === 'conversation.item.input_audio_transcription.completed') {
+      recordTurn({ session, callId, who: 'caller', text: msg.transcript })
+      return
+    }
+    if (msg.type === 'response.output_audio_transcript.done') {
+      recordTurn({ session, callId, who: 'agent', text: msg.transcript })
       return
     }
 

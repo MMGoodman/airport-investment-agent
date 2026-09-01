@@ -220,6 +220,7 @@ export function attachSideband({ callId, session, ephemeralKey, instructions, on
       result,
       ms,
       failed: Boolean(result?.data?.error),
+      ranOn: 'server',
     })
 
     send({

@@ -193,6 +193,7 @@ export function attachRelay(httpServer) {
                 result,
                 ms,
                 failed: Boolean(result?.data?.error),
+                ranOn: 'server',
               })
               // The same record shape callTool produces, so the trace panel and the audit
               // treat both transports' tools identically.

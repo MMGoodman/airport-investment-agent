@@ -342,7 +342,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
               push(
                 'audit',
                 audit.ok
-                  ? `${audit.serverCalls} tool ${audit.serverCalls === 1 ? 'call' : 'calls'} match the server log`
+                  ? `${audit.serverCalls} tool ${audit.serverCalls === 1 ? 'call' : 'calls'} match the server log` +
+                    (audit.serverRun
+                      ? ` · ${audit.serverRun} ran on your server, never through the browser`
+                      : '')
                   : `trace does not match the server log — ` +
                       [
                         audit.fabricated.length && `${audit.fabricated.length} not run`,

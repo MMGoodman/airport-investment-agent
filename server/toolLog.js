@@ -84,9 +84,20 @@ function digestOf(result) {
  * "what was actually asked for", and normalising here would hide a client sending something
  * the engine then quietly repaired.
  */
-export function recordToolCall({ session, tool, args, result, ms, failed = false }) {
+/**
+ * `ranOn` is who executed it, and it decides what the audit may accuse the client of.
+ *
+ * 'browser' — the page asked for it through POST /api/tool. It could have hidden the call
+ *             from its own trace, so a missing claim is a finding.
+ * 'server'  — this process ran it itself, over the relay or a sideband. The page never
+ *             touched it and cannot be asked to account for it; treating those as hidden
+ *             put a red "trace does not match the server log" on the first session where
+ *             the hybrid worked exactly as designed.
+ */
+export function recordToolCall({ session, tool, args, result, ms, failed = false, ranOn = 'browser' }) {
   const entry = {
     callId: `t${++seq}`,
+    ranOn,
     session: session || 'anonymous',
     at: new Date().toISOString(),
     tool,
@@ -139,11 +150,18 @@ export function reconcile(session, claimed = []) {
     else if (c.digest && c.digest !== match.digest) altered.push(c.callId)
   }
 
-  const omitted = actual.filter((e) => !claimedIds.has(e.callId)).map((e) => e.callId)
+  // Only what the client was responsible for can be missing from its account.
+  const omitted = actual
+    .filter((e) => e.ranOn !== 'server' && !claimedIds.has(e.callId))
+    .map((e) => e.callId)
+  const serverRun = actual.filter((e) => e.ranOn === 'server').length
 
   return {
     ok: fabricated.length === 0 && altered.length === 0 && omitted.length === 0,
     serverCalls: actual.length,
+    // Reported, not hidden: a reader should be able to see that some calls never went
+    // through the browser at all, which is the point of placing them on the server.
+    serverRun,
     claimedCalls: claimed.length,
     fabricated,
     altered,

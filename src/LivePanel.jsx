@@ -17,7 +17,12 @@ import { setToolSession, reconcileTools } from './live/tools.js'
  */
 
 const STARTERS = {
-  openai: startOpenAIRealtime,
+  // Same function, one option apart. The plain entry leaves the server-placed tools
+  // withheld and the model says so; the hybrid entry lets this server join the call and
+  // answer them. Everything else about the two is identical, which is what makes a trace
+  // from one comparable with a trace from the other.
+  openai: (opts) => startOpenAIRealtime({ ...opts, sideband: false }),
+  'openai-hybrid': (opts) => startOpenAIRealtime({ ...opts, sideband: true }),
   'openai-relay': startOpenAIRelay,
   elevenlabs: startElevenLabs,
   soniox: startSoniox,

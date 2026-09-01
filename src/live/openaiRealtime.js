@@ -194,6 +194,13 @@ export function createEventHandler({
 export async function startOpenAIRealtime({
   audioEl,
   lang = 'en',
+  /**
+   * Whether this server should join the call and answer its server-placed tools.
+   *
+   * Off is not a degraded mode — it is the honest one for a page that must be the only
+   * client on the session, and the model is told what it is missing and why.
+   */
+  sideband = false,
   /** Per-session pipeline settings from the control panel; the server clamps them. */
   pipeline = {},
   onStatus = () => {},
@@ -232,7 +239,11 @@ export async function startOpenAIRealtime({
   // goes missing. On this transport the model's function calls arrive in the browser, so a
   // tool placed on the server is not offered here at all.
   if (withheldTools.length) {
-    onStatus(`tools: browser-run · ${withheldTools.join(', ')} withheld (server-only)`)
+    onStatus(
+      sideband
+        ? `tools: browser-run · ${withheldTools.join(', ')} handed to your server`
+        : `tools: browser-run · ${withheldTools.join(', ')} withheld (server-only)`,
+    )
   }
 
   onStatus('opening microphone')
@@ -350,7 +361,7 @@ export async function startOpenAIRealtime({
    * to use. That fallback is proven; this is the upgrade on top of it.
    */
   const attachSideband = () => {
-    if (!callId || withheldTools.length === 0) return
+    if (!sideband || !callId || withheldTools.length === 0) return
     const deadline = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('no answer in 8s')), 8000),
     )

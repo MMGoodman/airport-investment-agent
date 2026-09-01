@@ -277,6 +277,23 @@ export function mountVoiceRoutes(app) {
           transport: 'WebRTC · speech-to-speech',
         },
         {
+          /**
+           * The same WebRTC call, with this server holding a second connection to it.
+           *
+           * Its own entry rather than a silent upgrade of the one above, because the
+           * difference is the thing worth seeing: identical audio path, identical latency,
+           * and one tool that the page cannot invoke. Two rows that differ in exactly one
+           * property are comparable; one row that sometimes behaves differently is not.
+           */
+          id: 'openai-hybrid',
+          label: `${OPENAI_MODEL} · voice · hybrid`,
+          mode: 'live',
+          available: Boolean(process.env.OPENAI_API_KEY),
+          model: OPENAI_MODEL,
+          pipeline: `${OPENAI_MODEL} — hybrid: audio direct, server-placed tools on a sideband`,
+          transport: 'WebRTC + server sideband · one session',
+        },
+        {
           id: 'openai-relay',
           // The same model and the same session config — the ONLY change is where the
           // connection lives. This is the architecture experiment: audio relayed through

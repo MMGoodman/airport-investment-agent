@@ -245,7 +245,10 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         },
 
         onResponseStart: () => {
-          if (marks.current.responseStart == null) mark('responseStart')
+          // Every response, not just the turn's first: the second one needs its own
+          // boundary or its audio gets timed against the first one's text.
+          mark('responseStart')
+          delete marks.current.firstAudio
         },
         onPhantom: (text) =>
           push('phantom', `dropped — the vocabulary hint read back: ${text.slice(0, 60)}…`, {
@@ -254,7 +257,13 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
         onFirstToken: () => noteFirstToken(false),
         onFirstAudio: () => {
           mark('firstAudio')
-          stage('synthesise', 'firstToken', 'firstAudio')
+          // Only when both marks belong to the SAME response. A turn that calls a tool runs
+          // two: the spoken preamble, then the answer. With no speech between them the
+          // marks carried over and the gap between one response's first word and the next
+          // one's first audio was reported as 2,023 ms of synthesis.
+          if (marks.current.firstToken >= (marks.current.responseStart ?? 0)) {
+            stage('synthesise', 'firstToken', 'firstAudio')
+          }
           stage('answer', 'speechEnd', 'firstAudio')
         },
         onAssistantTranscript: (text, final) => {

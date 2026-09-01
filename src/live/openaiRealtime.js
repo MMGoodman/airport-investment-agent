@@ -294,15 +294,29 @@ export async function startOpenAIRealtime({
         t.enabled = !muted
       })
     },
+    /**
+     * Tear down, peer connection first and every step isolated.
+     *
+     * The relayed transport had this shape and one throwing step left the session live
+     * while the panel reported it closed. Closing the peer connection is what ends the
+     * session, so nothing that can throw is allowed to run ahead of it.
+     */
     stop() {
-      mic.getTracks().forEach((t) => t.stop())
-      try {
-        dc.close()
-      } catch {
-        /* already closed */
+      const steps = [
+        ['peer connection', () => pc.close()],
+        ['data channel', () => dc.close()],
+        ['microphone', () => mic.getTracks().forEach((t) => t.stop())],
+        ['audio element', () => {
+          if (audioEl) audioEl.srcObject = null
+        }],
+      ]
+      for (const [what, run] of steps) {
+        try {
+          run()
+        } catch (err) {
+          onError(new Error(`hang-up: ${what} did not close — ${err.message}`))
+        }
       }
-      pc.close()
-      if (audioEl) audioEl.srcObject = null
       onStatus('idle')
     },
   }

@@ -86,7 +86,7 @@ export async function startOpenAIRelay({
   let muted = false
 
   processor.onaudioprocess = (event) => {
-    if (muted || ws.readyState !== WebSocket.OPEN) return
+    if (closed || muted || ws.readyState !== WebSocket.OPEN) return
     const floats = event.inputBuffer.getChannelData(0)
     const ints = new Int16Array(floats.length)
     for (let i = 0; i < floats.length; i++) {
@@ -102,7 +102,19 @@ export async function startOpenAIRelay({
   // Reset per answer, same convention as the WebRTC transport.
   let audioReported = false
 
+  /**
+   * Set the instant stop() is called, and checked before anything is acted on.
+   *
+   * A socket close is a handshake, not a switch: frames already in flight still arrive,
+   * and if any step of the teardown throws before ws.close() the socket never closes at
+   * all. One session kept transcribing, calling tools and answering for 47 seconds after
+   * it had reported itself closed. The flag makes the hangup take effect immediately even
+   * when the socket lags or the teardown fails.
+   */
+  let closed = false
+
   ws.onmessage = (event) => {
+    if (closed) return
     if (event.data instanceof ArrayBuffer) {
       if (!audioReported) {
         audioReported = true
@@ -178,23 +190,41 @@ export async function startOpenAIRelay({
     setMuted(m) {
       muted = m
     },
+    /**
+     * Tear down, socket first and every step isolated.
+     *
+     * Order matters: closing the socket is what actually ends the session, so it goes
+     * before anything that could throw. AudioContext.close() throws synchronously when the
+     * context is already closed, and it used to sit ahead of ws.close() — one throw there
+     * and the session stayed live while the panel reported it shut.
+     */
     stop() {
+      closed = true
       muted = true
-      try {
-        processor.disconnect()
-        micSource.disconnect()
-        sink.disconnect()
-      } catch {
-        /* already torn down */
+
+      const steps = [
+        ['socket', () => ws.close()],
+        ['capture', () => {
+          processor.disconnect()
+          micSource.disconnect()
+          sink.disconnect()
+        }],
+        ['microphone', () => mic.getTracks().forEach((t) => t.stop())],
+        ['playback', () => stopPlayback()],
+        ['audio context', () => ctx.close()],
+      ]
+
+      for (const [what, run] of steps) {
+        try {
+          const result = run()
+          if (result?.catch) result.catch(() => {})
+        } catch (err) {
+          // Reported rather than swallowed: a teardown that half-failed is exactly what a
+          // session lingering after its own goodbye looks like from the outside.
+          onError(new Error(`hang-up: ${what} did not close — ${err.message}`))
+        }
       }
-      mic.getTracks().forEach((t) => t.stop())
-      stopPlayback()
-      ctx.close().catch(() => {})
-      try {
-        ws.close()
-      } catch {
-        /* already closed */
-      }
+
       onStatus('idle')
     },
   }

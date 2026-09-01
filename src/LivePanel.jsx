@@ -174,9 +174,15 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
     sessionRef.current = null
     setPartial('')
     setSpeaking(null)
-    if (session) await session.stop()
+    if (session) {
+      await session.stop()
+    } else {
+      // Nothing to close. Said out loud because the other way a hangup fails silently is
+      // this branch: the panel reports the session shut while the transport runs on.
+      push('session', 'nothing to hang up — no live session was held')
+    }
     setStatus('idle')
-  }, [])
+  }, [push])
 
   // A provider or language switch must not leave a microphone open on the old session.
   useEffect(() => () => void stop(), [provider, lang, stop])

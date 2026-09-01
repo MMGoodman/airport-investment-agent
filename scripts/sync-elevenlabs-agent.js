@@ -14,6 +14,8 @@ import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent
 import { toolSchemas } from '../src/agent/tools.js'
 import { asrKeywords } from '../src/agent/vocabulary.js'
 
+const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback)
+
 const API = 'https://api.elevenlabs.io/v1/convai'
 const KEY = process.env.ELEVENLABS_API_KEY
 const AGENT_NAME = 'airport-investment-agent'
@@ -117,6 +119,20 @@ const conversation_config = {
     voice_id: process.env.ELEVENLABS_VOICE_ID || 'pqHfZKP75CvOlQylNhV4',
     model_id: process.env.ELEVENLABS_TTS_MODEL || 'eleven_v3_conversational',
     optimize_streaming_latency: 4,
+    /**
+     * Pinned, because it was not, and every call opened in a different mood.
+     *
+     * The greeting is one fixed sentence, but it is synthesised fresh each session, and
+     * with stability left at the platform default the same words came back cheerful,
+     * clipped or weary depending on the run. For an analyst assistant that reads as an
+     * unstable narrator; the caller cannot tell a mood from a signal.
+     *
+     * Higher is steadier and flatter. 0.7 was chosen to stop the swings without going
+     * monotone — worth A/B-ing on your own ear, since the v3 models are documented to
+     * quantise this differently from v2 and this build cannot measure that from here.
+     */
+    stability: num(process.env.ELEVENLABS_STABILITY, 0.7),
+    similarity_boost: num(process.env.ELEVENLABS_SIMILARITY, 0.8),
     // Expressive synthesis buys prosody at the cost of time to first audio. On a cascade
     // that delay lands after the LLM has already finished thinking.
     expressive_mode: false,

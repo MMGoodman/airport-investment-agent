@@ -105,8 +105,18 @@ const CASCADE_TTS =
     : process.env.CASCADE_TTS_MODEL || 'gpt-4o-mini-tts'
 const EL_LLM = process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite'
 // English sessions swap to the fast model at connect time; that is what the label shows.
-const EL_TTS =
-  process.env.ELEVENLABS_FAST_TTS || process.env.ELEVENLABS_TTS_MODEL || 'eleven_v3_conversational'
+/**
+ * The voice model this deployment actually runs, per language.
+ *
+ * The label used to prefer the fast model unconditionally, so a Hebrew session — which
+ * never gets the English-only swap, and runs the agent's base model — was reported in the
+ * trace as eleven_flash_v2_5 while eleven_v3_conversational was doing the talking. A trace
+ * that names the wrong model is worse than one that names none: it is what a comparison
+ * gets filed under.
+ */
+const EL_BASE_TTS = process.env.ELEVENLABS_TTS_MODEL || 'eleven_v3_conversational'
+const EL_FAST_TTS = process.env.ELEVENLABS_FAST_TTS || null
+const EL_TTS = DEFAULT_LANG === 'en' && EL_FAST_TTS ? EL_FAST_TTS : EL_BASE_TTS
 
 /** Our JSON-Schema tool declarations in the Realtime session format. */
 const realtimeTools = toolSchemas.map((t) => ({
@@ -226,7 +236,9 @@ export function mountVoiceRoutes(app) {
           mode: 'live',
           available: Boolean(process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_AGENT_ID),
           model: `${EL_LLM} → ${EL_TTS}`,
-          pipeline: `scribe_realtime → ${EL_LLM} → ${EL_TTS} (cascade)`,
+          pipeline:
+            `scribe_realtime → ${EL_LLM} → ${EL_TTS} (cascade)` +
+            (EL_FAST_TTS && EL_FAST_TTS !== EL_TTS ? ` · English swaps to ${EL_FAST_TTS}` : ''),
           transport: 'WebSocket · agent platform',
         },
       ],

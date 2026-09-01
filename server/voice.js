@@ -10,7 +10,7 @@
  * ElevenLabs gets a signed WebSocket URL minted here.
  */
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
-import { toolSchemas } from '../src/agent/tools.js'
+import { toolSchemasFor } from '../src/agent/tools.js'
 import { transcriptionPrompt } from '../src/agent/vocabulary.js'
 
 const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
@@ -136,7 +136,7 @@ const EL_FAST_TTS = process.env.ELEVENLABS_FAST_TTS || null
 const EL_TTS = DEFAULT_LANG === 'en' && EL_FAST_TTS ? EL_FAST_TTS : EL_BASE_TTS
 
 /** Our JSON-Schema tool declarations in the Realtime session format. */
-const realtimeTools = toolSchemas.map((t) => ({
+const asRealtimeTool = (t) => ({
   type: 'function',
   name: t.name,
   description: t.description,
@@ -144,7 +144,30 @@ const realtimeTools = toolSchemas.map((t) => ({
     t.parameters && Object.keys(t.parameters.properties ?? {}).length > 0
       ? t.parameters
       : { type: 'object', properties: {} },
-}))
+})
+
+/**
+ * Told to the model when a transport cannot offer a tool, so the gap is named rather than
+ * improvised around. A model handed six tools where its instructions imply seven answers
+ * the seventh from memory — which is exactly how a caller who asked for the weather got a
+ * score summary instead.
+ */
+function withheldNote(names) {
+  if (names.length === 0) return ''
+  const one = names.length === 1
+  return [
+    '',
+    '',
+    'NOT AVAILABLE ON THIS CONNECTION',
+    `${names.join(', ')} ${one ? 'is' : 'are'} not offered on this line. The caller's audio`,
+    `goes straight from their browser to you, so ${one ? 'that tool runs' : 'those tools run'} only where the server`,
+    'holds the connection.',
+    'Say so in one sentence and name the switch: the "via your server" option beside the',
+    'model selector puts the call on the relayed line, where it works. Do not answer from',
+    'memory, do not substitute figures from a different tool, and do not apologise at',
+    'length — it is a setting, not a limit of yours.',
+  ].join('\n')
+}
 
 /**
  * One realtime session config, built from a request's query.
@@ -154,8 +177,12 @@ const realtimeTools = toolSchemas.map((t) => ({
  * both places is how the two paths would drift apart — and the whole point of running
  * them side by side is that the ONLY difference is where the connection lives.
  */
-export async function buildRealtimeSession(query = {}) {
+export async function buildRealtimeSession(query = {}, transport = 'browser') {
   const lang = query.lang === 'he' ? 'he' : 'en'
+  // Which tools this connection may offer. A 'server' tool is withheld from the browser
+  // path rather than hidden there: on WebRTC the function call lands on the browser's data
+  // channel, so a tool it cannot see is a tool that transport cannot carry.
+  const { tools, withheld } = toolSchemasFor(transport)
   const vad = turnDetectionFor(query)
   const useVocabulary = query.vocabulary !== 'off'
 
@@ -168,14 +195,19 @@ export async function buildRealtimeSession(query = {}) {
     // the model can never be told two different things about the same session.
     interrupts: vad.config.interrupt_response !== false,
     useVocabulary,
+    // What this connection can and cannot reach, so the panel can show it rather than the
+    // caller discovering it when an answer goes missing.
+    toolNames: tools.map((t) => t.name),
+    withheldTools: withheld,
     // The hint's own terms, so the browser can recognise it being read back at it.
     hintTerms: hint.split(',').map((t) => t.trim()).filter((t) => t.length > 2),
     model: OPENAI_MODEL,
     session: {
       type: 'realtime',
       model: OPENAI_MODEL,
-      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
-      tools: realtimeTools,
+      instructions:
+        SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true) + withheldNote(withheld),
+      tools: tools.map(asRealtimeTool),
       tool_choice: 'auto',
       audio: {
         input: {
@@ -312,6 +344,8 @@ export function mountVoiceRoutes(app) {
         vad: built.vadSummary,
         vocabulary: built.useVocabulary,
         interrupts: built.interrupts,
+        toolNames: built.toolNames,
+        withheldTools: built.withheldTools,
         hintTerms: built.hintTerms,
       })
     } catch (err) {

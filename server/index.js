@@ -2,7 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import { runAgent } from '../src/agent/agent.js'
-import { runTool } from '../src/agent/tools.js'
+import { runTool, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile } from './toolLog.js'
@@ -123,6 +123,23 @@ app.post('/api/tool', async (req, res) => {
   const { name, args } = req.body ?? {}
   const session = req.get('x-session-id') || null
   const started = Date.now()
+
+  /**
+   * A tool placed on the server is refused here, for every caller, always.
+   *
+   * This endpoint is how the browser reaches the engine on the WebRTC path, so "the browser
+   * must not run this" and "this endpoint must not run this" are the same sentence. The
+   * refusal is what makes the placement real: without it the tool would simply be absent
+   * from one tool list and still one POST away.
+   *
+   * It is not offered on that transport either, so a model on the direct line cannot ask
+   * for it — this catches anything that reaches the endpoint by another route.
+   */
+  if (placementOf(name) === 'server') {
+    return res.status(403).json({
+      error: `${name} runs only where the server holds the session. It is not reachable from a browser.`,
+    })
+  }
 
   try {
     const result = await runTool(name, args)

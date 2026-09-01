@@ -201,12 +201,18 @@ export async function startOpenAIRealtime({
   const keyRes = await fetch(`/api/realtime/session?${params}`)
   const keyBody = await keyRes.json()
   if (!keyRes.ok) throw new Error(keyBody.error ?? 'Could not mint a realtime key')
-  const { clientSecret, model, vad, vocabulary, hintTerms = [], interrupts = true } = keyBody
+  const { clientSecret, model, vad, vocabulary, hintTerms = [], interrupts = true, withheldTools = [] } = keyBody
   // Record what this call ran under, so a pasted trace can be compared against another
   // that was configured differently. The server reports what it USED, after clamping —
   // not what was asked for.
   if (vad) onStatus(`turn detection: ${vad}`)
   onStatus(`vocabulary bias: ${vocabulary ? 'on' : 'off'}`)
+  // What this line cannot reach, said at the start rather than discovered when an answer
+  // goes missing. On this transport the model's function calls arrive in the browser, so a
+  // tool placed on the server is not offered here at all.
+  if (withheldTools.length) {
+    onStatus(`tools: browser-run · ${withheldTools.join(', ')} withheld (server-only)`)
+  }
 
   onStatus('opening microphone')
   const mic = await navigator.mediaDevices.getUserMedia({

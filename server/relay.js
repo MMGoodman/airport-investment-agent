@@ -48,7 +48,9 @@ export function attachRelay(httpServer) {
 
     let built
     try {
-      built = await buildRealtimeSession(query)
+      // The server holds this connection, so every tool is reachable including the ones
+      // withheld from the browser path.
+      built = await buildRealtimeSession(query, 'relay')
     } catch (err) {
       tell({ type: 'error', message: err.message })
       client.close()
@@ -57,6 +59,9 @@ export function attachRelay(httpServer) {
 
     tell({ type: 'status', text: `turn detection: ${built.vadSummary}` })
     tell({ type: 'status', text: `vocabulary bias: ${built.useVocabulary ? 'on' : 'off'}` })
+    // Where the tools ran. On this transport the answer is always "here", including the
+    // ones the browser line is not offered — that difference is the whole point of it.
+    tell({ type: 'status', text: `tools: ${built.toolNames.length} · all server-side` })
 
     const upstream = new WebSocket(`${UPSTREAM}?model=${encodeURIComponent(built.model)}`, {
       headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },

@@ -480,6 +480,27 @@ export const handlers = {
   },
 }
 
+/**
+ * Where a tool is allowed to run.
+ *
+ *   'anywhere' — safe for the browser to invoke and to see the result of. Declared on both
+ *                transports; POST /api/tool will run it for a live session.
+ *   'server'   — the browser must never reach it. Declared ONLY on the relay session, where
+ *                the server holds the connection and runs it in-process, and refused
+ *                outright by /api/tool.
+ *
+ * The distinction is not a preference, it is the shape of the protocol. On WebRTC the
+ * model's function call lands on the BROWSER's data channel — the server never sees it — so
+ * a tool the browser cannot see is a tool that transport cannot offer. Marking one 'server'
+ * therefore removes it from the direct path rather than hiding it there, and the model is
+ * told so it can say the capability needs the relayed line instead of guessing.
+ *
+ * Everything here reads a local, read-only dataset except get_airport_weather, which is the
+ * one call that leaves the building. A browser-reachable endpoint for it is an open proxy
+ * through this server's address, which is the whole reason the distinction exists.
+ */
+export const PLACEMENTS = ['anywhere', 'server']
+
 /** JSON-Schema tool declarations, shared by the model call and the HTTP layer. */
 export const toolSchemas = [
   {
@@ -564,6 +585,7 @@ export const toolSchemas = [
   },
   {
     name: 'get_airport_weather',
+    placement: 'server',
     description:
       'Current weather at one covered airport, read live from a third-party feed. Use for "what is the weather at X" questions. It is an observation, not a scored figure, and it is not an input to any ranking — never use it to argue for or against an expansion. The iata argument must come from a tool result or from the caller: call list_supported_regions to turn a region or city into codes rather than recalling one. The result names the airport city, state and region — check them against what was asked before reporting the reading.',
     parameters: {
@@ -604,6 +626,23 @@ export const toolSchemas = [
  */
 const COMPONENTS_ARE =
   'percentile ranks against this peer set, 0-100. Not percentages, and not the figures they were computed from.'
+
+/** A tool's placement, defaulting to the safe-everywhere case. */
+export const placementOf = (name) =>
+  toolSchemas.find((t) => t.name === name)?.placement ?? 'anywhere'
+
+/**
+ * The tools one transport may offer.
+ *
+ * 'relay' holds the session on the server, so it gets everything. 'browser' holds it on the
+ * data channel, so anything marked 'server' is withheld — withheld, not hidden: the caller
+ * gets told what is missing so the model can name it rather than improvise around a gap.
+ */
+export function toolSchemasFor(transport) {
+  if (transport === 'relay') return { tools: toolSchemas, withheld: [] }
+  const tools = toolSchemas.filter((t) => (t.placement ?? 'anywhere') !== 'server')
+  return { tools, withheld: toolSchemas.filter((t) => t.placement === 'server').map((t) => t.name) }
+}
 
 export async function runTool(name, args) {
   const handler = handlers[name]

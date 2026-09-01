@@ -210,7 +210,11 @@ export async function startOpenAIRealtime({
 }) {
   onStatus('minting key')
 
+  // The session id goes up with the mint so the server can hold this call's ephemeral key
+  // for the sideband, which has to authenticate as the secret that created the session.
   const params = new URLSearchParams({ lang })
+  const toolSession = getToolSession()
+  if (toolSession) params.set('session', toolSession)
   for (const [k, v] of Object.entries(pipeline)) {
     if (v !== undefined && v !== null && v !== '') params.set(k, String(v))
   }

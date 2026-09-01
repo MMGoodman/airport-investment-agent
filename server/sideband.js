@@ -56,7 +56,7 @@ const serverTools = () =>
  * Returns as soon as the socket is open and the tools have been declared, so the caller can
  * tell the browser the sideband is live rather than leaving it to guess.
  */
-export function attachSideband({ callId, session, apiKey, onEvent = () => {} }) {
+export function attachSideband({ callId, session, ephemeralKey, onEvent = () => {} }) {
   if (attached.has(callId)) return attached.get(callId).ready
 
   const tools = serverTools()
@@ -66,8 +66,18 @@ export function attachSideband({ callId, session, apiKey, onEvent = () => {} }) 
     return Promise.resolve({ attached: false, tools: [] })
   }
 
+  /**
+   * The EPHEMERAL key, not the account key.
+   *
+   * The account key is what mints the session and what relay.js connects with, so it was
+   * the obvious thing to reach for here — and it is refused. The first live attempt came
+   * back "refused after 5681ms — HTTP 404", which reads like a call id that does not exist
+   * and is in fact an authentication failure wearing the wrong status code. A sideband
+   * joins a session that already belongs to a client secret, and it has to present that
+   * secret to be let in.
+   */
   const ws = new WebSocket(`${UPSTREAM}?call_id=${encodeURIComponent(callId)}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer ${ephemeralKey}` },
   })
 
   const entry = { ws, callId }

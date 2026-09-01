@@ -12,6 +12,22 @@
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { attachSideband, detachSideband } from './sideband.js'
+
+/**
+ * Ephemeral keys awaiting their sideband, by the browser's session id.
+ *
+ * Two minutes is longer than any call takes to connect and shorter than the secret itself
+ * lives, so a forgotten entry is already useless before it is dropped.
+ */
+const pendingSecrets = new Map()
+const SECRET_TTL_MS = 120_000
+
+function rememberSecret(session, secret) {
+  pendingSecrets.set(session, { secret, at: Date.now() })
+  for (const [k, v] of pendingSecrets) {
+    if (Date.now() - v.at > SECRET_TTL_MS) pendingSecrets.delete(k)
+  }
+}
 import { transcriptionPrompt } from '../src/agent/vocabulary.js'
 
 const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
@@ -331,14 +347,17 @@ export function mountVoiceRoutes(app) {
     if (!/^rtc_[A-Za-z0-9_-]+$/.test(callId ?? '')) {
       return res.status(400).json({ error: 'a call id like rtc_… is required' })
     }
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(503).json({ error: 'no OpenAI key on this server' })
+    const held = pendingSecrets.get(String(session ?? ''))
+    if (!held) {
+      // Without the secret this session was minted with, OpenAI answers 404 — a call id it
+      // will not admit exists to a caller that cannot prove it owns the session.
+      return res.status(409).json({ error: 'no ephemeral key held for this session' })
     }
     try {
       const out = await attachSideband({
         callId,
         session: session || null,
-        apiKey: process.env.OPENAI_API_KEY,
+        ephemeralKey: held.secret,
       })
       res.json(out)
     } catch (err) {
@@ -374,6 +393,21 @@ export function mountVoiceRoutes(app) {
       const body = await upstream.json()
       if (!upstream.ok) {
         return res.status(upstream.status).json({ error: body?.error?.message ?? 'OpenAI rejected the session' })
+      }
+
+      /**
+       * Keep the ephemeral value long enough for the sideband to use it.
+       *
+       * The sideband joins the session this secret created and must authenticate as that
+       * secret, so the server needs it back after the browser has connected. Held here
+       * rather than sent back up by the browser: the page already has it, but an endpoint
+       * that accepts a secret is an endpoint that can be driven with someone else's.
+       *
+       * Short-lived on purpose — the secret expires in minutes anyway, and a map of live
+       * credentials should not outlive the calls that need them.
+       */
+      if (req.query.session) {
+        rememberSecret(String(req.query.session), body.value)
       }
 
       // Only the ephemeral value crosses to the browser — never the account key.

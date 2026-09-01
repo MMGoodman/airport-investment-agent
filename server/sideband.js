@@ -51,6 +51,16 @@ const serverTools = () =>
   toolSchemasFor('relay').tools.filter((t) => placementOf(t.name) === 'server')
 
 /**
+ * The WHOLE list, because session.update replaces it rather than adding to it.
+ *
+ * Sending only the server-placed tool would have deleted the six the browser owns the
+ * instant this attached — the model would have lost every ranking and comparison tool in
+ * exchange for the weather. The bug could only ever have shown up on the first call where
+ * the sideband succeeded, which is to say on the first call where any of this worked.
+ */
+const fullToolList = () => toolSchemasFor('relay').tools
+
+/**
  * Attach to a live WebRTC session and take over its server-placed tools.
  *
  * Returns as soon as the socket is open and the tools have been declared, so the caller can
@@ -132,7 +142,7 @@ export function attachSideband({ callId, session, ephemeralKey, onEvent = () => 
         type: 'session.update',
         session: {
           type: 'realtime',
-          tools: tools.map((t) => ({
+          tools: fullToolList().map((t) => ({
             type: 'function',
             name: t.name,
             description: t.description,
@@ -143,7 +153,11 @@ export function attachSideband({ callId, session, ephemeralKey, onEvent = () => 
           })),
         },
       })
-      console.log(`sideband ${callId}: declared ${tools.map((t) => t.name).join(', ')}`)
+      console.log(
+        `sideband ${callId}: declared ${fullToolList().length} tools, answering ${tools
+          .map((t) => t.name)
+          .join(', ')}`,
+      )
       resolve({ attached: true, tools: tools.map((t) => t.name) })
     })
   })

@@ -3,6 +3,7 @@ import { applyTheme, readTheme } from './theme.js'
 import AgentConsole from './AgentConsole.jsx'
 import Home from './Home.jsx'
 import AgentWorkspace from './AgentWorkspace.jsx'
+import ScenarioCapture from './ScenarioCapture.jsx'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -82,6 +83,8 @@ function App() {
    * do that. Null until the pane is opened, which is also correct — a portal with nowhere
    * to go renders inline, and inline is where the settings belong when there is no pane.
    */
+  /** The turn being turned into an eval case, or null. */
+  const [capturing, setCapturing] = useState(null)
   const [wsPane, setWsPane] = useState(null)
   const [settingsSlot, setSettingsSlot] = useState(null)
   const [traceSlot, setTraceSlot] = useState(null)
@@ -343,6 +346,8 @@ function App() {
       </header>
 
 
+      <ScenarioCapture turn={capturing} onClose={() => setCapturing(null)} />
+
       <AgentWorkspace
         nav={[
           {
@@ -430,6 +435,25 @@ function App() {
               {message.role === 'user' ? message.content : <Markdown text={message.content} />}
             </div>
             <ToolTrace calls={message.toolCalls} />
+            {/* An answer plus the question above it is a case. The button is quiet until
+                the message is hovered: capturing is occasional, and one on every answer
+                would compete with the answers. */}
+            {message.role === 'assistant' && messages[i - 1]?.role === 'user' && (
+              <button
+                type="button"
+                className="msg-capture"
+                onClick={() =>
+                  setCapturing({
+                    ask: messages[i - 1].content,
+                    reply: message.content,
+                    toolCalls: message.toolCalls ?? [],
+                    lang,
+                  })
+                }
+              >
+                צור מקרה בחינה
+              </button>
+            )}
           </article>
         ))}
 

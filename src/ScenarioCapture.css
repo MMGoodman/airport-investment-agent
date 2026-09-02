@@ -1,0 +1,204 @@
+/**
+ * Capturing an eval case from a turn.
+ *
+ * A review surface, so the thing being reviewed stays visible: the reply the suggestions
+ * came from sits at the bottom in a disclosure rather than being summarised away. The
+ * chips are the only interactive colour on the sheet — everything else is quiet, because
+ * the decision is which suggestions to keep.
+ */
+
+.sc-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5) var(--gutter);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  overflow: auto;
+}
+
+.sc {
+  inline-size: min(680px, 100%);
+  max-block-size: calc(100svh - var(--space-6));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  direction: rtl;
+}
+
+.sc-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-block-end: 1px solid var(--rule);
+}
+
+.sc-top h3 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.sc-sub {
+  margin-block-start: var(--space-2);
+  font-size: var(--fs-xs);
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.sc-body {
+  overflow-y: auto;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sc-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sc-field > span {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.sc-field input,
+.sc-field select,
+.sc-field textarea {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-3);
+  min-block-size: 38px;
+  color: var(--text);
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  resize: vertical;
+}
+
+.sc-field input[readonly] {
+  color: var(--text-dim);
+  cursor: default;
+}
+
+.sc-hint {
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* ---- chips ---------------------------------------------------------------
+   Kept is the default and dropped is the deliberate act, so "on" is the plain
+   state and "off" is the one that looks struck out. */
+
+.sc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sc-chip {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 30px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule-strong);
+  background: var(--bg-sunk);
+  color: var(--text-dim);
+  cursor: pointer;
+  text-decoration: line-through;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.sc-chip.on {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 45%, transparent);
+  background: var(--live-soft);
+  text-decoration: none;
+}
+
+/* The tools are not a suggestion — they are what ran. */
+.sc-chip.locked {
+  cursor: default;
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 45%, transparent);
+  background: var(--signal-soft);
+}
+
+/* ---- the source ---------------------------------------------------------- */
+
+.sc-source {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--bg-sunk);
+  padding: var(--space-3);
+}
+
+.sc-source summary {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.sc-source p {
+  margin-block-start: var(--space-3);
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.sc-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block-start: var(--space-2);
+}
+
+.sc-export {
+  font-size: var(--fs-xs);
+  color: var(--live);
+}
+
+/* The trigger on a message. Quiet until the message is hovered — it is an occasional act,
+   and a button on every answer would compete with the answers. */
+.msg-capture {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 28px;
+  margin-block-start: var(--space-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.msg:hover .msg-capture,
+.msg-capture:focus-visible {
+  opacity: 1;
+}
+
+.msg-capture:hover {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 45%, transparent);
+}
+
+/* Touch has no hover, so the trigger is simply always there. */
+@media (hover: none) {
+  .msg-capture {
+    opacity: 1;
+  }
+}

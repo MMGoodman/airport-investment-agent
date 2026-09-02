@@ -44,14 +44,13 @@ export default function ToolTrace({ calls }) {
             {open && (
               <pre className="trace-body">
                 {call.ranOn === 'server'
-                  ? 'Your server answered this one, on its own connection to the same session.
-' +
-                    'The result went straight from the server to the model — this page never received it,
-' +
-                    'which is the whole reason the tool is placed there.
-
-' +
-                    'The spoken answer above IS that result, read out by the model.'
+                  ? [
+                      'Your server answered this one, on its own connection to the same session.',
+                      'The result went from the server straight to the model — this page never',
+                      'received it, which is the whole reason the tool is placed there.',
+                      '',
+                      'The spoken answer above IS that result, read out by the model.',
+                    ].join('\n')
                   : JSON.stringify(call.result, null, 2)}
               </pre>
             )}

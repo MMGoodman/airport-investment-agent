@@ -1178,3 +1178,55 @@ kbd {
   background: var(--bg-sunk);
   border-color: var(--rule);
 }
+
+/**
+ * Which path you are on, in the header.
+ *
+ * Two facts, because the second was the one nobody could see: the name of the transport,
+ * and how many of the eight tools it actually carries. A path that runs six is not a
+ * smaller version of one that runs eight — it will decline questions the other answers,
+ * and until this chip existed the only way to know was to ask and be refused.
+ */
+.path-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 5px var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.path-chip-name {
+  color: var(--text);
+}
+
+/* The count sits behind a rule so it reads as a second fact, not a suffix of the name. */
+.path-chip-tools {
+  padding-inline-start: var(--space-2);
+  border-inline-start: 1px solid var(--rule);
+}
+
+/* Amber, on the same scale the rest of the interface uses for "worth knowing before you
+   act" — not red: a narrowed path is a deliberate setting, not a fault. */
+.path-chip.narrowed {
+  border-color: color-mix(in srgb, var(--signal) 45%, transparent);
+  background: color-mix(in srgb, var(--signal) 10%, transparent);
+}
+
+.path-chip.narrowed .path-chip-tools {
+  color: var(--signal);
+  border-inline-start-color: color-mix(in srgb, var(--signal) 40%, transparent);
+}
+
+/* Below the width where the header controls start wrapping, the name alone is enough —
+   the count is the first thing to go, not the identity. */
+@media (max-width: 720px) {
+  .path-chip-tools {
+    display: none;
+  }
+}

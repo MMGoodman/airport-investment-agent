@@ -248,6 +248,36 @@ function App() {
           </div>
         </div>
         <div className="topbar-right">
+          {/*
+            Which path this is, and how much of the agent it carries.
+            The second half is the part that was missing: two of the five paths run six
+            tools and three run eight, and a caller asked why the weather tool "did not
+            work" on the direct line when it had never been offered there. The switcher
+            said which model; nothing said what the model could reach.
+            Amber when something is withheld, because that is a fact about the answer you
+            are about to get rather than a decoration.
+          */}
+          {activeProvider && (
+            <span
+              className={`path-chip ${activeProvider.tools?.withheld?.length ? 'narrowed' : ''}`}
+              title={
+                activeProvider.tools?.withheld?.length
+                  ? `${activeProvider.pipeline}
+
+Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only where the server holds the session.`
+                  : activeProvider.pipeline
+              }
+            >
+              <span className="path-chip-name mono">
+                {activeProvider.short ?? activeProvider.label}
+              </span>
+              {activeProvider.tools && (
+                <span className="path-chip-tools mono">
+                  {activeProvider.tools.offered}/{activeProvider.tools.total}
+                </span>
+              )}
+            </span>
+          )}
           <button
             type="button"
             className={`toggle ${readAloud ? 'on' : ''}`}

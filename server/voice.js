@@ -273,6 +273,26 @@ export function mountVoiceRoutes(app) {
   mountKnowledgeRoutes(app)
 
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
+/**
+ * What a transport can reach, taken from the function that enforces it.
+ *
+ * The switcher described a path without saying how much of the agent it carries, and that
+ * difference is the whole point of having five of them: two paths run six tools and three
+ * run eight. Asked why the weather tool "did not work" on the direct line, the answer was
+ * that it had never been offered there — a fact that lived in the code and nowhere on the
+ * screen.
+ *
+ * Derived, never typed: add a server-placed tool tomorrow and every row updates itself.
+ */
+const ALL_TOOLS = toolSchemasFor('relay').tools.length
+const BROWSER_TOOLS = toolSchemasFor('browser')
+
+/** 'server' means this path runs every tool; 'browser' means the placed ones are out of reach. */
+const toolReach = (reach) =>
+  reach === 'server'
+    ? { offered: ALL_TOOLS, total: ALL_TOOLS, withheld: [] }
+    : { offered: BROWSER_TOOLS.tools.length, total: ALL_TOOLS, withheld: BROWSER_TOOLS.withheld }
+
   app.get('/api/voice/providers', (req, res) => {
     res.json({
       // Which language the UI opens on. Hebrew is the default here because that is what
@@ -285,6 +305,8 @@ export function mountVoiceRoutes(app) {
           mode: 'text',
           available: Boolean(process.env.GEMINI_API_KEY),
           model: GEMINI_MODEL,
+          short: 'gemini · text',
+          tools: toolReach('server'),
           pipeline: GEMINI_MODEL,
           transport: 'HTTP · POST /api/chat',
         },
@@ -295,6 +317,8 @@ export function mountVoiceRoutes(app) {
           mode: 'live',
           available: Boolean(process.env.OPENAI_API_KEY),
           model: OPENAI_MODEL,
+          short: `${OPENAI_MODEL} · voice`,
+          tools: toolReach('browser'),
           pipeline: `${OPENAI_MODEL} (native speech-to-speech)`,
           transport: 'WebRTC · speech-to-speech',
         },
@@ -312,6 +336,8 @@ export function mountVoiceRoutes(app) {
           mode: 'live',
           available: Boolean(process.env.OPENAI_API_KEY),
           model: OPENAI_MODEL,
+          short: `${OPENAI_MODEL} · hybrid`,
+          tools: toolReach('server'),
           pipeline: `${OPENAI_MODEL} — hybrid: audio direct, server-placed tools on a sideband`,
           transport: 'WebRTC + server sideband · one session',
         },
@@ -325,6 +351,8 @@ export function mountVoiceRoutes(app) {
           mode: 'live',
           available: Boolean(process.env.OPENAI_API_KEY),
           model: OPENAI_MODEL,
+          short: `${OPENAI_MODEL} · via server`,
+          tools: toolReach('server'),
           pipeline: `${OPENAI_MODEL} — relayed: audio through your server, tools in-process`,
           transport: 'WebSocket · browser → your server → OpenAI',
         },
@@ -342,6 +370,8 @@ export function mountVoiceRoutes(app) {
           ),
           note: SONIOX_FUNDED ? null : 'needs a funded Soniox account — set SONIOX_FUNDED=true once topped up',
           model: `${SONIOX_STT} + ${CASCADE_TTS}`,
+          short: 'cascade · 3 vendors',
+          tools: toolReach('browser'),
           pipeline: `${SONIOX_STT} → ${GEMINI_MODEL} → ${CASCADE_TTS} (assembled — three vendors)`,
           transport: 'WebSocket STT · our agent · REST TTS',
         },
@@ -356,6 +386,8 @@ export function mountVoiceRoutes(app) {
           pipeline:
             `scribe_realtime → ${EL_LLM} → ${EL_TTS} (cascade)` +
             (EL_FAST_TTS && EL_FAST_TTS !== EL_TTS ? ` · English swaps to ${EL_FAST_TTS}` : ''),
+          short: 'elevenlabs · cascade',
+          tools: toolReach('browser'),
           transport: 'WebSocket · agent platform',
         },
       ],

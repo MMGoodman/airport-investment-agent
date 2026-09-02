@@ -26,13 +26,16 @@
  * vocabulary bias, or without a scoring engine behind it, simply omits those and the
  * sidebar shows fewer sections rather than empty ones.
  */
+import { toolSchemas } from '../src/agent/tools.js'
+import { cases as evalCases } from '../eval/cases.js'
+
 export const AGENTS = [
   {
     id: 'airport-investment',
     name: 'Airport Investment Agent',
     tagline: 'US terminal expansion — demand opportunity analysis',
     description:
-      'An aviation investment analyst. It computes nothing itself: every figure it states comes from a deterministic scoring engine over BTS T-100 data, reached through seven tools.',
+      'An aviation investment analyst. It computes nothing itself: every figure it states comes from a deterministic scoring engine over BTS T-100 data, reached through tools.',
     /** Which of the switcher entries this agent is built to run on. */
     transports: ['gemini', 'openai', 'openai-hybrid', 'openai-relay', 'elevenlabs'],
     defaultTransport: 'openai-hybrid',
@@ -44,11 +47,21 @@ export const AGENTS = [
       vocabulary: true,
       evals: true,
     },
-    /** The one-line facts a card shows without loading the whole workbench. */
+    /**
+     * The one-line facts a card shows without loading the whole workbench.
+     *
+     * Counted, not typed. These were literals and both had gone stale: the card said seven
+     * tools while the agent carried eight, and the description said "seven tools" in prose
+     * where no reader would think to check it. A number that describes the code belongs to
+     * the code.
+     *
+     * airports stays a literal because reading it means loading the store, which is the
+     * one thing a card is supposed to avoid — `npm run verify` asserts it instead.
+     */
     summary: {
-      tools: 7,
+      tools: toolSchemas.length,
       airports: 158,
-      evalCases: 19,
+      evalCases: evalCases.length,
     },
   },
 ]

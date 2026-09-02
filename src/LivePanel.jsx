@@ -26,6 +26,9 @@ const STARTERS = {
   'openai-hybrid': (opts) => startOpenAIRealtime({ ...opts, sideband: true }),
   'openai-relay': startOpenAIRelay,
   elevenlabs: startElevenLabs,
+  // Same client, different synced agent. The choice travels to the signed-url route, which
+  // holds both ids next to the API key rather than exposing either to the page.
+  'elevenlabs-hybrid': (opts) => startElevenLabs({ ...opts, agent: 'hybrid' }),
   soniox: startSoniox,
 }
 

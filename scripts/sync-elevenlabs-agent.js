@@ -29,6 +29,8 @@ const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback)
 const API = 'https://api.elevenlabs.io/v1/convai'
 const KEY = process.env.ELEVENLABS_API_KEY
 const AGENT_NAME = 'airport-investment-agent'
+/** The same agent with the placed tools on a webhook. Its own row in the switcher. */
+const HYBRID_AGENT_NAME = 'airport-investment-agent-hybrid'
 
 if (!KEY) {
   console.error('ELEVENLABS_API_KEY is not set in .env.')
@@ -94,9 +96,6 @@ const webhookTools = webhookToolsFor()
  * you, when another transport answers it in one call, is the worst of the available wrong
  * answers, because they stop asking.
  */
-const stillWithheld = withheld.filter((name) => !webhookTools.some((t) => t.name === name))
-const WITHHELD = withheldNote(stillWithheld, ELEVENLABS_REMEDY)
-
 const tools = offered.map((t) => ({
   type: 'client',
   name: t.name,
@@ -112,18 +111,25 @@ const tools = offered.map((t) => ({
   },
 }))
 
-/**
- * One list, two kinds.
- *
- * The six the browser runs, then whatever the webhook half added — which is nothing unless
- * this deployment is reachable. The agent sees a single tool list either way; the difference
- * is who ElevenLabs asks when the model reaches for one.
- */
-const allTools = [...tools, ...webhookTools]
+/** The same bias list for both agents, so resolve it once rather than per build. */
+const ASR_KEYWORDS = await asrKeywords()
 
 const SPOKEN_PROMPT = SYSTEM_PROMPT + VOICE_ADDENDUM
 
-const conversation_config = {
+/**
+ * One agent's configuration, as a function of the tools it can reach.
+ *
+ * Called twice. Everything it produces — prompt, voice, turn settings, ASR, language
+ * presets — is identical between the two agents; the ONLY difference is `webhookTools`,
+ * and the withheld note that follows from it. That is the same discipline the OpenAI pair
+ * follows, and it is what makes the two rows in the switcher a comparison rather than two
+ * unrelated agents that happen to share a name.
+ */
+const buildConfig = (webhookTools) => {
+  const stillWithheld = withheld.filter((name) => !webhookTools.some((t) => t.name === name))
+  const WITHHELD = withheldNote(stillWithheld, ELEVENLABS_REMEDY)
+  const allTools = [...tools, ...webhookTools]
+  return {
   agent: {
     language: 'en',
     first_message:
@@ -255,7 +261,7 @@ const conversation_config = {
   // here; the list is closed, which is the cost of a managed platform.
   asr: {
     provider: process.env.ELEVENLABS_ASR_PROVIDER || 'scribe_realtime',
-    keywords: await asrKeywords(),
+    keywords: ASR_KEYWORDS,
   },
   // Set ELEVENLABS_REALTIME_MODEL to collapse the cascade into one native
   // speech-to-speech model — the same shape the OpenAI path uses. Left unset it stays a
@@ -263,6 +269,7 @@ const conversation_config = {
   ...(process.env.ELEVENLABS_REALTIME_MODEL
     ? { realtime_model: process.env.ELEVENLABS_REALTIME_MODEL }
     : {}),
+  }
 }
 
 // Without this the platform refuses any client-side override, and the browser could not
@@ -285,79 +292,98 @@ const platform_settings = {
 const BACKUPS = join(dirname(fileURLToPath(import.meta.url)), '..', '.backups')
 const headers = { 'xi-api-key': KEY, 'Content-Type': 'application/json' }
 
-async function findExisting() {
+/**
+ * Two agents, differing in one property.
+ *
+ * The plain one runs six client tools. The hybrid one runs the same six plus the two placed
+ * tools as webhooks, which ElevenLabs' cloud calls on this server. Everything else — prompt,
+ * voice, turn settings, ASR, language presets — comes from the same function and the same
+ * inputs, because a comparison between two things that differ in three ways measures nothing.
+ *
+ * The hybrid agent is only created when the webhook half is configured. An agent declaring
+ * webhook tools at a URL nobody can reach is worse than no agent at all: it would appear in
+ * the switcher, take a call, and fail at the first tool.
+ */
+async function findByName(name) {
   const res = await fetch(`${API}/agents?page_size=100`, { headers })
   if (!res.ok) return null
   const { agents = [] } = await res.json()
-  return agents.find((a) => a.name === AGENT_NAME) ?? null
+  return agents.find((a) => a.name === name) ?? null
 }
-
-const existing = await findExisting()
 
 /**
  * Keep what is about to be overwritten.
  *
- * A PATCH here replaces the whole conversation_config, including anything set by hand in
- * the ElevenLabs dashboard. speculative_turn had arrived exactly that way — on, against the
+ * A PATCH replaces the whole conversation_config, including anything set by hand in the
+ * ElevenLabs dashboard. speculative_turn had arrived exactly that way — on, against the
  * documented default, with nothing in this repo recording it — and it was found by reading
  * the live agent rather than by anything here knowing. The next such setting should be
- * recoverable instead of merely gone.
+ * recoverable rather than merely gone.
  *
- * A snapshot is not a rollback, and it is not offered as one: it is the previous config on
- * disk, in a directory git ignores, so a person can see what changed and put it back.
+ * A snapshot is not a rollback and is not offered as one: it is the previous config on disk,
+ * in a directory git ignores, so a person can see what changed and put it back.
  */
-async function snapshot(agentId) {
+async function snapshot(agentId, label) {
   const res = await fetch(`${API}/agents/${agentId}`, { headers })
   if (!res.ok) {
-    console.warn(`  could not snapshot the live agent (${res.status}) — continuing without one`)
+    console.warn(`  could not snapshot ${label} (${res.status}) — continuing without one`)
     return null
   }
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-  const path = join(BACKUPS, `elevenlabs-agent-${stamp}.json`)
+  const path = join(BACKUPS, `${label}-${stamp}.json`)
   await mkdir(BACKUPS, { recursive: true })
   await writeFile(path, JSON.stringify(await res.json(), null, 2))
   return path
 }
 
-const saved = existing ? await snapshot(existing.agent_id) : null
+async function syncAgent({ name, webhookTools: hooks, envVar }) {
+  const config = buildConfig(hooks)
+  const existing = await findByName(name)
+  const saved = existing ? await snapshot(existing.agent_id, name) : null
 
-// Never touch an agent we did not create — the configured id may belong to another project.
-const res = existing
-  ? await fetch(`${API}/agents/${existing.agent_id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ name: AGENT_NAME, conversation_config, platform_settings }),
-    })
-  : await fetch(`${API}/agents/create`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ name: AGENT_NAME, conversation_config, platform_settings }),
-    })
+  // Never touch an agent we did not create — a configured id may belong to another project.
+  const res = existing
+    ? await fetch(`${API}/agents/${existing.agent_id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ name, conversation_config: config, platform_settings }),
+      })
+    : await fetch(`${API}/agents/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name, conversation_config: config, platform_settings }),
+      })
 
-const body = await res.json()
-if (!res.ok) {
-  console.error(`\n  ${res.status} from ElevenLabs:\n`, JSON.stringify(body, null, 2).slice(0, 2000))
-  process.exit(1)
+  const body = await res.json()
+  if (!res.ok) {
+    console.error(`\n  ${res.status} from ElevenLabs for ${name}:\n`, JSON.stringify(body, null, 2).slice(0, 1500))
+    process.exit(1)
+  }
+
+  const id = body.agent_id ?? existing?.agent_id
+  const placed = hooks.map((t) => t.name)
+  const missing = withheld.filter((n) => !placed.includes(n))
+  const total = tools.length + withheld.length
+
+  console.log(`\n  ${existing ? 'updated' : 'created'} "${name}"`)
+  console.log(`  ${tools.length} client · ${hooks.length} webhook · ${tools.length + hooks.length}/${total} of the agent`)
+  if (placed.length) console.log(`  their cloud calls this server for: ${placed.join(', ')}`)
+  if (missing.length) console.log(`  withheld: ${missing.join(', ')}`)
+  console.log(`  prompt: ${config.agent.prompt.prompt.length} chars`)
+  if (saved) console.log(`  previous config saved to ${relative(process.cwd(), saved)}`)
+  console.log(`  ${envVar}=${id}`)
+  return id
 }
 
-const id = body.agent_id ?? existing?.agent_id
-console.log(`\n  ${existing ? 'updated' : 'created'} "${AGENT_NAME}"`)
-console.log(`  ${tools.length} client tools: ${tools.map((t) => t.name).join(', ')}`)
-if (webhookTools.length) {
-  console.log(
-    `  ${webhookTools.length} webhook tools (ElevenLabs' cloud calls this server): ${webhookTools.map((t) => t.name).join(', ')}`,
-  )
+console.log(`\n  hybrid: ${hybrid.enabled ? 'ON' : 'off'} — ${hybrid.reason}`)
+
+await syncAgent({ name: AGENT_NAME, webhookTools: [], envVar: 'ELEVENLABS_AGENT_ID' })
+
+if (hybrid.enabled) {
+  await syncAgent({ name: HYBRID_AGENT_NAME, webhookTools, envVar: 'ELEVENLABS_HYBRID_AGENT_ID' })
+} else {
+  console.log(`\n  "${HYBRID_AGENT_NAME}" not synced — it would declare webhook tools at a URL nobody can reach.`)
+  console.log('  Set PUBLIC_BASE_URL and ELEVENLABS_WEBHOOK_SECRET, then run this again.')
 }
-if (stillWithheld.length) {
-  console.log(`  withheld: ${stillWithheld.join(', ')}`)
-}
-console.log(`  hybrid: ${hybrid.enabled ? 'ON' : 'off'} — ${hybrid.reason}`)
-// What was SENT, not what SPOKEN_PROMPT happens to be: the language instruction and the
-// withheld note are appended after it, and reporting the shorter number made a prompt that
-// had grown by 1,479 characters look unchanged.
-console.log(
-  `  prompt: ${conversation_config.agent.prompt.prompt.length} chars — the text path's prompt, spoken-delivery rules${WITHHELD ? ', and the withheld-tools note' : ''}`,
-)
-if (saved) console.log(`  previous config saved to ${relative(process.cwd(), saved)}`)
-console.log('  languages: en, he (the preset switches transcriber and voice, not just wording)')
-console.log(`  ELEVENLABS_AGENT_ID=${id}\n`)
+
+console.log('\n  languages: en, he (the preset switches transcriber and voice, not just wording)\n')

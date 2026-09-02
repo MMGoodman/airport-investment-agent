@@ -388,11 +388,43 @@ const toolReach = (reach) =>
             `scribe_realtime → ${EL_LLM} → ${EL_TTS} (cascade)` +
             (EL_FAST_TTS && EL_FAST_TTS !== EL_TTS ? ` · English swaps to ${EL_FAST_TTS}` : ''),
           short: 'elevenlabs · cascade',
-          // Six normally; eight when the webhook hybrid is configured, because their cloud
-          // then calls this server for the placed tools. Read at request time rather than at
-          // module load, so turning a tunnel on does not need a restart to show up here.
-          tools: toolReach(webhookHybridStatus().enabled ? 'server' : 'browser'),
+          tools: toolReach('browser'),
           transport: 'WebSocket · agent platform',
+        },
+        {
+          /**
+           * The same cascade with the placed tools on a webhook.
+           *
+           * Its own row for the same reason the OpenAI hybrid has one: the difference is
+           * the thing worth seeing, and a row that sometimes behaves differently is not
+           * comparable to anything. Two synced agents, built by one function from one set
+           * of inputs, differing in whether get_airport_weather and search_knowledge are
+           * declared as webhooks.
+           *
+           * And a different mechanism from the OpenAI hybrid, which is the interesting
+           * part: there the server opens a second connection INTO the session; here
+           * ElevenLabs' cloud calls an endpoint on the server. Same guarantee that the page
+           * cannot invoke those tools, opposite arrows, and only one of the two puts
+           * anything on the public internet.
+           */
+          id: 'elevenlabs-hybrid',
+          label: `${EL_LLM} → ${EL_TTS} · voice · hybrid`,
+          mode: 'live',
+          // Needs the agent to exist, which needs the webhook half configured. Listed as
+          // unavailable rather than hidden, so the row explains what is missing.
+          available: Boolean(
+            process.env.ELEVENLABS_API_KEY &&
+              process.env.ELEVENLABS_HYBRID_AGENT_ID &&
+              webhookHybridStatus().enabled,
+          ),
+          note: webhookHybridStatus().enabled
+            ? undefined
+            : `${webhookHybridStatus().reason} Run npm run sync:agent once both are set.`,
+          model: `${EL_LLM} → ${EL_TTS}`,
+          pipeline: `scribe_realtime → ${EL_LLM} → ${EL_TTS} (cascade) — hybrid: their cloud calls your server for the placed tools`,
+          short: 'elevenlabs · hybrid',
+          tools: toolReach('server'),
+          transport: 'WebSocket · agent platform + webhook to your server',
         },
       ],
     })
@@ -647,14 +679,29 @@ const toolReach = (reach) =>
    * how the voice path stays pinned to the repo's prompt rather than the dashboard's copy.
    */
   app.get('/api/voice/signed-url', async (req, res) => {
-    const { ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID } = process.env
-    if (!ELEVENLABS_API_KEY || !ELEVENLABS_AGENT_ID) {
-      return res.status(503).json({ error: 'ELEVENLABS_API_KEY or ELEVENLABS_AGENT_ID is not set in .env.' })
+    const { ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID, ELEVENLABS_HYBRID_AGENT_ID } = process.env
+
+    /**
+     * Two agents, one route.
+     *
+     * They differ in one property — whether the placed tools are declared as webhooks — and
+     * everything else about them is built from the same function. Picking between them here
+     * rather than in the browser keeps the ids on the server, where the API key already is.
+     */
+    const wantsHybrid = req.query.agent === 'hybrid'
+    const agentId = wantsHybrid ? ELEVENLABS_HYBRID_AGENT_ID : ELEVENLABS_AGENT_ID
+
+    if (!ELEVENLABS_API_KEY || !agentId) {
+      return res.status(503).json({
+        error: wantsHybrid
+          ? 'ELEVENLABS_HYBRID_AGENT_ID is not set. Configure PUBLIC_BASE_URL and ELEVENLABS_WEBHOOK_SECRET, then run npm run sync:agent to create it.'
+          : 'ELEVENLABS_API_KEY or ELEVENLABS_AGENT_ID is not set in .env.',
+      })
     }
 
     try {
       const upstream = await mintFetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${ELEVENLABS_AGENT_ID}`,
+        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
         { headers: { 'xi-api-key': ELEVENLABS_API_KEY } },
         'ElevenLabs',
       )
@@ -671,7 +718,11 @@ const toolReach = (reach) =>
 
       res.json({
         signedUrl: body.signed_url,
-        agentId: ELEVENLABS_AGENT_ID,
+        agentId,
+        // The handlers the page should register. On the hybrid agent the placed tools are
+        // fetched by ElevenLabs' cloud instead, so the page must NOT answer them — this is
+        // the browser's half in both configurations, named by the side that knows.
+        clientTools: toolSchemasFor('browser').tools.map((t) => t.name),
         lang,
         ttsModelId,
         prompt: effectivePrompt() + effectiveVoiceAddendum() + languageInstruction(lang, true),

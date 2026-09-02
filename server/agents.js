@@ -37,7 +37,7 @@ export const AGENTS = [
     description:
       'An aviation investment analyst. It computes nothing itself: every figure it states comes from a deterministic scoring engine over BTS T-100 data, reached through tools.',
     /** Which of the switcher entries this agent is built to run on. */
-    transports: ['gemini', 'openai', 'openai-hybrid', 'openai-relay', 'elevenlabs'],
+    transports: ['gemini', 'openai', 'openai-hybrid', 'openai-relay', 'elevenlabs', 'elevenlabs-hybrid'],
     defaultTransport: 'openai-hybrid',
     languages: ['he', 'en'],
     capabilities: {

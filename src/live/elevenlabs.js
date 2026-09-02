@@ -25,18 +25,25 @@ import { callTool, parseArgs } from './tools.js'
  * that only shows up mid-call. Importing the schemas directly would close the gap, but
  * tools.js reaches data/store.js and node:fs through it, which cannot be bundled.
  */
-const TOOL_NAMES = [
-  'list_supported_regions',
-  'rank_airports',
-  'compare_airports',
-  'get_airport_profile',
-  'get_flight_mix',
-  'get_airport_weather',
-  'end_call',
-]
+/**
+ * The tools THIS page registers handlers for — named by the server, not by this file.
+ *
+ * It was a hand-written array and it had gone stale in the way that matters: it still
+ * listed get_airport_weather, a server-placed tool. Harmless while the agent was never told
+ * about it, but on the hybrid agent — where ElevenLabs' own cloud fetches that tool — a
+ * client handler for it is a second and wrong answer to the same question.
+ *
+ * Importing the schema module to derive it was the obvious fix and the wrong one: it drags
+ * data/store.js, and with it node:fs, into the browser bundle. That compiles cleanly and
+ * blanks the page at runtime; browser-safe.test.js caught it, having been written the last
+ * time it happened. So the list arrives with the signed URL, from the side that can read
+ * the schemas safely.
+ */
 
 export async function startElevenLabs({
   lang = 'en',
+  /** 'plain' or 'hybrid' — which of the two synced agents to open. */
+  agent = 'plain',
   onStatus = () => {},
   onRawEvent = () => {},
   onUserTranscript = () => {},
@@ -48,15 +55,16 @@ export async function startElevenLabs({
 }) {
   onStatus('minting key')
 
-  const res = await fetch(`/api/voice/signed-url?lang=${lang}`)
+  const res = await fetch(`/api/voice/signed-url?lang=${lang}&agent=${agent}`)
   const body = await res.json()
   if (!res.ok) throw new Error(body.error ?? 'Could not mint a signed URL')
+  const toolNames = body.clientTools ?? []
 
   onStatus('opening microphone')
   await navigator.mediaDevices.getUserMedia({ audio: true })
 
   const clientTools = Object.fromEntries(
-    TOOL_NAMES.map((name) => [
+    toolNames.map((name) => [
       name,
       async (params) => {
         const record = await callTool(name, parseArgs(params))

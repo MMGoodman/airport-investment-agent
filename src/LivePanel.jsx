@@ -400,10 +400,24 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           const args = Object.entries(record.args ?? {})
             .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
             .join(' · ')
-          push('tool', `${record.tool}${args ? `  ${args}` : ''}`)
+          /**
+           * Say which side ran it, and do not invent a result row for the side that did not.
+           *
+           * On the hybrid both connections hear every function call; only one answers. The
+           * browser sees the weather call go past and never receives its result, so
+           * JSON.stringify(undefined).length threw here and the row vanished — leaving a
+           * trace where a browser-run tool has two lines and a server-run tool has one, for
+           * a reason a reader had to work out. It is stated now.
+           */
+          const ranOnServer = record.ranOn === 'server'
+          push('tool', `${record.tool}${args ? `  ${args}` : ''}${ranOnServer ? '   · your server ran it' : ''}`)
+          if (ranOnServer) {
+            push('result', `${record.tool} answered by your server — the browser never saw the result`)
+            return
+          }
           // Payload size is usually the reason a spoken answer was slow to start.
           push('result', `${record.tool} returned`, {
-            bytes: JSON.stringify(record.result).length,
+            bytes: JSON.stringify(record.result ?? null).length,
             ms: record.ms,
           })
         },

@@ -84,23 +84,23 @@ function Icon({ name }) {
 /** Grouped by what the section is for: what you set, what it knows, what checks it. */
 const GROUPS = [
   {
-    label: 'הגדרה',
+    label: 'Behaviour',
     items: [
-      { id: 'prompt', label: 'הוראות', icon: 'prompt' },
-      { id: 'skills', label: 'סקילים', icon: 'skills' },
-      { id: 'tools', label: 'כלים', icon: 'tools' },
+      { id: 'prompt', label: 'Instructions', icon: 'prompt' },
+      { id: 'skills', label: 'Skills', icon: 'skills' },
+      { id: 'tools', label: 'Tools', icon: 'tools' },
     ],
   },
   {
-    label: 'ידע',
+    label: 'Data',
     items: [
-      { id: 'knowledge', label: 'מאגר נתונים', icon: 'knowledge' },
-      { id: 'vocabulary', label: 'אוצר מילים', icon: 'vocabulary' },
+      { id: 'knowledge', label: 'Knowledge base', icon: 'knowledge' },
+      { id: 'vocabulary', label: 'Vocabulary', icon: 'vocabulary' },
     ],
   },
   {
-    label: 'בקרה',
-    items: [{ id: 'evals', label: 'הערכות', icon: 'evals' }],
+    label: 'Quality',
+    items: [{ id: 'evals', label: 'Evals', icon: 'evals' }],
   },
 ]
 

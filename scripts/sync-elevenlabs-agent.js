@@ -11,7 +11,7 @@
  */
 import 'dotenv/config'
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
-import { toolSchemas } from '../src/agent/tools.js'
+import { toolSchemasFor } from '../src/agent/tools.js'
 import { asrKeywords } from '../src/agent/vocabulary.js'
 
 const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback)
@@ -48,7 +48,22 @@ function toElevenLabsParam(schema, name = 'value') {
   return out
 }
 
-const tools = toolSchemas.map((t) => ({
+/**
+ * Client tools — so the BROWSER runs every one of these.
+ *
+ * That makes this the same transport as the direct WebRTC line as far as placement is
+ * concerned, and it has to be built the same way. It was not: this mapped every schema,
+ * which would have handed ElevenLabs get_airport_weather and search_knowledge as client
+ * tools. The page would call POST /api/tool, get the 403 that placement exists to return,
+ * and the agent would report a tool failure to the caller — a placement leak that only
+ * shows up on the next sync, in a SaaS dashboard, minutes from the code that caused it.
+ *
+ * ElevenLabs has no equivalent of the sideband, so a server-placed tool cannot be offered
+ * here at all. The withheld list is printed at the end rather than left silent.
+ */
+const { tools: offered, withheld } = toolSchemasFor('browser')
+
+const tools = offered.map((t) => ({
   type: 'client',
   name: t.name,
   description: t.description,
@@ -212,6 +227,11 @@ if (!res.ok) {
 const id = body.agent_id ?? existing?.agent_id
 console.log(`\n  ${existing ? 'updated' : 'created'} "${AGENT_NAME}"`)
 console.log(`  ${tools.length} client tools: ${tools.map((t) => t.name).join(', ')}`)
+if (withheld.length) {
+  console.log(
+    `  withheld (server-placed, and this platform has no sideband): ${withheld.join(', ')}`,
+  )
+}
 console.log(`  prompt: ${SPOKEN_PROMPT.length} chars — the text path's prompt plus spoken-delivery rules`)
 console.log('  languages: en, he (the preset switches transcriber and voice, not just wording)')
 console.log(`  ELEVENLABS_AGENT_ID=${id}\n`)

@@ -326,25 +326,25 @@ function App() {
       <AgentWorkspace
         nav={[
           {
-            label: 'הפעלה',
-            items: [{ id: 'model', label: 'מודל וצינור', icon: 'model', badge: activeProvider?.mode === 'live' ? 'חי' : '' }],
+            label: 'Runtime',
+            items: [{ id: 'model', label: 'Model & pipeline', icon: 'model', badge: activeProvider?.mode === 'live' ? 'חי' : '' }],
           },
           {
-            label: 'הגדרה',
+            label: 'Behaviour',
             items: [
-              { id: 'prompt', label: 'הוראות', icon: 'prompt' },
-              { id: 'skills', label: 'סקילים', icon: 'skills' },
-              { id: 'tools', label: 'כלים', icon: 'tools' },
+              { id: 'prompt', label: 'Instructions', icon: 'prompt' },
+              { id: 'skills', label: 'Skills', icon: 'skills' },
+              { id: 'tools', label: 'Tools', icon: 'tools' },
             ],
           },
           {
-            label: 'ידע',
+            label: 'Data',
             items: [
-              { id: 'knowledge', label: 'מאגר נתונים', icon: 'knowledge' },
-              { id: 'vocabulary', label: 'אוצר מילים', icon: 'vocabulary' },
+              { id: 'knowledge', label: 'Knowledge base', icon: 'knowledge' },
+              { id: 'vocabulary', label: 'Vocabulary', icon: 'vocabulary' },
             ],
           },
-          { label: 'בקרה', items: [{ id: 'evals', label: 'הערכות', icon: 'evals' }] },
+          { label: 'Quality', items: [{ id: 'evals', label: 'Evals', icon: 'evals' }] },
         ]}
         activePane={wsPane}
         onPane={setWsPane}

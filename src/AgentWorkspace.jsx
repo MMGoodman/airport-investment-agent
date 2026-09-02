@@ -129,7 +129,7 @@ export default function AgentWorkspace({
 
   return (
     <div className={`ws ${rail ? 'with-rail' : ''} ${sideOpen ? '' : 'side-collapsed'}`}>
-      <nav className="ws-side" aria-label="הגדרות הסוכן">
+      <nav className="ws-side" aria-label="Agent settings">
         <div className="ws-side-top">
           <button
             type="button"
@@ -152,7 +152,7 @@ export default function AgentWorkspace({
               <path d="M9.5 4.5v15" />
             </svg>
           </button>
-          {sideOpen && <span className="ws-side-title">הגדרות הסוכן</span>}
+          {sideOpen && <span className="ws-side-title">Agent settings</span>}
         </div>
 
         <div className="ws-side-nav">

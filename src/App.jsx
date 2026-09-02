@@ -317,31 +317,6 @@ function App() {
             </select>
           </label>
 
-          <label className={`switcher ${health?.ok ? 'up' : 'down'} ${live ? 'live' : ''}`}>
-            <span className="dot" aria-hidden="true" />
-            <select
-              value={providerId}
-              onChange={(event) => {
-                setProviderId(event.target.value)
-                setError(null)
-              }}
-              aria-label="Model and transport"
-              title="Same tools, same scoring engine — only the model and the transport change"
-            >
-              {providers.length === 0 && (
-                <option value="gemini">{health?.model ?? 'connecting…'}</option>
-              )}
-              {providers.map((p) => (
-                <option key={p.id} value={p.id} disabled={!p.available}>
-                  {p.label}
-                  {/* "no key" was hardcoded, and stopped being true once a provider could
-                      be unavailable for other reasons — a key that exists but an account
-                      with no funds behind it. The server says why; the option repeats it. */}
-                  {p.available ? '' : ` — ${p.note ? 'unavailable' : 'no key'}`}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
       </header>
 

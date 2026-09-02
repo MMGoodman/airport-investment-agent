@@ -98,6 +98,17 @@ const PIPELINE_DEFAULTS = {
  */
 const into = (slot, node) => (slot ? createPortal(node, slot) : node)
 
+/**
+ * Render only into a slot, or not at all.
+ *
+ * The pipeline board is settings for the NEXT call. Falling back to inline put it at the
+ * bottom of the running conversation, which is both the wrong place and the wrong moment —
+ * a wall of switches under the answer you are reading, none of which affect the call they
+ * are sitting in. Without a slot it simply does not draw; its state lives here either way,
+ * so opening the sidebar pane brings it back exactly as it was.
+ */
+const onlyInto = (slot, node) => (slot ? createPortal(node, slot) : null)
+
 export default function LivePanel({ provider, lang, onAppend, onError, slots }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
@@ -598,7 +609,7 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
           panel over those would be dead switches, so they get none. */}
       {/* ElevenLabs gets no switches, and the board says why instead of vanishing: its
           pipeline is pushed at sync time, so a per-session switch would be a dead one. */}
-      {into(
+      {onlyInto(
         slots?.settings,
         <>
       {provider.id === 'elevenlabs' && (

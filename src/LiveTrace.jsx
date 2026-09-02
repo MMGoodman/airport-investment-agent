@@ -107,13 +107,28 @@ export default function LiveTrace({ events, verbose, onVerbose, onClear, provide
     setTimeout(() => setCopied(false), 1800)
   }
 
+  /**
+   * What was said, and what the machine did, are two different readings.
+   *
+   * The rail was one list of both, so a spoken sentence sat between a timing row and an
+   * event name and you read past it looking for it. Speech is the reason the rail is open
+   * during a call; the machinery is why it is open afterwards.
+   *
+   * The machinery collapses. It does not disappear — a count stays on the toggle, because
+   * a hidden section with no sign of what is in it is a section people forget exists.
+   */
+  const SPEECH = new Set(['you', 'agent', 'phantom'])
+  const speech = events.filter((e) => SPEECH.has(e.kind))
+  const machine = (verbose ? events : events.filter((e) => e.kind !== 'raw')).filter(
+    (e) => !SPEECH.has(e.kind),
+  )
   const shown = verbose ? events : events.filter((e) => e.kind !== 'raw')
 
   return (
     <div className="ltrace">
       <div className="ltrace-head">
         <span className="ltrace-title">Session trace</span>
-        <span className="ltrace-count">{shown.length} events</span>
+        <span className="ltrace-count">{speech.length} turns · {machine.length} events</span>
         <label className="ltrace-verbose">
           <input type="checkbox" checked={verbose} onChange={(e) => onVerbose(e.target.checked)} />
           raw events
@@ -133,17 +148,36 @@ export default function LiveTrace({ events, verbose, onVerbose, onClear, provide
       </div>
 
       <div className="ltrace-body">
-        {shown.length === 0 && <p className="ltrace-empty">Start a call and it fills in as you talk.</p>}
+        {shown.length === 0 && (
+          <p className="ltrace-empty">Start a call and it fills in as you talk.</p>
+        )}
 
-        {shown.map((e) => (
-          <div key={e.id} className={`ltrace-row ${e.kind}${e.bad ? ' bad' : ''}`}>
-            <span className="ltrace-t">{e.t.toFixed(1)}s</span>
-            <span className="ltrace-mark">{KIND_MARK[e.kind] ?? '·'}</span>
-            <span className="ltrace-text">{e.text}</span>
-            {e.bytes != null && <span className="ltrace-meta">{fmtBytes(e.bytes)}</span>}
-            {e.ms != null && <span className="ltrace-meta">{e.ms} ms</span>}
+        {speech.map((e) => (
+          <div key={e.id} className={`ltrace-said ${e.kind}${e.bad ? ' bad' : ''}`}>
+            <span className="ltrace-who">
+              {e.kind === 'you' ? 'אתה' : e.kind === 'phantom' ? 'נזרק' : 'הסוכן'}
+            </span>
+            <span className="ltrace-line">{e.text}</span>
+            <span className="ltrace-t mono">{e.t.toFixed(1)}s</span>
           </div>
         ))}
+
+        {machine.length > 0 && (
+          <details className="ltrace-machine">
+            <summary>
+              מה שקרה מתחת — <span className="mono">{machine.length}</span> אירועים
+            </summary>
+            {machine.map((e) => (
+              <div key={e.id} className={`ltrace-row ${e.kind}${e.bad ? ' bad' : ''}`}>
+                <span className="ltrace-t">{e.t.toFixed(1)}s</span>
+                <span className="ltrace-mark">{KIND_MARK[e.kind] ?? '·'}</span>
+                <span className="ltrace-text">{e.text}</span>
+                {e.bytes != null && <span className="ltrace-meta">{fmtBytes(e.bytes)}</span>}
+                {e.ms != null && <span className="ltrace-meta">{e.ms} ms</span>}
+              </div>
+            ))}
+          </details>
+        )}
         <div ref={endRef} />
       </div>
     </div>

@@ -364,3 +364,75 @@
   flex-shrink: 0;
   border-block-start: 1px solid var(--rule);
 }
+
+/* ---- what was said, in the rail --------------------------------------------
+   The rail is open during a call to read the conversation, and afterwards to
+   read the machinery. Speech gets the room; the machinery gets a disclosure. */
+
+.ws-rail .ltrace-said {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border-block-end: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+
+.ws-rail .ltrace-who {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ws-rail .ltrace-said.agent .ltrace-who {
+  color: var(--live);
+}
+
+/* A dropped phantom is not speech and must not read as it — amber, struck, and named. */
+.ws-rail .ltrace-said.phantom {
+  color: var(--text-dim);
+}
+
+.ws-rail .ltrace-said.phantom .ltrace-who {
+  color: var(--signal);
+}
+
+.ws-rail .ltrace-said.phantom .ltrace-line {
+  text-decoration: line-through;
+}
+
+.ws-rail .ltrace-line {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ws-rail .ltrace-said .ltrace-t {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ws-rail .ltrace-machine {
+  margin-block-start: var(--space-4);
+  border-block-start: 1px solid var(--rule-strong);
+  padding-block-start: var(--space-3);
+}
+
+.ws-rail .ltrace-machine summary {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  cursor: pointer;
+  padding-block: var(--space-1);
+}
+
+.ws-rail .ltrace-machine summary:hover {
+  color: var(--text);
+}
+
+/* The rail owns the frame, so the trace's own chrome would be a second one. */
+.ws-rail .ltrace {
+  border: 0;
+  background: none;
+  padding: 0;
+  block-size: auto;
+}

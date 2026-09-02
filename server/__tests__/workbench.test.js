@@ -17,15 +17,15 @@ beforeEach(() => {
 })
 
 describe('workbench overrides', () => {
-  it('reports every tool with its placement, and does not offer to change it', () => {
-    const { tools } = workbenchState()
+  it('reports every tool with its placement, and does not offer to change it', async () => {
+    const { tools } = await workbenchState()
     expect(tools).toHaveLength(7)
     const weather = tools.find((t) => t.name === 'get_airport_weather')
     expect(weather.placement).toBe('server')
     // The panel renders placement; nothing in the patch shape can set it.
     const before = weather.placement
     applyOverrides({ tools: [{ name: 'get_airport_weather', placement: 'anywhere' }] })
-    expect(workbenchState().tools.find((t) => t.name === 'get_airport_weather').placement)
+    expect((await workbenchState()).tools.find((t) => t.name === 'get_airport_weather').placement)
       .toBe(before)
   })
 
@@ -44,28 +44,28 @@ describe('workbench overrides', () => {
     expect(toolIsEnabled('get_flight_mix')).toBe(true)
   })
 
-  it('ignores a tool name it does not know', () => {
+  it('ignores a tool name it does not know', async () => {
     applyOverrides({ disabledTools: ['no_such_tool'] })
-    expect(workbenchState().tools.every((t) => t.enabled)).toBe(true)
+    expect((await workbenchState()).tools.every((t) => t.enabled)).toBe(true)
   })
 
-  it('tells an empty override apart from no override', () => {
+  it('tells an empty override apart from no override', async () => {
     // Someone can legitimately want to try an empty addendum, and "" must not read as
     // "go back to the file" — that is the difference between an experiment and a revert.
     applyOverrides({ voiceAddendum: '' })
-    const empty = workbenchState().prompt
+    const empty = (await workbenchState()).prompt
     expect(empty.voiceAddendum).toBe('')
     expect(empty.voiceAddendumIsOverridden).toBe(true)
 
     applyOverrides({ voiceAddendum: null })
-    const reverted = workbenchState().prompt
+    const reverted = (await workbenchState()).prompt
     expect(reverted.voiceAddendumIsOverridden).toBe(false)
     expect(reverted.voiceAddendum).toBe(reverted.fileVoiceAddendum)
   })
 
-  it('keeps the file alongside the override so a revert is always possible', () => {
+  it('keeps the file alongside the override so a revert is always possible', async () => {
     applyOverrides({ systemPrompt: 'a much shorter prompt' })
-    const s = workbenchState().prompt
+    const s = (await workbenchState()).prompt
     expect(s.system).toBe('a much shorter prompt')
     expect(s.fileSystem.length).toBeGreaterThan(1000)
     expect(s.systemIsOverridden).toBe(true)

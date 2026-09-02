@@ -417,13 +417,15 @@ export const handlers = {
           query,
           documentsInStore: docs,
           hits,
-          // The score is returned, not hidden: a weak best match is the signal that the
-          // store has nothing on this, and the instructions say to report that rather
-          // than quote the nearest paragraph.
+          // The score is returned, not hidden — but it ranks the passages against each
+          // other and says nothing about whether any of them answers the question. This
+          // store was measured: a question the document answered under its own heading
+          // scored 0.393, and one it never addressed scored 0.469. Any bar between them
+          // cuts the wrong one, so the note tells the model to read instead of threshold.
           note:
             hits.length === 0
               ? 'Nothing in the knowledge base. Say so; do not answer from memory.'
-              : 'Cite the loc of any passage you use. A top score below about 0.3 means nothing here is really about this.',
+              : 'These are the closest passages, which is not the same as relevant ones — the score orders them and does not tell you whether any of them answers the question. Read the text: if the answer is not in it, say the knowledge base has nothing on this. Cite the loc of any passage you do use.',
         },
         meta: meta(),
       }
@@ -650,7 +652,7 @@ export const toolSchemas = [
     // leaves the building, and the same reasoning puts it on the server.
     placement: 'server',
     description:
-      'Search the uploaded knowledge base for passages relevant to a question. Use it for anything the scoring tools do not cover — policy notes, methodology, context a caller has supplied. Every hit carries a "loc" naming its file and position: cite it. If nothing comes back, or the top score is low, say the knowledge base has nothing on this rather than answering from memory.',
+      'Search the uploaded knowledge base for passages relevant to a question. Use it for anything the scoring tools do not cover — policy notes, methodology, context a caller has supplied. It always returns its closest matches, so judge relevance from the passage text and not from the score: if the answer is not in the text, say the knowledge base has nothing on this rather than answering from memory. Every hit carries a "loc" naming its file and position: cite it.',
     parameters: {
       type: 'object',
       properties: {

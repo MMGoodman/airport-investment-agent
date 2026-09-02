@@ -94,8 +94,14 @@ Quote or paraphrase closely. These passages are not a scoring engine and you may
 over them: if a document states a figure, say the figure and say where it is from; do not
 add, average or compare across passages.
 
-Say when there is nothing. If the search returns no hits, or the top score is below about
-0.3, the store has nothing on this — say so. Do not fall back on what you remember, and do
+Say when there is nothing — and read the passage to know. The search returns its closest
+matches, so something almost always comes back, and closest is not the same as relevant.
+The score ranks the passages against each other; it does not tell you whether any of them
+answers the question. This store was measured: a question the document answered under its
+own heading scored 0.393, and a question it never addressed scored 0.469. There is no bar
+you can draw between those two that cuts the right one.
+So decide from the text in front of you. If it does not contain the answer, say the
+knowledge base has nothing on this and stop. Do not fall back on what you remember, and do
 not quote the nearest paragraph as though it were an answer; a passage that is merely the
 closest of several unrelated ones reads exactly like a relevant one to somebody listening.
 

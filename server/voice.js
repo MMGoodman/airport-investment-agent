@@ -25,6 +25,7 @@ import {
 } from './workbench.js'
 import { turnsForSession } from './sessionLog.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
+import { mintFetch } from './mint.js'
 
 /**
  * Ephemeral keys awaiting their sideband, by the browser's session id.
@@ -464,14 +465,14 @@ export function mountVoiceRoutes(app) {
       // server-relay transport. See the comment there for why sharing it is the point.
       const built = await buildRealtimeSession(req.query)
 
-      const upstream = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+      const upstream = await mintFetch('https://api.openai.com/v1/realtime/client_secrets', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ session: built.session }),
-      })
+      }, 'OpenAI')
 
       const body = await upstream.json()
       if (!upstream.ok) {
@@ -526,7 +527,7 @@ export function mountVoiceRoutes(app) {
     }
 
     try {
-      const upstream = await fetch('https://api.soniox.com/v1/auth/temporary-api-key', {
+      const upstream = await mintFetch('https://api.soniox.com/v1/auth/temporary-api-key', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.SONIOX_API_KEY}`,
@@ -537,7 +538,7 @@ export function mountVoiceRoutes(app) {
           expires_in_seconds: 120,
           client_reference_id: 'airport-investment-agent',
         }),
-      })
+      }, 'Soniox')
 
       const body = await upstream.json()
       if (!upstream.ok) {
@@ -639,9 +640,10 @@ export function mountVoiceRoutes(app) {
     }
 
     try {
-      const upstream = await fetch(
+      const upstream = await mintFetch(
         `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${ELEVENLABS_AGENT_ID}`,
         { headers: { 'xi-api-key': ELEVENLABS_API_KEY } },
+        'ElevenLabs',
       )
       const body = await upstream.json()
       if (!upstream.ok) {

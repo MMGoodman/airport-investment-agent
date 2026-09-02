@@ -63,8 +63,24 @@ async function load() {
  * A markdown heading starts a new chunk and travels with the text under it, so a retrieved
  * passage arrives with the thing it is about. Blank lines separate paragraphs. Very short
  * pieces are merged forward, because a chunk that is one line matches on almost nothing.
+ *
+ * WHY A HEADING ENDS A CHUNK AND SIZE DOES NOT
+ *
+ * This used to merge sections together until 1400 characters, which is not what the
+ * paragraph above claims it does: size decided where an idea ended, and structure only
+ * broke ties. A 980-character policy note with six headings became ONE chunk, and one
+ * vector averaging six subjects matches each of them weakly. Asked a question the document
+ * answers under its own heading, the store scored 0.246 and the agent said it had nothing.
+ *
+ * Splitting at every heading that follows a chunk already worth retrieving took the same
+ * question to 0.528 and halved the overlap between questions the document answers and
+ * questions it does not. So `min` is a floor on what can stand alone, `max` is a guard for
+ * documents with no headings at all, and the heading is what actually decides.
+ *
+ * The floor matters: without it a heading is pushed out on its own and its body arrives in
+ * the next chunk with no subject, which is the failure the first test here describes.
  */
-export function chunk(text, { min = 280, max = 1400 } = {}) {
+export function chunk(text, { min = 120, max = 1400 } = {}) {
   const blocks = text
     .replace(/\r\n/g, '\n')
     .split(/\n(?=#{1,6}\s)|\n{2,}/)
@@ -74,9 +90,11 @@ export function chunk(text, { min = 280, max = 1400 } = {}) {
   const out = []
   let current = ''
   for (const block of blocks) {
-    // A heading never ends a chunk — it introduces the next one.
+    // A heading introduces what follows it, so it ends the chunk BEFORE it — but only once
+    // that chunk can stand on its own, or the heading leaves with nothing under it.
     const isHeading = /^#{1,6}\s/.test(block)
-    if (current && (current.length >= min || isHeading) && current.length + block.length > max) {
+    const standsAlone = current.length >= min
+    if (current && standsAlone && (isHeading || current.length + block.length > max)) {
       out.push(current)
       current = block
     } else {

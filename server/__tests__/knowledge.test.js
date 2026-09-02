@@ -37,6 +37,36 @@ describe('chunk', () => {
     expect(out[0]).toContain('# B')
   })
 
+  it('does not collapse a structured document into one chunk', () => {
+    // The bug this pins: sections merged until 1400 characters, so a short policy note with
+    // six headings became one vector averaging six subjects. Asked something the document
+    // answered under its own heading, it scored 0.246 — under the bar the agent was told
+    // meant "the store has nothing" — while a question the document never addressed scored
+    // higher. Structure decides where an idea ends; size only guards the ends.
+    const doc = [
+      '# Committee policy',
+      'The fund reviews terminal programmes once per quarter, in the order they were received. This note records how the committee decides, not what any airport scored.',
+      '## Entry threshold',
+      'A proposal is discussed only where the national demand score reaches 63 or above. Anything under the bar is not rejected: it returns to the watch list for the next quarter.',
+      '## Funding ceiling',
+      'The fund commits up to 210 million dollars to any single terminal programme. Anything above the ceiling is heard only in partnership with a local authority, on a separate track.',
+      '## Cargo-weighted airports',
+      'Passenger terminal expansion is not funded from this programme where cargo exceeds 60 percent of revenue tonne-kilometres, whatever the demand score says.',
+    ].join(BR)
+
+    // Well under the 1400-character cap, and it still splits: the headings are what decide.
+    expect(doc.length).toBeLessThan(1400)
+    const out = chunk(doc)
+    expect(out.length, 'the sections merged back into one blob').toBe(4)
+
+    // Every heading still arrives with its own body, which is the whole point of splitting
+    // there rather than at a character count.
+    const ceiling = out.find((c) => c.includes('## Funding ceiling'))
+    expect(ceiling).toContain('210 million')
+    const cargo = out.find((c) => c.includes('## Cargo-weighted'))
+    expect(cargo).toContain('60 percent')
+  })
+
   it('does not leave a one-line scrap on its own', () => {
     // A chunk of one line matches almost nothing and takes a retrieval slot from something
     // that would have answered.

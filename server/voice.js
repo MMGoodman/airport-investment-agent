@@ -2,16 +2,23 @@
  * Live-voice transport endpoints.
  *
  * Two providers, one rule that does not change: neither of them gets to compute a
- * number. Both are handed the SAME `SYSTEM_PROMPT` and the SAME five `toolSchemas`
+ * number. Both are handed the same instructions and the same tool list — read through
+ * workbench.js, so a wording can be tried against a live call without a restart
  * the text path uses, and when either asks for a tool the browser calls POST /api/tool
  * — the deterministic engine that was already there. Only the transport differs.
  *
  * Secrets never reach the browser. OpenAI gets a short-lived ephemeral key minted here;
  * ElevenLabs gets a signed WebSocket URL minted here.
  */
-import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
+import { languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { attachSideband, detachSideband } from './sideband.js'
+import {
+  effectivePrompt,
+  effectiveVoiceAddendum,
+  mountWorkbenchRoutes,
+  toolIsEnabled,
+} from './workbench.js'
 import { turnsForSession } from './sessionLog.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 
@@ -201,7 +208,10 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
   // Which tools this connection may offer. A 'server' tool is withheld from the browser
   // path rather than hidden there: on WebRTC the function call lands on the browser's data
   // channel, so a tool it cannot see is a tool that transport cannot carry.
-  const { tools, withheld } = toolSchemasFor(transport)
+  const { tools: placed, withheld } = toolSchemasFor(transport)
+  // The workbench can take a tool away for an experiment. It can never add one back that
+  // placement withheld — that boundary is set before the conversation starts.
+  const tools = placed.filter((t) => toolIsEnabled(t.name))
   const vad = turnDetectionFor(query)
   const useVocabulary = query.vocabulary !== 'off'
 
@@ -225,7 +235,10 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
       type: 'realtime',
       model: OPENAI_MODEL,
       instructions:
-        SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true) + withheldNote(withheld),
+        effectivePrompt() +
+        effectiveVoiceAddendum() +
+        languageInstruction(lang, true) +
+        withheldNote(withheld),
       tools: tools.map(asRealtimeTool),
       tool_choice: 'auto',
       audio: {
@@ -252,6 +265,8 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
 }
 
 export function mountVoiceRoutes(app) {
+  mountWorkbenchRoutes(app)
+
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
   app.get('/api/voice/providers', (req, res) => {
     res.json({
@@ -615,7 +630,7 @@ export function mountVoiceRoutes(app) {
         agentId: ELEVENLABS_AGENT_ID,
         lang,
         ttsModelId,
-        prompt: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
+        prompt: effectivePrompt() + effectiveVoiceAddendum() + languageInstruction(lang, true),
       })
     } catch (err) {
       res.status(500).json({ error: describeUpstreamError(err, 'ElevenLabs') })

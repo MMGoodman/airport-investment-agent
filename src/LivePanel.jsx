@@ -71,7 +71,7 @@ const MAX_EVENTS = 300
 const describePipeline = (p) =>
   (p.vad === 'semantic'
     ? `מודל שופט משמעות · רגישות ${{ low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[p.eagerness] ?? p.eagerness}`
-    : `טיימר שקט · סף ${Number(p.threshold).toFixed(2)} · ${p.silenceMs}ms`) +
+    : `טיימר שקט · סף ${Number(p.threshold).toFixed(2)} · ${p.silenceMs}ms · ריפוד ${p.prefixMs}ms`) +
   `${p.interrupt === 'on' ? '' : ' · בלי קטיעה'}` +
   `${p.vocabulary === 'on' ? ' · הטיית אוצר מילים' : ''}`
 
@@ -80,6 +80,10 @@ const PIPELINE_DEFAULTS = {
   eagerness: 'low',
   threshold: 0.5,
   silenceMs: 700,
+  // Audio kept from BEFORE speech was detected. The server has always accepted it and the
+  // panel never sent it, so it sat on its default while the one symptom it addresses —
+  // a clipped first syllable — had no control anywhere in the UI.
+  prefixMs: 300,
   interrupt: 'on', // whether detected speech cancels the answer already being spoken
   vocabulary: 'on',
 }
@@ -276,7 +280,11 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
           vad: pipeline.vad,
           ...(pipeline.vad === 'semantic'
             ? { eagerness: pipeline.eagerness }
-            : { threshold: pipeline.threshold, silenceMs: pipeline.silenceMs }),
+            : {
+                threshold: pipeline.threshold,
+                silenceMs: pipeline.silenceMs,
+                prefixMs: pipeline.prefixMs,
+              }),
           vocabulary: pipeline.vocabulary,
         },
         onStatus: (s) => {
@@ -723,6 +731,21 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
                   />
                   <b>{pipeline.silenceMs} ms</b>
                   <span className="pipe-note">כמה שקט סוגר תור. 200 פיצל שאלה אחת לארבעה שברים</span>
+                </div>
+                <div className="pipe-slider">
+                  <span className="pipe-sub-label">ריפוד התחלה</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="50"
+                    value={pipeline.prefixMs}
+                    onChange={(e) => setPipeline((p) => ({ ...p, prefixMs: Number(e.target.value) }))}
+                  />
+                  <b>{pipeline.prefixMs} ms</b>
+                  <span className="pipe-note">
+                    אודיו שנשמר מלפני שהדיבור זוהה. נמוך מדי חותך את ההברה הראשונה
+                  </span>
                 </div>
               </div>
             )}

@@ -524,17 +524,18 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
                   </label>
                   {uploadNote && <p className="ac-hint">{uploadNote}</p>}
 
-                  {/* Measured, not assumed: the same question scored 0.363 against a Hebrew
-                      document and 0.044 against the English one saying the same thing. Both
-                      cross-language scores fall under the 0.3 threshold the agent treats as
-                      "nothing here", so a document that answers the question is simply not
-                      found. This fails silently, which is why it is said where you upload. */}
+                  {/* Measured, not assumed, and re-measured after the 0.3 threshold this
+                      used to cite was removed — the score gate is gone, but the problem it
+                      described is not. A Hebrew question ranks the matching English passage
+                      5th to 7th of nine chunks, and only four are returned, so the passage
+                      that answers is not weaker in the result: it is absent from it.
+                      text-embedding-3-large narrows the gap and does not close it. This
+                      fails silently, which is why it is said where you upload. */}
                   <p className="ac-warn-note">
-                    <b>העלה מסמכים בשפה שבה תשאל.</b> החיפוש חוצה-שפות כמעט לא עובד: אותה שאלה
-                    קיבלה <span className="mono">0.363</span> מול מסמך עברי ו-
-                    <span className="mono">0.044</span> מול מסמך אנגלי שאומר אותו דבר. מתחת ל-
-                    <span className="mono">0.3</span> הסוכן אומר ״אין לי על זה״ — כלומר מסמך
-                    שעונה על השאלה פשוט לא יימצא.
+                    <b>העלה מסמכים בשפה שבה תשאל.</b> החיפוש חוצה-שפות לא עובד: שאלה בעברית
+                    מדרגת את הקטע האנגלי המתאים במקום <span className="mono">5–7</span> מתוך
+                    9, ונשלפים ארבעה. כלומר מסמך שעונה על השאלה לא חוזר חלש — הוא לא חוזר
+                    בכלל, והסוכן לא יכול לדעת שהוא קיים.
                   </p>
 
                   {(docs?.docs ?? []).length === 0 ? (

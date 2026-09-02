@@ -38,6 +38,7 @@ export function createEventHandler({
   onResponseStart = () => {},
   onPhantom = () => {},
   onServerToolCall = () => {},
+  onServerToolResult = () => {},
   /** The vocabulary hint's own terms, for spotting it read back. */
   hintTerms = [],
   /**
@@ -79,6 +80,19 @@ export function createEventHandler({
    * item list malformed for every later turn — but the request to speak is dropped, because
    * turn detection is about to open a new turn anyway.
    */
+  /**
+   * Server-answered calls awaiting their result, by call_id.
+   *
+   * The server injects its function_call_output into the session, and OpenAI echoes that
+   * item to EVERY connection — so this one receives the payload whether it wants it or not.
+   * Verified against the live API: conversation.item.added carries item.output in full.
+   *
+   * That is worth capturing rather than ignoring. The panel was telling readers the browser
+   * never saw the result, which is false, and a trace that claims less visibility than it
+   * has is as misleading as one that claims more.
+   */
+  const serverCalls = new Map()
+
   let bargedIn = false
 
   return async function handle(msg) {
@@ -128,6 +142,23 @@ export function createEventHandler({
         break
       }
 
+      // The server's answer, echoed back to this connection like every other item.
+      case 'conversation.item.added': {
+        const item = msg.item
+        if (item?.type !== 'function_call_output') break
+        const pending = serverCalls.get(item.call_id)
+        if (!pending) break
+        serverCalls.delete(item.call_id)
+        let result = null
+        try {
+          result = JSON.parse(item.output)
+        } catch {
+          result = { raw: item.output }
+        }
+        onServerToolResult(pending.name, pending.args, result)
+        break
+      }
+
       case 'response.output_audio_transcript.delta':
         onFirstToken()
         onAssistantTranscript(msg.delta ?? '', false)
@@ -143,7 +174,10 @@ export function createEventHandler({
         // against its own credentials — the whole point of the sideband. Reported so the
         // trace still shows the call happened, then dropped.
         if (serverTools.includes(msg.name)) {
-          onServerToolCall(msg.name, parseArgs(msg.arguments))
+          // Remember which call this was, so its result can be recognised when the server's
+          // answer is echoed back to this connection a moment later.
+          serverCalls.set(msg.call_id, { name: msg.name, args: parseArgs(msg.arguments) })
+          onServerToolCall(msg.name, parseArgs(msg.arguments), msg.call_id)
           break
         }
         pendingCalls.push(
@@ -284,7 +318,11 @@ export async function startOpenAIRealtime({
   const handle = createEventHandler({
     send,
     serverTools: serverToolNames,
+    // The call, so the trace shows it the moment it happens; then the result when the
+    // server's answer comes back round, which replaces the row rather than adding one.
     onServerToolCall: (name, args) => onToolCall({ tool: name, args, ranOn: 'server', ms: null }),
+    onServerToolResult: (name, args, result) =>
+      onToolCall({ tool: name, args, result, ranOn: 'server', ms: null, isResult: true }),
     onRawEvent,
     onUserTranscript,
     onAssistantTranscript,

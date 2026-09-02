@@ -46,10 +46,13 @@ export default function ToolTrace({ calls }) {
                 {call.ranOn === 'server'
                   ? [
                       'Your server answered this one, on its own connection to the same session.',
-                      'The result went from the server straight to the model — this page never',
-                      'received it, which is the whole reason the tool is placed there.',
+                      'It ran the tool, holds the credentials, and made the outbound call.',
                       '',
-                      'The spoken answer above IS that result, read out by the model.',
+                      'This page did NOT run it and cannot: /api/tool refuses the tool outright.',
+                      'It did receive the result below — OpenAI echoes every item to every',
+                      'connection on a session, so placement controls who EXECUTES, not who sees.',
+                      '',
+                      JSON.stringify(call.result, null, 2),
                     ].join('\n')
                   : JSON.stringify(call.result, null, 2)}
               </pre>

@@ -410,11 +410,29 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
            * a reason a reader had to work out. It is stated now.
            */
           const ranOnServer = record.ranOn === 'server'
-          push('tool', `${record.tool}${args ? `  ${args}` : ''}${ranOnServer ? '   · your server ran it' : ''}`)
-          if (ranOnServer) {
-            push('result', `${record.tool} answered by your server — the browser never saw the result`)
+
+          /**
+           * A server-answered call arrives twice: the call, then its result echoed back.
+           *
+           * The second one carries the payload and replaces the pending entry rather than
+           * adding a second row, so the audit still counts one call and the trace panel can
+           * open it and show what the model was actually given.
+           */
+          if (record.isResult) {
+            pendingTools.current = [
+              ...pendingTools.current.filter(
+                (r) => !(r.tool === record.tool && r.ranOn === 'server' && r.result == null),
+              ),
+              record,
+            ]
+            push('result', `${record.tool} answered by your server`, {
+              bytes: JSON.stringify(record.result ?? null).length,
+            })
             return
           }
+
+          push('tool', `${record.tool}${args ? `  ${args}` : ''}${ranOnServer ? '   · your server ran it' : ''}`)
+          if (ranOnServer) return
           // Payload size is usually the reason a spoken answer was slow to start.
           push('result', `${record.tool} returned`, {
             bytes: JSON.stringify(record.result ?? null).length,

@@ -6,3 +6,4 @@ data/raw/
 .ipynb_checkpoints/
 
 notebooks/*.html
+data/knowledge/

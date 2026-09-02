@@ -186,6 +186,10 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
   const [draft, setDraft] = useState({ system: null, voiceAddendum: null })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(null)
+  /** The uploaded knowledge base, loaded separately because it changes on its own. */
+  const [docs, setDocs] = useState(null)
+  const [uploading, setUploading] = useState(null)
+  const [uploadNote, setUploadNote] = useState(null)
   const [railOpen, setRailOpen] = useState(() => {
     try {
       return localStorage.getItem(RAIL_KEY) !== 'collapsed'
@@ -220,9 +224,19 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
     }
   }, [])
 
+  const loadDocs = useCallback(() => {
+    fetch('/api/knowledge')
+      .then((r) => r.json())
+      .then(setDocs)
+      .catch(() => setDocs({ docs: [] }))
+  }, [])
+
   useEffect(() => {
-    if (open || bare) load()
-  }, [open, bare, load])
+    if (open || bare) {
+      load()
+      loadDocs()
+    }
+  }, [open, bare, load, loadDocs])
 
   useEffect(() => {
     if (!open || bare) return undefined
@@ -469,6 +483,91 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
 
         {state && pane === 'knowledge' && (
           <div className="ac-pane">
+                <Disclosure
+                  title="מסמכים שהעלית"
+                  meta={`${docs?.docs?.length ?? 0} · ${docs?.model ?? ''}`}
+                  defaultOpen
+                >
+                  <p className="ac-hint">{docs?.note}</p>
+
+                  <label className="ac-upload">
+                    <input
+                      type="file"
+                      accept={(docs?.accepted ?? ['.md', '.txt', '.csv']).join(',')}
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0]
+                        event.target.value = ''
+                        if (!file) return
+                        setUploading(file.name)
+                        try {
+                          // The browser reads the file and posts its text, which is why the
+                          // accepted formats are exactly the ones readable without a parser
+                          // and why this endpoint needs no multipart dependency.
+                          const text = await file.text()
+                          const res = await fetch('/api/knowledge', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: file.name, text }),
+                          })
+                          const body = await res.json()
+                          if (!res.ok) throw new Error(body.error ?? 'could not add the file')
+                          setUploadNote(`${body.name} — ${body.chunks} קטעים`)
+                          loadDocs()
+                        } catch (err) {
+                          setUploadNote(err.message)
+                        } finally {
+                          setUploading(null)
+                        }
+                      }}
+                    />
+                    <span>{uploading ? `מעבד ${uploading}…` : 'הוסף מסמך'}</span>
+                  </label>
+                  {uploadNote && <p className="ac-hint">{uploadNote}</p>}
+
+                  {/* Measured, not assumed: the same question scored 0.363 against a Hebrew
+                      document and 0.044 against the English one saying the same thing. Both
+                      cross-language scores fall under the 0.3 threshold the agent treats as
+                      "nothing here", so a document that answers the question is simply not
+                      found. This fails silently, which is why it is said where you upload. */}
+                  <p className="ac-warn-note">
+                    <b>העלה מסמכים בשפה שבה תשאל.</b> החיפוש חוצה-שפות כמעט לא עובד: אותה שאלה
+                    קיבלה <span className="mono">0.363</span> מול מסמך עברי ו-
+                    <span className="mono">0.044</span> מול מסמך אנגלי שאומר אותו דבר. מתחת ל-
+                    <span className="mono">0.3</span> הסוכן אומר ״אין לי על זה״ — כלומר מסמך
+                    שעונה על השאלה פשוט לא יימצא.
+                  </p>
+
+                  {(docs?.docs ?? []).length === 0 ? (
+                    <p className="ac-hint">
+                      אין עדיין מסמכים. מה שתעלה כאן נחתך לקטעים לפי כותרות ופסקאות, מוטמע,
+                      ונשלף דרך הכלי <code>search_knowledge</code> — לא מוזרק להקשר בשקט, כדי
+                      שכל טענה שנבנית עליו תישאר ניתנת לבדיקה בטרייס.
+                    </p>
+                  ) : (
+                    <ul className="ac-docs">
+                      {docs.docs.map((doc) => (
+                        <li key={doc.id}>
+                          <span className="ac-doc-name mono">{doc.name}</span>
+                          <span className="ac-doc-meta mono">
+                            {doc.chunks} קטעים · {doc.chars.toLocaleString()} תווים
+                          </span>
+                          <button
+                            type="button"
+                            className="ac-doc-remove"
+                            onClick={async () => {
+                              await fetch(`/api/knowledge/${doc.id}`, { method: 'DELETE' })
+                              loadDocs()
+                            }}
+                          >
+                            הסר
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Disclosure>
+
+
             <div className="ac-stats">
               <div>
                 <b className="mono">{state.knowledge.airports}</b>

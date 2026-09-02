@@ -79,6 +79,31 @@ Chicago", a Midwest top three of Sioux Falls, Springfield and Fargo is a correct
 a wrong answer, with MDW and ORD unnamed in the same peer set.`,
   },
   {
+    id: 'knowledge',
+    name: 'מאגר ידע',
+    summary: 'קטעים ממסמכים שהעלית. נטען כשהמודל מחפש בהם.',
+    tools: ['search_knowledge'],
+    instructions: `THE KNOWLEDGE BASE — rules that apply to what you are about to say
+
+Every passage comes back with a "loc" naming its file and position. Cite it. A caller who
+hears a claim from an uploaded document and cannot tell which document has been given an
+assertion, not a source, and this agent's whole contract is that its statements can be
+traced.
+
+Quote or paraphrase closely. These passages are not a scoring engine and you may not compute
+over them: if a document states a figure, say the figure and say where it is from; do not
+add, average or compare across passages.
+
+Say when there is nothing. If the search returns no hits, or the top score is below about
+0.3, the store has nothing on this — say so. Do not fall back on what you remember, and do
+not quote the nearest paragraph as though it were an answer; a passage that is merely the
+closest of several unrelated ones reads exactly like a relevant one to somebody listening.
+
+The knowledge base is not the airport dataset. The scoring tools are the source for anything
+about utilization, growth, demand or capacity. This is for what those tools do not cover —
+methodology, policy, context somebody has supplied.`,
+  },
+  {
     id: 'weather',
     name: 'מזג אוויר',
     summary: 'קריאה חיה שאינה חלק מהניקוד. נטענת רק כששואלים עליה.',

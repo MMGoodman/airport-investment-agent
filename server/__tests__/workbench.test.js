@@ -10,7 +10,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { applyOverrides, workbenchState, toolIsEnabled } from '../workbench.js'
-import { toolSchemasFor } from '../../src/agent/tools.js'
+import { toolSchemasFor, toolSchemas } from '../../src/agent/tools.js'
 
 beforeEach(() => {
   applyOverrides({ systemPrompt: null, voiceAddendum: null, disabledTools: [] })
@@ -19,7 +19,7 @@ beforeEach(() => {
 describe('workbench overrides', () => {
   it('reports every tool with its placement, and does not offer to change it', async () => {
     const { tools } = await workbenchState()
-    expect(tools).toHaveLength(7)
+    expect(tools.length).toBe(toolSchemas.length)
     const weather = tools.find((t) => t.name === 'get_airport_weather')
     expect(weather.placement).toBe('server')
     // The panel renders placement; nothing in the patch shape can set it.

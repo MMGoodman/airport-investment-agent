@@ -394,6 +394,44 @@ export const handlers = {
    * Open-Meteo needs no key and no account, which keeps the repo runnable from a clone.
    * A failure returns a typed error naming the stage, never a plausible-looking reading.
    */
+  /**
+   * The knowledge base, reached the same way every other fact here is reached.
+   *
+   * The import is lazy because knowledge.js opens files and this module is shared with the
+   * browser build. A static import would put node:fs in the client graph — which happened
+   * once already, compiled clean, and blanked the page on load.
+   */
+  async search_knowledge({ query, topK } = {}) {
+    if (!query?.trim()) {
+      return { data: { error: 'missing_query', hint: 'Say what to look for.' }, meta: meta() }
+    }
+    const { search } = await import('../../server/knowledge.js')
+    try {
+      const { hits, docs } = await search({
+        query,
+        topK: Number.isFinite(Number(topK)) ? Number(topK) : 4,
+        apiKey: process.env.OPENAI_API_KEY,
+      })
+      return {
+        data: {
+          query,
+          documentsInStore: docs,
+          hits,
+          // The score is returned, not hidden: a weak best match is the signal that the
+          // store has nothing on this, and the instructions say to report that rather
+          // than quote the nearest paragraph.
+          note:
+            hits.length === 0
+              ? 'Nothing in the knowledge base. Say so; do not answer from memory.'
+              : 'Cite the loc of any passage you use. A top score below about 0.3 means nothing here is really about this.',
+        },
+        meta: meta(),
+      }
+    } catch (err) {
+      return { data: { error: 'knowledge_unavailable', why: err.message }, meta: meta() }
+    }
+  },
+
   async get_airport_weather({ iata } = {}) {
     const store = await getStore()
     const code = String(iata ?? '').toUpperCase()
@@ -604,6 +642,22 @@ export const toolSchemas = [
         dimension: { type: 'string', enum: ['distance', 'carrier', 'destination'] },
       },
       required: ['iata'],
+    },
+  },
+  {
+    name: 'search_knowledge',
+    // Reads uploaded documents and calls an embeddings API — the second tool here that
+    // leaves the building, and the same reasoning puts it on the server.
+    placement: 'server',
+    description:
+      'Search the uploaded knowledge base for passages relevant to a question. Use it for anything the scoring tools do not cover — policy notes, methodology, context a caller has supplied. Every hit carries a "loc" naming its file and position: cite it. If nothing comes back, or the top score is low, say the knowledge base has nothing on this rather than answering from memory.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What to look for, in the words the caller used.' },
+        topK: { type: 'integer', description: 'How many passages. Default 4, maximum 8.' },
+      },
+      required: ['query'],
     },
   },
   {

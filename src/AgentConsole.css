@@ -705,3 +705,98 @@
   display: grid;
   gap: var(--space-2);
 }
+
+/* ---- knowledge base ------------------------------------------------------ */
+
+.ac-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  min-block-size: 38px;
+  border-radius: var(--r-md);
+  border: 1px dashed var(--rule-strong);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.ac-upload:hover {
+  border-color: var(--live);
+  color: var(--live);
+}
+
+/* The native control is unusable and unstyleable; the label is the button. It stays
+   focusable and keyboard-operable because the input is still there, only hidden. */
+.ac-upload input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ac-upload:focus-within {
+  outline: 2px solid var(--live);
+  outline-offset: 2px;
+}
+
+.ac-docs {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ac-docs li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+}
+
+.ac-doc-name {
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.ac-doc-meta {
+  margin-inline-start: auto;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.ac-doc-remove {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 2px var(--space-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ac-doc-remove:hover {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+/* Amber, because it is a caution about how the thing behaves rather than a failure. */
+.ac-warn-note {
+  padding: var(--space-3);
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--signal-soft);
+  border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent);
+  border-radius: var(--r-sm);
+}

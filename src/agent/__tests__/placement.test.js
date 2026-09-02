@@ -41,11 +41,12 @@ describe('tool placement', () => {
   })
 
   it('marks only what leaves the building', () => {
-    // Every other tool is a pure read over a local dataset. get_airport_weather is the one
-    // outbound call, and a browser-reachable endpoint for it is an open proxy through this
-    // server's address.
+    // The rest are pure reads over a local dataset. These two make outbound calls —
+    // get_airport_weather to Open-Meteo, search_knowledge to the embeddings API — and a
+    // browser-reachable endpoint for either is an open proxy through this server's address.
+    // If a third tool appears here, the question to ask is whether it really goes out.
     const server = toolSchemas.filter((t) => t.placement === 'server').map((t) => t.name)
-    expect(server).toEqual(['get_airport_weather'])
+    expect(server.sort()).toEqual(['get_airport_weather', 'search_knowledge'])
   })
 })
 

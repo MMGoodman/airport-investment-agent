@@ -9,53 +9,99 @@ import './AgentConsole.css'
  * restarting the API by hand and reloading, so a day of tuning was a day of guessing which
  * sentence in a 15,000-character prompt caused a wrong answer.
  *
- * It is a sheet rather than a third column because it is not part of running a call. The
- * runtime layout — conversation on one side, live panel on the other — is what you look at
- * during a session; this is what you open between sessions, and it needs the width.
+ * A rail and a pane, not an accordion. An accordion makes you scroll past what you are not
+ * reading to reach what you are, and with a 12,000-character textarea in the first section
+ * that is a long way down. A rail keeps every destination at a fixed position one click
+ * away, which is what keeps five very different sections navigable.
  *
- * Sections collapse and carry their state in the summary line, so a closed one still says
- * what it holds. Ten always-open groups is how the pipeline board became a wall.
+ * The rail collapses to icons and remembers that. Every item keeps its label as a title and
+ * an aria-label there, because an icon on its own is not a label — it is a reminder for
+ * someone who already knows which one it is.
  */
 
-const SECTIONS = [
-  { id: 'prompt', label: 'הוראות' },
-  { id: 'tools', label: 'כלים' },
-  { id: 'knowledge', label: 'ידע' },
-  { id: 'vocabulary', label: 'אוצר מילים' },
-  { id: 'evals', label: 'הערכות' },
-]
+const RAIL_KEY = 'agent-console-rail'
 
-/** One collapsible section. The summary is always visible, so nothing hides completely. */
-function Section({ id, label, summary, open, onToggle, children }) {
+/** 18px line icons at one stroke weight, so the rail reads as a single set. */
+function Icon({ name }) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.6,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
+  if (name === 'prompt') {
+    return (
+      <svg {...common}>
+        <path d="M5 4h11l3 3v13H5z" />
+        <path d="M8 10h8M8 14h8M8 18h5" />
+      </svg>
+    )
+  }
+  if (name === 'tools') {
+    return (
+      <svg {...common}>
+        <path d="M9 5 5 12l4 7M15 5l4 7-4 7" />
+      </svg>
+    )
+  }
+  if (name === 'knowledge') {
+    return (
+      <svg {...common}>
+        <ellipse cx="12" cy="6" rx="7" ry="2.8" />
+        <path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6" />
+        <path d="M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6" />
+      </svg>
+    )
+  }
+  if (name === 'vocabulary') {
+    return (
+      <svg {...common}>
+        <path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" />
+      </svg>
+    )
+  }
   return (
-    <section className={`ac-section ${open ? 'open' : ''}`}>
-      <button
-        type="button"
-        className="ac-head"
-        onClick={() => onToggle(open ? null : id)}
-        aria-expanded={open}
-        aria-controls={`ac-body-${id}`}
-      >
-        <span className="ac-caret" aria-hidden="true">
-          {open ? '▾' : '◂'}
-        </span>
-        <span className="ac-label">{label}</span>
-        <span className="ac-summary mono">{summary}</span>
-      </button>
-      {open && (
-        <div className="ac-body" id={`ac-body-${id}`}>
-          {children}
-        </div>
-      )}
-    </section>
+    <svg {...common}>
+      <path d="M4 7h5M4 12h5M4 17h5" />
+      <path d="M13 7.5 14.8 9.3 18.5 5.5M13 16.5l1.8 1.8 3.7-3.8" />
+    </svg>
   )
 }
+
+/** Grouped by what the section is for: what you set, what it knows, what checks it. */
+const GROUPS = [
+  {
+    label: 'הגדרה',
+    items: [
+      { id: 'prompt', label: 'הוראות', icon: 'prompt' },
+      { id: 'tools', label: 'כלים', icon: 'tools' },
+    ],
+  },
+  {
+    label: 'ידע',
+    items: [
+      { id: 'knowledge', label: 'מאגר נתונים', icon: 'knowledge' },
+      { id: 'vocabulary', label: 'אוצר מילים', icon: 'vocabulary' },
+    ],
+  },
+  {
+    label: 'בקרה',
+    items: [{ id: 'evals', label: 'הערכות', icon: 'evals' }],
+  },
+]
+
+const ALL_ITEMS = GROUPS.flatMap((group) => group.items)
 
 /**
  * A block of instructions, editable, with the file version kept alongside.
  *
- * The count of changed characters is not decoration: you are editing twelve thousand of
- * them, and without it the only way to see what you did is to remember.
+ * The character delta is not decoration: you are editing twelve thousand of them, and
+ * without it the only way to see what you changed is to remember.
  */
 function PromptBlock({ title, value, file, overridden, onChange, onRevert, hint }) {
   const delta = value.length - file.length
@@ -87,7 +133,7 @@ function PromptBlock({ title, value, file, overridden, onChange, onRevert, hint 
         onChange={(event) => onChange(event.target.value)}
         spellCheck="false"
         dir="ltr"
-        rows={14}
+        rows={18}
       />
       {hint && <p className="ac-hint">{hint}</p>}
     </div>
@@ -97,11 +143,30 @@ function PromptBlock({ title, value, file, overridden, onChange, onRevert, hint 
 export default function AgentConsole({ open, onClose }) {
   const [state, setState] = useState(null)
   const [error, setError] = useState(null)
-  const [section, setSection] = useState('prompt')
+  const [pane, setPane] = useState('prompt')
   const [draft, setDraft] = useState({ system: null, voiceAddendum: null })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(null)
+  const [railOpen, setRailOpen] = useState(() => {
+    try {
+      return localStorage.getItem(RAIL_KEY) !== 'collapsed'
+    } catch {
+      return true
+    }
+  })
   const closeRef = useRef(null)
+
+  const toggleRail = useCallback(() => {
+    setRailOpen((wasOpen) => {
+      const next = !wasOpen
+      try {
+        localStorage.setItem(RAIL_KEY, next ? 'open' : 'collapsed')
+      } catch {
+        /* private window; the choice just does not survive a reload */
+      }
+      return next
+    })
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -120,7 +185,6 @@ export default function AgentConsole({ open, onClose }) {
     if (open) load()
   }, [open, load])
 
-  // Escape closes, and focus lands somewhere sensible rather than staying behind the sheet.
   useEffect(() => {
     if (!open) return undefined
     const onKey = (event) => {
@@ -131,29 +195,26 @@ export default function AgentConsole({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  const patch = useCallback(
-    async (body, note) => {
-      setSaving(true)
-      try {
-        const res = await fetch('/api/workbench', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        const out = await res.json()
-        if (!res.ok) throw new Error(out.error ?? 'could not apply')
-        setState(out.state)
-        setDraft({ system: null, voiceAddendum: null })
-        setSaved(note ?? (out.changed?.length ? out.changed.join(' · ') : 'נשמר'))
-        setError(null)
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setSaving(false)
-      }
-    },
-    [],
-  )
+  const patch = useCallback(async (body, note) => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/workbench', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const out = await res.json()
+      if (!res.ok) throw new Error(out.error ?? 'could not apply')
+      setState(out.state)
+      setDraft({ system: null, voiceAddendum: null })
+      setSaved(note ?? (out.changed?.length ? out.changed.join(' · ') : 'נשמר'))
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!saved) return undefined
@@ -171,64 +232,110 @@ export default function AgentConsole({ open, onClose }) {
     (draft.voiceAddendum !== null && draft.voiceAddendum !== p?.voiceAddendum)
 
   /**
-   * A payload from a server older than this bundle is a normal thing to meet: the API has
-   * no watcher, so it keeps running whatever it started with while Vite reloads the page
-   * on every edit. A field that is not there yet should read as a gap, not take the sheet
-   * down — which is what an unguarded .join on a missing array did.
+   * The count beside each rail item, so a destination says what it holds before you go
+   * there. Every read is guarded: a payload from a server older than this bundle is the
+   * normal case here — the API has no watcher and keeps serving what it started with while
+   * Vite reloads the page on every edit — and one unguarded field took the whole sheet down.
    */
-  const summaries = {
-    prompt: p
-      ? `${(p.system.length + p.voiceAddendum.length).toLocaleString()} תווים${
-          p.systemIsOverridden || p.voiceAddendumIsOverridden ? ' · נערך' : ''
-        }`
-      : '…',
-    tools: state ? `${state.tools.filter((t) => t.enabled).length} מתוך ${state.tools.length}` : '…',
-    knowledge: state
-      ? `${state.knowledge.airports} שדות · ${state.knowledge.regions.length} אזורים`
-      : '…',
-    vocabulary: state ? `${state.vocabulary.he.terms.length} מונחים` : '…',
-    evals: state ? `${state.evals.total} מקרים` : '…',
+  const badge = {
+    prompt: p && (p.systemIsOverridden || p.voiceAddendumIsOverridden) ? 'נערך' : '',
+    tools: state ? `${state.tools.filter((t) => t.enabled).length}/${state.tools.length}` : '',
+    knowledge: state ? String(state.knowledge.airports) : '',
+    vocabulary: state ? String(state.vocabulary.he.terms.length) : '',
+    evals: state ? String(state.evals.total) : '',
   }
+
+  const current = ALL_ITEMS.find((item) => item.id === pane) ?? ALL_ITEMS[0]
 
   return (
     <div className="ac-scrim" role="dialog" aria-modal="true" aria-label="ניהול הסוכן">
-      <div className="ac">
-        <header className="ac-top">
-          <div>
-            <h2>הסוכן</h2>
-            <p className="ac-sub">
-              שינויים חלים בשיחה הבאה, חיים בזיכרון בלבד, ונעלמים בהפעלה מחדש של השרת.
-              <br />
-              <code>src/agent/prompt.js</code> נשאר מקור האמת.
-            </p>
-          </div>
-          <div className="ac-top-right">
-            {saved && <span className="ac-saved">{saved}</span>}
-            {error && <span className="ac-error">{error}</span>}
-            <button type="button" className="ac-close" onClick={onClose} ref={closeRef}>
-              סגור
-            </button>
-          </div>
-        </header>
-
-        <div className="ac-scroll">
-          {!state && !error && <p className="ac-loading">קורא את הסוכן…</p>}
-
-          {state && (
-            <>
-              <Section
-                id="prompt"
-                label={SECTIONS[0].label}
-                summary={summaries.prompt}
-                open={section === 'prompt'}
-                onToggle={setSection}
+      <div className={`ac ${railOpen ? '' : 'rail-collapsed'}`}>
+        <nav className="ac-rail" aria-label="מקטעי הסוכן">
+          <div className="ac-rail-top">
+            <button
+              type="button"
+              className="ac-rail-toggle"
+              onClick={toggleRail}
+              aria-expanded={railOpen}
+              aria-label={railOpen ? 'צמצם את הסרגל' : 'הרחב את הסרגל'}
+              title={railOpen ? 'צמצם את הסרגל' : 'הרחב את הסרגל'}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
               >
+                <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+                <path d="M14.5 4.5v15" />
+              </svg>
+            </button>
+            {railOpen && <span className="ac-rail-title">הסוכן</span>}
+          </div>
+
+          {GROUPS.map((group) => (
+            <div className="ac-rail-group" key={group.label}>
+              {railOpen && <p className="ac-rail-group-label">{group.label}</p>}
+              <ul>
+                {group.items.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className={`ac-rail-item ${pane === item.id ? 'on' : ''}`}
+                      onClick={() => setPane(item.id)}
+                      aria-current={pane === item.id ? 'page' : undefined}
+                      aria-label={item.label}
+                      title={item.label}
+                    >
+                      <Icon name={item.icon} />
+                      {railOpen && (
+                        <>
+                          <span className="ac-rail-label">{item.label}</span>
+                          {badge[item.id] && (
+                            <span className="ac-rail-badge mono">{badge[item.id]}</span>
+                          )}
+                        </>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <div className="ac-main">
+          <header className="ac-top">
+            <div>
+              <h2>{current.label}</h2>
+              <p className="ac-sub">
+                שינויים חלים בשיחה הבאה, חיים בזיכרון בלבד, ונעלמים בהפעלה מחדש של השרת.{' '}
+                <code>src/agent/prompt.js</code> נשאר מקור האמת.
+              </p>
+            </div>
+            <div className="ac-top-right">
+              {saved && <span className="ac-saved">{saved}</span>}
+              {error && <span className="ac-error">{error}</span>}
+              <button type="button" className="ac-close" onClick={onClose} ref={closeRef}>
+                סגור
+              </button>
+            </div>
+          </header>
+
+          <div className="ac-scroll">
+            {!state && !error && <p className="ac-loading">קורא את הסוכן…</p>}
+
+            {state && pane === 'prompt' && (
+              <div className="ac-pane">
                 <PromptBlock
                   title="פרומט מערכת"
                   value={systemValue}
                   file={p.fileSystem}
                   overridden={p.systemIsOverridden}
-                  onChange={(v) => setDraft((d) => ({ ...d, system: v }))}
+                  onChange={(value) => setDraft((d) => ({ ...d, system: value }))}
                   onRevert={() => patch({ systemPrompt: null }, 'הפרומט הוחזר לקובץ')}
                   hint="החוזה האנליטי: אילו מספרים מותר לומר, מה לעשות כששאלה מחוץ לתחום, ומתי לסיים שיחה."
                 />
@@ -237,20 +344,15 @@ export default function AgentConsole({ open, onClose }) {
                   value={voiceValue}
                   file={p.fileVoiceAddendum}
                   overridden={p.voiceAddendumIsOverridden}
-                  onChange={(v) => setDraft((d) => ({ ...d, voiceAddendum: v }))}
+                  onChange={(value) => setDraft((d) => ({ ...d, voiceAddendum: value }))}
                   onRevert={() => patch({ voiceAddendum: null }, 'תוספת הקול הוחזרה לקובץ')}
                   hint="נוסף רק בנתיבי הקול. אורך תשובה, איך נשמעים מספרים, ומה לא קוראים בקול."
                 />
-
-                <div className="ac-lang">
-                  <span className="ac-prompt-title">בלוק שפה</span>
-                  <p className="ac-hint">
-                    נבנה מהשפה שנבחרה ולא ניתן לעריכה כאן — הוא נגזר מקוד.
-                    {' '}
-                    עברית {p.languageBlock.he.length.toLocaleString()} תווים · אנגלית{' '}
-                    {p.languageBlock.en.length.toLocaleString()}.
-                  </p>
-                </div>
+                <p className="ac-hint">
+                  <b>בלוק שפה</b> — נגזר מקוד ולא ניתן לעריכה כאן. עברית{' '}
+                  {p.languageBlock.he.length.toLocaleString()} תווים · אנגלית{' '}
+                  {p.languageBlock.en.length.toLocaleString()}.
+                </p>
 
                 <div className="ac-actions">
                   <button
@@ -278,18 +380,14 @@ export default function AgentConsole({ open, onClose }) {
                     </button>
                   )}
                 </div>
-              </Section>
+              </div>
+            )}
 
-              <Section
-                id="tools"
-                label={SECTIONS[1].label}
-                summary={summaries.tools}
-                open={section === 'tools'}
-                onToggle={setSection}
-              >
+            {state && pane === 'tools' && (
+              <div className="ac-pane">
                 <ul className="ac-tools">
                   {state.tools.map((tool) => {
-                    const params = Object.entries(tool.parameters.properties ?? {})
+                    const params = Object.entries(tool.parameters?.properties ?? {})
                     return (
                       <li key={tool.name} className={`ac-tool ${tool.enabled ? '' : 'off'}`}>
                         <div className="ac-tool-head">
@@ -321,7 +419,7 @@ export default function AgentConsole({ open, onClose }) {
                                 <span className="ac-param-type mono">
                                   {spec.enum ? spec.enum.join(' | ') : spec.type}
                                 </span>
-                                {tool.required.includes(name) && (
+                                {(tool.required ?? []).includes(name) && (
                                   <span className="ac-required">חובה</span>
                                 )}
                               </li>
@@ -337,15 +435,11 @@ export default function AgentConsole({ open, onClose }) {
                   הטיעון כולו לשים אותו ברשימת הכלים ולא בהוראות, שאיתן אפשר להתווכח. כיבוי כאן
                   רק מצמצם: כלי שהטרנספורט מונע נשאר מנוע.
                 </p>
-              </Section>
+              </div>
+            )}
 
-              <Section
-                id="knowledge"
-                label={SECTIONS[2].label}
-                summary={summaries.knowledge}
-                open={section === 'knowledge'}
-                onToggle={setSection}
-              >
+            {state && pane === 'knowledge' && (
+              <div className="ac-pane">
                 <div className="ac-stats">
                   <div>
                     <b className="mono">{state.knowledge.airports}</b>
@@ -371,11 +465,11 @@ export default function AgentConsole({ open, onClose }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {state.knowledge.regions.map((r) => (
-                      <tr key={r.region}>
-                        <td className="mono">{r.region}</td>
-                        <td className="mono num">{r.airports}</td>
-                        <td className="ac-states mono">{(r.states ?? []).join(' ')}</td>
+                    {state.knowledge.regions.map((region) => (
+                      <tr key={region.region}>
+                        <td className="mono">{region.region}</td>
+                        <td className="mono num">{region.airports}</td>
+                        <td className="ac-states mono">{(region.states ?? []).join(' ')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -388,13 +482,19 @@ export default function AgentConsole({ open, onClose }) {
                 <div className="ac-weights">
                   <span className="ac-prompt-title">משקלות הניקוד</span>
                   <ul>
-                    {['utilization', 'growth', 'unmetDemand', 'constraint'].map((k) => (
-                      <li key={k}>
-                        <code className="mono">{k}</code>
+                    {['utilization', 'growth', 'unmetDemand', 'constraint'].map((key) => (
+                      <li key={key}>
+                        <code className="mono">{key}</code>
                         <span className="ac-bar" aria-hidden="true">
-                          <i style={{ inlineSize: `${state.knowledge.weights[k] * 100}%` }} />
+                          <i
+                            style={{
+                              inlineSize: `${(state.knowledge.weights?.[key] ?? 0) * 100}%`,
+                            }}
+                          />
                         </span>
-                        <span className="mono num">{state.knowledge.weights[k].toFixed(2)}</span>
+                        <span className="mono num">
+                          {(state.knowledge.weights?.[key] ?? 0).toFixed(2)}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -416,15 +516,11 @@ export default function AgentConsole({ open, onClose }) {
                     ))}
                   </ul>
                 </div>
-              </Section>
+              </div>
+            )}
 
-              <Section
-                id="vocabulary"
-                label={SECTIONS[3].label}
-                summary={summaries.vocabulary}
-                open={section === 'vocabulary'}
-                onToggle={setSection}
-              >
+            {state && pane === 'vocabulary' && (
+              <div className="ac-pane">
                 <div className="ac-stats">
                   <div>
                     <b className="mono">{state.vocabulary.he.terms.length}</b>
@@ -441,29 +537,25 @@ export default function AgentConsole({ open, onClose }) {
                 </div>
                 <p className="ac-hint">{state.vocabulary.phantomNote}</p>
                 <div className="ac-terms">
-                  {state.vocabulary.he.terms.map((t) => (
-                    <span key={t} className="ac-term mono">
-                      {t}
+                  {state.vocabulary.he.terms.map((term) => (
+                    <span key={term} className="ac-term mono">
+                      {term}
                     </span>
                   ))}
                 </div>
-              </Section>
+              </div>
+            )}
 
-              <Section
-                id="evals"
-                label={SECTIONS[4].label}
-                summary={summaries.evals}
-                open={section === 'evals'}
-                onToggle={setSection}
-              >
+            {state && pane === 'evals' && (
+              <div className="ac-pane">
                 <p className="ac-hint">{state.evals.note}</p>
-                {state.evals.groups.map((g) => (
-                  <div key={g.group} className="ac-eval-group">
+                {state.evals.groups.map((group) => (
+                  <div key={group.group} className="ac-eval-group">
                     <span className="ac-prompt-title">
-                      {g.group} <span className="mono num">({g.ids.length})</span>
+                      {group.group} <span className="mono num">({group.ids.length})</span>
                     </span>
                     <div className="ac-terms">
-                      {g.ids.map((id) => (
+                      {group.ids.map((id) => (
                         <span key={id} className="ac-term mono">
                           {id}
                         </span>
@@ -471,9 +563,9 @@ export default function AgentConsole({ open, onClose }) {
                     </div>
                   </div>
                 ))}
-              </Section>
-            </>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

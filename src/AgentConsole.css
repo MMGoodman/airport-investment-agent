@@ -22,15 +22,148 @@
 }
 
 .ac {
-  inline-size: min(1080px, 100%);
+  inline-size: min(1240px, 100%);
   background: var(--bg-panel);
   border: 1px solid var(--rule-strong);
   border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  block-size: calc(100svh - var(--space-6));
+  overflow: hidden;
+  direction: rtl;
+}
+
+.ac.rail-collapsed {
+  grid-template-columns: 60px minmax(0, 1fr);
+}
+
+/* ---- rail ---------------------------------------------------------------- */
+
+.ac-rail {
+  background: var(--bg-sunk);
+  border-inline-end: 1px solid var(--rule);
+  padding: var(--space-3) var(--space-2) var(--space-4);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  max-block-size: calc(100svh - var(--space-6));
-  direction: rtl;
+  gap: var(--space-4);
+}
+
+.ac-rail-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-1);
+  min-block-size: 40px;
+}
+
+.ac-rail-title {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.ac-rail-toggle {
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ac-rail-toggle:hover {
+  color: var(--text);
+  background: var(--bg-panel);
+  border-color: var(--rule);
+}
+
+.ac-rail-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ac-rail-group-label {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  padding: 0 var(--space-3) var(--space-2);
+  letter-spacing: 0.02em;
+}
+
+.ac-rail-item {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  min-block-size: 40px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ac-rail-item:hover {
+  color: var(--text);
+  background: var(--bg-panel);
+}
+
+/* Cyan is "this is where you are", the same as live elsewhere in the console. */
+.ac-rail-item.on {
+  color: var(--live);
+  background: var(--live-soft);
+  border-color: color-mix(in srgb, var(--live) 30%, transparent);
+}
+
+.ac-rail-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ac-rail-badge {
+  margin-inline-start: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ac-rail-item.on .ac-rail-badge {
+  color: var(--live);
+}
+
+.ac.rail-collapsed .ac-rail-item {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.ac.rail-collapsed .ac-rail-group + .ac-rail-group {
+  border-block-start: 1px solid var(--rule);
+  padding-block-start: var(--space-3);
+}
+
+/* ---- pane ---------------------------------------------------------------- */
+
+.ac-main {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.ac-pane {
+  display: grid;
+  gap: var(--space-5);
 }
 
 .ac-top {
@@ -128,51 +261,6 @@
   padding: var(--space-6);
   text-align: center;
   color: var(--text-dim);
-}
-
-/* ---- sections ------------------------------------------------------------ */
-
-.ac-section + .ac-section {
-  border-block-start: 1px solid var(--rule);
-}
-
-.ac-head {
-  inline-size: 100%;
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-1);
-  background: none;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-  min-block-size: 48px;
-}
-
-.ac-caret {
-  color: var(--text-dim);
-  font-size: var(--fs-xs);
-}
-
-.ac-label {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text-strong);
-}
-
-/* The state of a closed section, so nothing hides completely. */
-.ac-summary {
-  margin-inline-start: auto;
-  font-size: var(--fs-xs);
-  color: var(--text-dim);
-}
-
-.ac-body {
-  padding: 0 var(--space-1) var(--space-5);
-  display: grid;
-  gap: var(--space-5);
 }
 
 .ac-hint {

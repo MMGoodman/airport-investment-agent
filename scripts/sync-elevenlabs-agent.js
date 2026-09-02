@@ -21,6 +21,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { toolSchemasFor } from '../src/agent/tools.js'
+import { skillsFor } from '../src/agent/skills.js'
 import { webhookToolsFor, webhookHybridStatus } from '../server/webhookTools.js'
 import { asrKeywords } from '../src/agent/vocabulary.js'
 
@@ -125,10 +126,42 @@ const SPOKEN_PROMPT = SYSTEM_PROMPT + VOICE_ADDENDUM
  * follows, and it is what makes the two rows in the switcher a comparison rather than two
  * unrelated agents that happen to share a name.
  */
+/**
+ * Skills, flattened into the prompt, because this platform cannot be sent any later.
+ *
+ * On the OpenAI paths a skill arrives as a session.update the first time one of its tools is
+ * called — the base prompt stays small and the conditional rules turn up when they become
+ * relevant. ElevenLabs has no session.update and no equivalent, so for a long time the
+ * result was simply that NO skill ever reached these agents, silently.
+ *
+ * It showed. A caller said "אה, תודה רבה" and the agent hung up on them, because the rule
+ * that a bare thank-you is acknowledgement rather than goodbye lives in the call-control
+ * skill — 1,071 characters that had never been sent. The ranking rules and the weather
+ * rules had never been sent either.
+ *
+ * So the choice here is all of them always or none of them ever, and none was the wrong
+ * one. Only the skills whose tools this agent actually carries: the plain agent has no
+ * weather tool, and rules about reading back a weather result are noise to it.
+ */
+function skillsBlock(toolNames) {
+  const relevant = skillsFor(toolNames)
+  if (relevant.length === 0) return ''
+  return [
+    '',
+    '',
+    'RULES THAT APPLY WHEN THEY APPLY',
+    'What follows is grouped by subject. Each block governs only its own subject; read the',
+    'one that matches what you are about to do and ignore the rest.',
+    '',
+    ...relevant.map((skill) => skill.instructions),
+  ].join('\n')
+}
+
 const buildConfig = (webhookTools) => {
   const stillWithheld = withheld.filter((name) => !webhookTools.some((t) => t.name === name))
   const WITHHELD = withheldNote(stillWithheld, ELEVENLABS_REMEDY)
   const allTools = [...tools, ...webhookTools]
+  const SKILLS_TEXT = skillsBlock(allTools.map((t) => t.name))
   return {
   agent: {
     language: 'en',
@@ -136,7 +169,7 @@ const buildConfig = (webhookTools) => {
       'Airport investment agent, live. Ask me which airports are strong expansion candidates, ' +
       'or compare two of them.',
     prompt: {
-      prompt: SPOKEN_PROMPT + languageInstruction('en', true) + WITHHELD,
+      prompt: SPOKEN_PROMPT + SKILLS_TEXT + languageInstruction('en', true) + WITHHELD,
       // Same model tier as the text path on purpose: when you A/B the three providers,
       // the difference you hear should be the transport, not a smarter model.
       llm: process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite',
@@ -160,7 +193,7 @@ const buildConfig = (webhookTools) => {
           language: 'he',
           first_message:
             'סוכן השקעות בשדות תעופה, בשידור חי. אפשר לשאול אילו שדות מועמדים חזקים להרחבה, או להשוות בין שניים.',
-          prompt: { prompt: SPOKEN_PROMPT + languageInstruction('he', true) + WITHHELD },
+          prompt: { prompt: SPOKEN_PROMPT + SKILLS_TEXT + languageInstruction('he', true) + WITHHELD },
         },
       },
     },
@@ -369,7 +402,8 @@ async function syncAgent({ name, webhookTools: hooks, envVar }) {
   console.log(`  ${tools.length} client · ${hooks.length} webhook · ${tools.length + hooks.length}/${total} of the agent`)
   if (placed.length) console.log(`  their cloud calls this server for: ${placed.join(', ')}`)
   if (missing.length) console.log(`  withheld: ${missing.join(', ')}`)
-  console.log(`  prompt: ${config.agent.prompt.prompt.length} chars`)
+  const skills = skillsFor([...tools, ...hooks].map((t) => t.name))
+  console.log(`  prompt: ${config.agent.prompt.prompt.length} chars · ${skills.length} skills inlined: ${skills.map((s) => s.id).join(', ')}`)
   if (saved) console.log(`  previous config saved to ${relative(process.cwd(), saved)}`)
   console.log(`  ${envVar}=${id}`)
   return id

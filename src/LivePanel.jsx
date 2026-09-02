@@ -382,6 +382,13 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
                   ? `${audit.serverCalls} tool ${audit.serverCalls === 1 ? 'call' : 'calls'} match the server log` +
                     (audit.serverRun
                       ? ` · ${audit.serverRun} ran on your server, never through the browser`
+                      : '') +
+                    // A count that is right about what it saw still misleads if the reader
+                    // takes it for the whole story. On a transport whose placed tools are
+                    // fetched by the provider's own cloud, this browser is not shown them
+                    // at all — so the line says what it does not cover.
+                    (provider.toolTrace === 'partial'
+                      ? ` · not counted: ${provider.toolTraceNote}`
                       : '')
                   : `trace does not match the server log — ` +
                       [

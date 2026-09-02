@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { startOpenAIRealtime } from './live/openaiRealtime.js'
 import { startOpenAIRelay } from './live/openaiRelay.js'
 import { firstTokenStages, turnHasQuestion } from './live/stopwatch.js'
@@ -83,7 +84,21 @@ const PIPELINE_DEFAULTS = {
   vocabulary: 'on',
 }
 
-export default function LivePanel({ provider, lang, onAppend, onError }) {
+/**
+ * Render `node` into `slot` when the workspace offers one, in place otherwise.
+ *
+ * The three parts of this panel belong in three different columns now — the settings on
+ * the left, the controls in the middle, the trace on the right — but the state behind them
+ * is one machine: marks, pending tools, the audit claim set, the end-of-call timer. Lifting
+ * that out would be a rewrite of the piece the session is tested against every few minutes.
+ *
+ * A portal moves where a thing is drawn without moving where it lives, which is exactly the
+ * distinction being made. Without a slot it renders inline, so the panel still works on its
+ * own — which is what keeps this a layout decision rather than a dependency.
+ */
+const into = (slot, node) => (slot ? createPortal(node, slot) : node)
+
+export default function LivePanel({ provider, lang, onAppend, onError, slots }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
   const [speaking, setSpeaking] = useState(null)
@@ -583,6 +598,9 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           panel over those would be dead switches, so they get none. */}
       {/* ElevenLabs gets no switches, and the board says why instead of vanishing: its
           pipeline is pushed at sync time, so a per-session switch would be a dead one. */}
+      {into(
+        slots?.settings,
+        <>
       {provider.id === 'elevenlabs' && (
         <fieldset className="pipe" dir="rtl" disabled>
           <legend>צינור העיבוד</legend>
@@ -752,19 +770,24 @@ export default function LivePanel({ provider, lang, onAppend, onError }) {
           )}
         </fieldset>
       )}
+        </>,
+      )}
 
-      <LiveTrace
-        events={events}
-        verbose={verbose}
-        onVerbose={setVerbose}
-        onClear={() => {
-          setEvents([])
-          resetTotals()
-        }}
-        totals={sessionTotals}
-        provider={provider}
-        lang={lang}
-      />
+      {into(
+        slots?.trace,
+        <LiveTrace
+          events={events}
+          verbose={verbose}
+          onVerbose={setVerbose}
+          onClear={() => {
+            setEvents([])
+            resetTotals()
+          }}
+          totals={sessionTotals}
+          provider={provider}
+          lang={lang}
+        />,
+      )}
     </div>
   )
 }

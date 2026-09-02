@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { applyTheme, readTheme } from './theme.js'
 import AgentConsole from './AgentConsole.jsx'
 import Home from './Home.jsx'
+import AgentWorkspace from './AgentWorkspace.jsx'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -72,7 +73,18 @@ function App() {
   // transcriber and the voice as well.
   // Read once from storage; the inline script in index.html already applied it.
   const [theme, setTheme] = useState(readTheme)
-  const [consoleOpen, setConsoleOpen] = useState(false)
+  /**
+   * Which settings pane is open in the workspace, and the two DOM nodes LivePanel draws
+   * into.
+   *
+   * They are state rather than refs because a ref does not re-render: LivePanel has to be
+   * told the slot exists, and a callback ref that sets state is the shortest honest way to
+   * do that. Null until the pane is opened, which is also correct — a portal with nowhere
+   * to go renders inline, and inline is where the settings belong when there is no pane.
+   */
+  const [wsPane, setWsPane] = useState(null)
+  const [settingsSlot, setSettingsSlot] = useState(null)
+  const [traceSlot, setTraceSlot] = useState(null)
   const [lang, setLang] = useState('he')
   const [readAloud, setReadAloud] = useState(false)
   const bottomRef = useRef(null)
@@ -274,16 +286,6 @@ function App() {
             <span>{readAloud ? 'voice on' : 'voice off'}</span>
           </button>
 
-          {/* Between calls, not during one — which is why it is a sheet and not a column. */}
-          <button
-            type="button"
-            className="switcher agent-open"
-            onClick={() => setConsoleOpen(true)}
-            title="הוראות, כלים, ידע ואוצר מילים"
-          >
-            סוכן
-          </button>
-
           {/* Three states, because "system" is a real choice and a two-way toggle cannot
               return to it. Labelled by what it does, not by an icon alone. */}
           <label className="switcher theme" title="Which ground the console is read on">
@@ -340,12 +342,63 @@ function App() {
         </div>
       </header>
 
-      <AgentConsole open={consoleOpen} onClose={() => setConsoleOpen(false)} />
 
-      {/* Side by side while a call is live: the trace and the pipeline board are for
-          reading WHILE talking, and stacked below the transcript they were always the
-          half of the screen you could not see. Stacks again under 60rem. */}
-      <div className={`workspace${live ? ' split' : ''}`}>
+      <AgentWorkspace
+        nav={[
+          {
+            label: 'הפעלה',
+            items: [{ id: 'model', label: 'מודל וצינור', icon: 'model', badge: activeProvider?.mode === 'live' ? 'חי' : '' }],
+          },
+          {
+            label: 'הגדרה',
+            items: [
+              { id: 'prompt', label: 'הוראות', icon: 'prompt' },
+              { id: 'tools', label: 'כלים', icon: 'tools' },
+            ],
+          },
+          {
+            label: 'ידע',
+            items: [
+              { id: 'knowledge', label: 'מאגר נתונים', icon: 'knowledge' },
+              { id: 'vocabulary', label: 'אוצר מילים', icon: 'vocabulary' },
+            ],
+          },
+          { label: 'בקרה', items: [{ id: 'evals', label: 'הערכות', icon: 'evals' }] },
+        ]}
+        activePane={wsPane}
+        onPane={setWsPane}
+        pane={
+          wsPane === 'model' ? (
+            <div className="ws-model">
+              <label className="home-field">
+                <span>מודל</span>
+                <select value={providerId} onChange={(event) => setProviderId(event.target.value)}>
+                  {providers.map((option) => (
+                    <option key={option.id} value={option.id} disabled={!option.available}>
+                      {option.label}
+                      {option.available ? '' : ' — unavailable'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {/* LivePanel draws its pipeline board in here. It keeps its own state; only
+                  the drawing moves. */}
+              <div ref={setSettingsSlot} />
+              {!live && (
+                <p className="ac-hint">
+                  צינור העיבוד נפתח לכוונון רק בנתיבי הקול — בנתיב הטקסט אין זיהוי תור ואין
+                  מתמלל, אז אין מה לקנפג.
+                </p>
+              )}
+            </div>
+          ) : wsPane ? (
+            <AgentConsole bare pane={wsPane} />
+          ) : null
+        }
+        rail={live ? <div ref={setTraceSlot} /> : null}
+        railLive={live}
+        center={
+          <>
         <main className="messages">
         {messages.length === 0 && !loading && (
           <div className="welcome">
@@ -402,13 +455,18 @@ function App() {
         </main>
 
         {live && (
-          <LivePanel provider={activeProvider} lang={lang} onAppend={appendLive} onError={setError} />
+          <LivePanel
+            provider={activeProvider}
+            lang={lang}
+            onAppend={appendLive}
+            onError={setError}
+            slots={{ settings: settingsSlot, trace: traceSlot }}
+          />
         )}
-      </div>
 
       {!live && (
       <form
-        className="composer"
+        className="composer-inner composer"
         onSubmit={(event) => {
           event.preventDefault()
           send()
@@ -483,6 +541,9 @@ function App() {
         </p>
       </form>
       )}
+          </>
+        }
+      />
     </div>
   )
 }

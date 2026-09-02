@@ -1,0 +1,331 @@
+/**
+ * Inside an agent: settings on the left, the conversation in the middle, the live trace on
+ * the right while a call is running.
+ *
+ * Three columns that scroll independently. One page scroll would mean reaching the tool
+ * list by scrolling past the conversation, and watching a trace arrive would drag the
+ * composer off screen — the two things you do at once are in different columns for exactly
+ * that reason.
+ *
+ * The rail is physically right and the sidebar physically left, in an RTL page. That is
+ * deliberate and is why these use left/right rather than start/end: the layout is a desk,
+ * not a sentence, and the desk does not flip when the language does.
+ */
+
+.ws {
+  block-size: calc(100svh - var(--ws-top, 64px));
+  display: grid;
+  grid-template-columns: var(--ws-side, 260px) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.ws.with-rail {
+  grid-template-columns: var(--ws-side, 260px) minmax(0, 1fr) var(--ws-rail, 380px);
+}
+
+.ws.side-collapsed {
+  --ws-side: 56px;
+}
+
+/* ---- left: the agent's settings ------------------------------------------ */
+
+.ws-side {
+  grid-column: 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sunk);
+  border-inline-end: 1px solid var(--rule);
+  overflow: hidden;
+}
+
+.ws-side-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-block-end: 1px solid var(--rule);
+  min-block-size: 52px;
+}
+
+.ws-side-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ws-side-toggle {
+  display: grid;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  flex-shrink: 0;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ws-side-toggle:hover {
+  color: var(--text);
+  background: var(--bg-panel);
+  border-color: var(--rule);
+}
+
+.ws-side-nav {
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+
+.ws-group-label {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.ws-side-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ws-item {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  min-block-size: 40px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ws-item:hover {
+  color: var(--text);
+  background: var(--bg-panel);
+}
+
+.ws-item.on {
+  color: var(--live);
+  background: var(--live-soft);
+  border-color: color-mix(in srgb, var(--live) 30%, transparent);
+}
+
+.ws-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-item-badge {
+  margin-inline-start: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ws-item.on .ws-item-badge {
+  color: var(--live);
+}
+
+.ws.side-collapsed .ws-item {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.ws.side-collapsed .ws-group-label,
+.ws.side-collapsed .ws-side-title,
+.ws.side-collapsed .ws-item-label,
+.ws.side-collapsed .ws-item-badge {
+  display: none;
+}
+
+/* The settings pane opens over the middle when a rail item is chosen, so the sidebar can
+   stay narrow and the content still gets room. */
+.ws-side-pane {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--ws-side, 260px);
+  inline-size: min(560px, 60vw);
+  z-index: 20;
+  background: var(--bg-panel);
+  border-inline-end: 1px solid var(--rule-strong);
+  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ws-pane-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
+  border-block-end: 1px solid var(--rule);
+}
+
+.ws-pane-top h3 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.ws-pane-body {
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* ---- middle: the conversation -------------------------------------------- */
+
+.ws-center {
+  grid-column: 2;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ---- right: the live trace ----------------------------------------------- */
+
+.ws-rail {
+  grid-column: 3;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sunk);
+  border-inline-start: 1px solid var(--rule);
+  overflow: hidden;
+}
+
+.ws-rail-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-block-end: 1px solid var(--rule);
+  min-block-size: 52px;
+}
+
+.ws-rail-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.ws-rail-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+  font-size: var(--fs-xs);
+  color: var(--live);
+}
+
+.ws-rail-live i {
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: var(--r-pill);
+  background: var(--live);
+}
+
+.ws-rail-body {
+  overflow: auto;
+  padding: var(--space-3);
+  flex: 1;
+  min-block-size: 0;
+}
+
+/* ---- narrow ---------------------------------------------------------------
+   Below 1100px the rail costs more than it gives: three columns leave the
+   conversation too narrow to read. It becomes a sheet over the middle instead,
+   which is the same content in the place there is room for it. */
+
+@media (max-width: 1100px) {
+  .ws.with-rail {
+    grid-template-columns: var(--ws-side, 260px) minmax(0, 1fr);
+  }
+
+  .ws-rail {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    inline-size: min(420px, 92vw);
+    z-index: 25;
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+    border-inline-start: 1px solid var(--rule-strong);
+  }
+}
+
+@media (max-width: 820px) {
+  /* The sidebar stops holding a column and becomes an icon strip. Below this the
+     conversation is the only thing with enough width to be worth reading. */
+  .ws,
+  .ws.with-rail {
+    --ws-side: 56px;
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  /* Same as the collapsed state: at 56px a label is a sliver, not a word. The
+     aria-label and the title stay, so the strip is still navigable without sight. */
+  .ws .ws-group-label,
+  .ws .ws-side-title,
+  .ws .ws-item-label,
+  .ws .ws-item-badge {
+    display: none;
+  }
+
+  .ws .ws-item {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .ws-side-pane {
+    inline-size: min(420px, calc(100vw - 56px));
+  }
+}
+
+/* The model pane: the switcher, then whatever board the transport offers. */
+.ws-model {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ws-model .home-field select {
+  inline-size: 100%;
+}
+
+/* The centre column scrolls on its own, so the composer stays put while the conversation
+   moves under it. */
+.ws-center > .messages {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+}
+
+.ws-center > .composer-inner {
+  flex-shrink: 0;
+}
+
+/* The panel keeps its call controls in the middle; its board and its trace are portalled
+   out, so the wrapper is only a controls strip now. */
+.ws-center > .live {
+  flex-shrink: 0;
+  border-block-start: 1px solid var(--rule);
+}

@@ -140,10 +140,19 @@ function PromptBlock({ title, value, file, overridden, onChange, onRevert, hint 
   )
 }
 
-export default function AgentConsole({ open, onClose }) {
+/**
+ * `bare` renders one pane and nothing around it.
+ *
+ * The workspace owns the rail and the frame now, so the console's own scrim, rail and
+ * header would be a second set of both. Keeping one component for the pane bodies rather
+ * than extracting them means the sheet and the workspace can never drift into showing
+ * different things under the same name.
+ */
+export default function AgentConsole({ open, onClose, bare = false, pane: panePropCargo }) {
   const [state, setState] = useState(null)
   const [error, setError] = useState(null)
-  const [pane, setPane] = useState('prompt')
+  const [panePriv, setPane] = useState('prompt')
+  const pane = bare ? panePropCargo : panePriv
   const [draft, setDraft] = useState({ system: null, voiceAddendum: null })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(null)
@@ -182,18 +191,18 @@ export default function AgentConsole({ open, onClose }) {
   }, [])
 
   useEffect(() => {
-    if (open) load()
-  }, [open, load])
+    if (open || bare) load()
+  }, [open, bare, load])
 
   useEffect(() => {
-    if (!open) return undefined
+    if (!open || bare) return undefined
     const onKey = (event) => {
       if (event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     closeRef.current?.focus()
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, bare, onClose])
 
   const patch = useCallback(async (body, note) => {
     setSaving(true)
@@ -222,7 +231,7 @@ export default function AgentConsole({ open, onClose }) {
     return () => clearTimeout(t)
   }, [saved])
 
-  if (!open) return null
+  if (!open && !bare) return null
 
   const p = state?.prompt
   const systemValue = draft.system ?? p?.system ?? ''
@@ -246,6 +255,260 @@ export default function AgentConsole({ open, onClose }) {
   }
 
   const current = ALL_ITEMS.find((item) => item.id === pane) ?? ALL_ITEMS[0]
+
+  const panes = (
+    <>
+        {!state && !error && <p className="ac-loading">קורא את הסוכן…</p>}
+
+        {state && pane === 'prompt' && (
+          <div className="ac-pane">
+            <PromptBlock
+              title="פרומט מערכת"
+              value={systemValue}
+              file={p.fileSystem}
+              overridden={p.systemIsOverridden}
+              onChange={(value) => setDraft((d) => ({ ...d, system: value }))}
+              onRevert={() => patch({ systemPrompt: null }, 'הפרומט הוחזר לקובץ')}
+              hint="החוזה האנליטי: אילו מספרים מותר לומר, מה לעשות כששאלה מחוץ לתחום, ומתי לסיים שיחה."
+            />
+            <PromptBlock
+              title="תוספת קול"
+              value={voiceValue}
+              file={p.fileVoiceAddendum}
+              overridden={p.voiceAddendumIsOverridden}
+              onChange={(value) => setDraft((d) => ({ ...d, voiceAddendum: value }))}
+              onRevert={() => patch({ voiceAddendum: null }, 'תוספת הקול הוחזרה לקובץ')}
+              hint="נוסף רק בנתיבי הקול. אורך תשובה, איך נשמעים מספרים, ומה לא קוראים בקול."
+            />
+            <p className="ac-hint">
+              <b>בלוק שפה</b> — נגזר מקוד ולא ניתן לעריכה כאן. עברית{' '}
+              {p.languageBlock.he.length.toLocaleString()} תווים · אנגלית{' '}
+              {p.languageBlock.en.length.toLocaleString()}.
+            </p>
+
+            <div className="ac-actions">
+              <button
+                type="button"
+                className="ac-apply"
+                disabled={!dirty || saving}
+                onClick={() =>
+                  patch({
+                    ...(draft.system !== null ? { systemPrompt: draft.system } : {}),
+                    ...(draft.voiceAddendum !== null
+                      ? { voiceAddendum: draft.voiceAddendum }
+                      : {}),
+                  })
+                }
+              >
+                {saving ? 'מחיל…' : 'החל על השיחה הבאה'}
+              </button>
+              {dirty && (
+                <button
+                  type="button"
+                  className="ac-discard"
+                  onClick={() => setDraft({ system: null, voiceAddendum: null })}
+                >
+                  בטל עריכה
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {state && pane === 'tools' && (
+          <div className="ac-pane">
+            <ul className="ac-tools">
+              {state.tools.map((tool) => {
+                const params = Object.entries(tool.parameters?.properties ?? {})
+                return (
+                  <li key={tool.name} className={`ac-tool ${tool.enabled ? '' : 'off'}`}>
+                    <div className="ac-tool-head">
+                      <label className="ac-tool-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tool.enabled}
+                          onChange={(event) => {
+                            const off = new Set(
+                              state.tools.filter((t) => !t.enabled).map((t) => t.name),
+                            )
+                            if (event.target.checked) off.delete(tool.name)
+                            else off.add(tool.name)
+                            patch({ disabledTools: [...off] })
+                          }}
+                        />
+                        <span className="ac-tool-name mono">{tool.name}</span>
+                      </label>
+                      <span className={`ac-place ${tool.placement}`}>
+                        {tool.placement === 'server' ? 'השרת שלך' : 'הדפדפן'}
+                      </span>
+                    </div>
+                    <p className="ac-tool-desc">{tool.description}</p>
+                    {params.length > 0 && (
+                      <ul className="ac-params">
+                        {params.map(([name, spec]) => (
+                          <li key={name}>
+                            <code className="mono">{name}</code>
+                            <span className="ac-param-type mono">
+                              {spec.enum ? spec.enum.join(' | ') : spec.type}
+                            </span>
+                            {(tool.required ?? []).includes(name) && (
+                              <span className="ac-required">חובה</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="ac-hint">
+              <b>המיקום אינו ניתן לעריכה כאן.</b> מי מריץ כלי נקבע לפני שהשיחה מתחילה — זה
+              הטיעון כולו לשים אותו ברשימת הכלים ולא בהוראות, שאיתן אפשר להתווכח. כיבוי כאן
+              רק מצמצם: כלי שהטרנספורט מונע נשאר מנוע.
+            </p>
+          </div>
+        )}
+
+        {state && pane === 'knowledge' && (
+          <div className="ac-pane">
+            <div className="ac-stats">
+              <div>
+                <b className="mono">{state.knowledge.airports}</b>
+                <span>שדות תעופה</span>
+              </div>
+              <div>
+                <b className="mono">{state.knowledge.annualRows}</b>
+                <span>שורות שנתיות</span>
+              </div>
+              <div>
+                <b className="mono">{(state.knowledge.years ?? []).join(' · ')}</b>
+                <span>שנים</span>
+              </div>
+            </div>
+            <p className="ac-hint">{state.knowledge.yearsNote}</p>
+
+            <table className="ac-table">
+              <thead>
+                <tr>
+                  <th>אזור</th>
+                  <th>שדות</th>
+                  <th>מדינות</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.knowledge.regions.map((region) => (
+                  <tr key={region.region}>
+                    <td className="mono">{region.region}</td>
+                    <td className="mono num">{region.airports}</td>
+                    <td className="ac-states mono">{(region.states ?? []).join(' ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="ac-hint">
+              המדינות הן התשובה לשאלה שהסוכן טעה בה בקול: ״אריזונה״ אינה אזור כאן, היא בתוך
+              Mountain.
+            </p>
+
+            <div className="ac-weights">
+              <span className="ac-prompt-title">משקלות הניקוד</span>
+              <ul>
+                {['utilization', 'growth', 'unmetDemand', 'constraint'].map((key) => (
+                  <li key={key}>
+                    <code className="mono">{key}</code>
+                    <span className="ac-bar" aria-hidden="true">
+                      <i
+                        style={{
+                          inlineSize: `${(state.knowledge.weights?.[key] ?? 0) * 100}%`,
+                        }}
+                      />
+                    </span>
+                    <span className="mono num">
+                      {(state.knowledge.weights?.[key] ?? 0).toFixed(2)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="ac-hint">{state.knowledge.weightsNote}</p>
+            </div>
+
+            <div className="ac-constraints">
+              <span className="ac-prompt-title">
+                הערות מחייבות ({state.knowledge.constraints.length})
+              </span>
+              <p className="ac-hint">{state.knowledge.constraintsNote}</p>
+              <ul>
+                {state.knowledge.constraints.map((c) => (
+                  <li key={c.iata}>
+                    <span className="ac-iata mono">{c.iata}</span>
+                    <span className="ac-ctype">{c.type}</span>
+                    <span className="ac-cnote">{c.note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {state && pane === 'vocabulary' && (
+          <div className="ac-pane">
+            <div className="ac-stats">
+              <div>
+                <b className="mono">{state.vocabulary.he.terms.length}</b>
+                <span>מונחים · עברית</span>
+              </div>
+              <div>
+                <b className="mono">{state.vocabulary.en.terms.length}</b>
+                <span>מונחים · אנגלית</span>
+              </div>
+              <div>
+                <b className="mono">{state.vocabulary.phantomThreshold}</b>
+                <span>סף פאנטום</span>
+              </div>
+            </div>
+            <p className="ac-hint">{state.vocabulary.phantomNote}</p>
+            <div className="ac-terms">
+              {state.vocabulary.he.terms.map((term) => (
+                <span key={term} className="ac-term mono">
+                  {term}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {state && pane === 'evals' && (
+          <div className="ac-pane">
+            <p className="ac-hint">{state.evals.note}</p>
+            {state.evals.groups.map((group) => (
+              <div key={group.group} className="ac-eval-group">
+                <span className="ac-prompt-title">
+                  {group.group} <span className="mono num">({group.ids.length})</span>
+                </span>
+                <div className="ac-terms">
+                  {group.ids.map((id) => (
+                    <span key={id} className="ac-term mono">
+                      {id}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+    </>
+  )
+
+
+  if (bare) {
+    return (
+      <div className="ac-bare">
+        {saved && <p className="ac-saved">{saved}</p>}
+        {panes}
+      </div>
+    )
+  }
 
   return (
     <div className="ac-scrim" role="dialog" aria-modal="true" aria-label="ניהול הסוכן">
@@ -326,245 +589,7 @@ export default function AgentConsole({ open, onClose }) {
           </header>
 
           <div className="ac-scroll">
-            {!state && !error && <p className="ac-loading">קורא את הסוכן…</p>}
-
-            {state && pane === 'prompt' && (
-              <div className="ac-pane">
-                <PromptBlock
-                  title="פרומט מערכת"
-                  value={systemValue}
-                  file={p.fileSystem}
-                  overridden={p.systemIsOverridden}
-                  onChange={(value) => setDraft((d) => ({ ...d, system: value }))}
-                  onRevert={() => patch({ systemPrompt: null }, 'הפרומט הוחזר לקובץ')}
-                  hint="החוזה האנליטי: אילו מספרים מותר לומר, מה לעשות כששאלה מחוץ לתחום, ומתי לסיים שיחה."
-                />
-                <PromptBlock
-                  title="תוספת קול"
-                  value={voiceValue}
-                  file={p.fileVoiceAddendum}
-                  overridden={p.voiceAddendumIsOverridden}
-                  onChange={(value) => setDraft((d) => ({ ...d, voiceAddendum: value }))}
-                  onRevert={() => patch({ voiceAddendum: null }, 'תוספת הקול הוחזרה לקובץ')}
-                  hint="נוסף רק בנתיבי הקול. אורך תשובה, איך נשמעים מספרים, ומה לא קוראים בקול."
-                />
-                <p className="ac-hint">
-                  <b>בלוק שפה</b> — נגזר מקוד ולא ניתן לעריכה כאן. עברית{' '}
-                  {p.languageBlock.he.length.toLocaleString()} תווים · אנגלית{' '}
-                  {p.languageBlock.en.length.toLocaleString()}.
-                </p>
-
-                <div className="ac-actions">
-                  <button
-                    type="button"
-                    className="ac-apply"
-                    disabled={!dirty || saving}
-                    onClick={() =>
-                      patch({
-                        ...(draft.system !== null ? { systemPrompt: draft.system } : {}),
-                        ...(draft.voiceAddendum !== null
-                          ? { voiceAddendum: draft.voiceAddendum }
-                          : {}),
-                      })
-                    }
-                  >
-                    {saving ? 'מחיל…' : 'החל על השיחה הבאה'}
-                  </button>
-                  {dirty && (
-                    <button
-                      type="button"
-                      className="ac-discard"
-                      onClick={() => setDraft({ system: null, voiceAddendum: null })}
-                    >
-                      בטל עריכה
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {state && pane === 'tools' && (
-              <div className="ac-pane">
-                <ul className="ac-tools">
-                  {state.tools.map((tool) => {
-                    const params = Object.entries(tool.parameters?.properties ?? {})
-                    return (
-                      <li key={tool.name} className={`ac-tool ${tool.enabled ? '' : 'off'}`}>
-                        <div className="ac-tool-head">
-                          <label className="ac-tool-toggle">
-                            <input
-                              type="checkbox"
-                              checked={tool.enabled}
-                              onChange={(event) => {
-                                const off = new Set(
-                                  state.tools.filter((t) => !t.enabled).map((t) => t.name),
-                                )
-                                if (event.target.checked) off.delete(tool.name)
-                                else off.add(tool.name)
-                                patch({ disabledTools: [...off] })
-                              }}
-                            />
-                            <span className="ac-tool-name mono">{tool.name}</span>
-                          </label>
-                          <span className={`ac-place ${tool.placement}`}>
-                            {tool.placement === 'server' ? 'השרת שלך' : 'הדפדפן'}
-                          </span>
-                        </div>
-                        <p className="ac-tool-desc">{tool.description}</p>
-                        {params.length > 0 && (
-                          <ul className="ac-params">
-                            {params.map(([name, spec]) => (
-                              <li key={name}>
-                                <code className="mono">{name}</code>
-                                <span className="ac-param-type mono">
-                                  {spec.enum ? spec.enum.join(' | ') : spec.type}
-                                </span>
-                                {(tool.required ?? []).includes(name) && (
-                                  <span className="ac-required">חובה</span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-                <p className="ac-hint">
-                  <b>המיקום אינו ניתן לעריכה כאן.</b> מי מריץ כלי נקבע לפני שהשיחה מתחילה — זה
-                  הטיעון כולו לשים אותו ברשימת הכלים ולא בהוראות, שאיתן אפשר להתווכח. כיבוי כאן
-                  רק מצמצם: כלי שהטרנספורט מונע נשאר מנוע.
-                </p>
-              </div>
-            )}
-
-            {state && pane === 'knowledge' && (
-              <div className="ac-pane">
-                <div className="ac-stats">
-                  <div>
-                    <b className="mono">{state.knowledge.airports}</b>
-                    <span>שדות תעופה</span>
-                  </div>
-                  <div>
-                    <b className="mono">{state.knowledge.annualRows}</b>
-                    <span>שורות שנתיות</span>
-                  </div>
-                  <div>
-                    <b className="mono">{(state.knowledge.years ?? []).join(' · ')}</b>
-                    <span>שנים</span>
-                  </div>
-                </div>
-                <p className="ac-hint">{state.knowledge.yearsNote}</p>
-
-                <table className="ac-table">
-                  <thead>
-                    <tr>
-                      <th>אזור</th>
-                      <th>שדות</th>
-                      <th>מדינות</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.knowledge.regions.map((region) => (
-                      <tr key={region.region}>
-                        <td className="mono">{region.region}</td>
-                        <td className="mono num">{region.airports}</td>
-                        <td className="ac-states mono">{(region.states ?? []).join(' ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="ac-hint">
-                  המדינות הן התשובה לשאלה שהסוכן טעה בה בקול: ״אריזונה״ אינה אזור כאן, היא בתוך
-                  Mountain.
-                </p>
-
-                <div className="ac-weights">
-                  <span className="ac-prompt-title">משקלות הניקוד</span>
-                  <ul>
-                    {['utilization', 'growth', 'unmetDemand', 'constraint'].map((key) => (
-                      <li key={key}>
-                        <code className="mono">{key}</code>
-                        <span className="ac-bar" aria-hidden="true">
-                          <i
-                            style={{
-                              inlineSize: `${(state.knowledge.weights?.[key] ?? 0) * 100}%`,
-                            }}
-                          />
-                        </span>
-                        <span className="mono num">
-                          {(state.knowledge.weights?.[key] ?? 0).toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="ac-hint">{state.knowledge.weightsNote}</p>
-                </div>
-
-                <div className="ac-constraints">
-                  <span className="ac-prompt-title">
-                    הערות מחייבות ({state.knowledge.constraints.length})
-                  </span>
-                  <p className="ac-hint">{state.knowledge.constraintsNote}</p>
-                  <ul>
-                    {state.knowledge.constraints.map((c) => (
-                      <li key={c.iata}>
-                        <span className="ac-iata mono">{c.iata}</span>
-                        <span className="ac-ctype">{c.type}</span>
-                        <span className="ac-cnote">{c.note}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {state && pane === 'vocabulary' && (
-              <div className="ac-pane">
-                <div className="ac-stats">
-                  <div>
-                    <b className="mono">{state.vocabulary.he.terms.length}</b>
-                    <span>מונחים · עברית</span>
-                  </div>
-                  <div>
-                    <b className="mono">{state.vocabulary.en.terms.length}</b>
-                    <span>מונחים · אנגלית</span>
-                  </div>
-                  <div>
-                    <b className="mono">{state.vocabulary.phantomThreshold}</b>
-                    <span>סף פאנטום</span>
-                  </div>
-                </div>
-                <p className="ac-hint">{state.vocabulary.phantomNote}</p>
-                <div className="ac-terms">
-                  {state.vocabulary.he.terms.map((term) => (
-                    <span key={term} className="ac-term mono">
-                      {term}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {state && pane === 'evals' && (
-              <div className="ac-pane">
-                <p className="ac-hint">{state.evals.note}</p>
-                {state.evals.groups.map((group) => (
-                  <div key={group.group} className="ac-eval-group">
-                    <span className="ac-prompt-title">
-                      {group.group} <span className="mono num">({group.ids.length})</span>
-                    </span>
-                    <div className="ac-terms">
-                      {group.ids.map((id) => (
-                        <span key={id} className="ac-term mono">
-                          {id}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {panes}
           </div>
         </div>
       </div>

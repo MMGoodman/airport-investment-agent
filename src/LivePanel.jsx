@@ -116,6 +116,19 @@ const into = (slot, node) => (slot ? createPortal(node, slot) : node)
  */
 const onlyInto = (slot, node) => (slot ? createPortal(node, slot) : null)
 
+/**
+ * Arguments as a trace reads them.
+ *
+ * An object argument used to render as "[object Object]" — weights, which is the one
+ * argument whose value would actually explain a surprising ranking. Shared because the
+ * browser's own calls and the ones replayed from the server log are the same rows to a
+ * reader, and two formatters would eventually disagree about that.
+ */
+const formatArgs = (args) =>
+  Object.entries(args ?? {})
+    .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
+    .join(' · ')
+
 export default function LivePanel({ provider, lang, onAppend, onError, slots }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
@@ -148,6 +161,8 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
   // Every claim made this session, for the audit — the server log is session-wide, so the
   // comparison has to be too.
   const claimedTools = useRef([])
+  /** Server-run calls already pushed, so a per-turn reconcile does not repeat them. */
+  const serverShown = useRef(new Set())
   // end_call is acknowledged by the server but performed here — closing a WebRTC session is
   // something only this side can do. Hang up after the closing sentence has been spoken, not
   // the instant the tool fires, or the caller hears the line cut off mid-word.
@@ -376,6 +391,23 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
             claimedTools.current = [...claimedTools.current, ...attached]
             reconcileTools(claimedTools.current).then((audit) => {
               if (!audit) return
+
+              /**
+               * Show the calls this browser never made.
+               *
+               * On the ElevenLabs hybrid the placed tools are fetched by their cloud, so no
+               * event reaches this page and the trace listed only what the browser ran — a
+               * session answered "31 degrees at Phoenix" with the weather call nowhere in
+               * it. The server has them; they arrive with the reconcile and are pushed here
+               * once each, marked so nobody mistakes them for something this page did.
+               */
+              for (const entry of audit.serverEntries ?? []) {
+                if (serverShown.current.has(entry.callId)) continue
+                serverShown.current.add(entry.callId)
+                const a = formatArgs(entry.args)
+                push('tool', `${entry.tool}${a ? `  ${a}` : ''}   · your server ran it`)
+              }
+
               push(
                 'audit',
                 audit.ok
@@ -387,8 +419,8 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
                     // takes it for the whole story. On a transport whose placed tools are
                     // fetched by the provider's own cloud, this browser is not shown them
                     // at all — so the line says what it does not cover.
-                    (provider.toolTrace === 'partial'
-                      ? ` · not counted: ${provider.toolTraceNote}`
+                    (provider.toolTrace === 'replayed' && audit.serverRun
+                      ? ` · ${provider.toolTraceNote}`
                       : '')
                   : `trace does not match the server log — ` +
                       [
@@ -439,11 +471,7 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
                 .catch((err) => push('error', `hang-up failed: ${err.message}`))
             }, 6000)
           }
-          // An object argument used to render as "[object Object]" — weights, which is the
-          // one argument whose value would actually explain a surprising ranking.
-          const args = Object.entries(record.args ?? {})
-            .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
-            .join(' · ')
+          const args = formatArgs(record.args)
           /**
            * Say which side ran it, and do not invent a result row for the side that did not.
            *

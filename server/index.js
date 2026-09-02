@@ -167,6 +167,23 @@ app.post('/api/tool', async (req, res) => {
  * What this server actually ran for a session, and whether the client's account of it
  * agrees. POST a claimed trace to check it; GET to just read the record.
  */
+/**
+ * A tool call this process did not run, reported by the webhook server.
+ *
+ * Recorded as ranOn: 'server', exactly as the OpenAI sideband records its own — so the
+ * audit treats it the same way: counted in serverRun, and never accused of being a call
+ * the browser hid, because the browser was never in a position to make it.
+ *
+ * Localhost only in practice: this port is not the one behind the tunnel. It is unguarded
+ * for the same reason the rest of this file is, and it belongs in the same fix.
+ */
+app.post('/api/tool-log/external', (req, res) => {
+  const { session, tool, args, result, ms, failed } = req.body ?? {}
+  if (!tool) return res.status(400).json({ error: 'Body must name a tool.' })
+  const entry = recordToolCall({ session, tool, args, result, ms, failed, ranOn: 'server' })
+  res.json({ callId: entry.callId })
+})
+
 app.get('/api/tool-log', (req, res) => {
   const session = req.query.session
   if (!session) return res.status(400).json({ error: 'Pass ?session=<id>' })

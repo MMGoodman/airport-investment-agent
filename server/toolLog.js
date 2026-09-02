@@ -162,6 +162,17 @@ export function reconcile(session, claimed = []) {
     // Reported, not hidden: a reader should be able to see that some calls never went
     // through the browser at all, which is the point of placing them on the server.
     serverRun,
+    /**
+     * The server-run calls themselves, so a trace can show them rather than only count them.
+     *
+     * A count is enough to prove nothing was hidden and not enough to read. A caller who
+     * heard "31 degrees at Phoenix" wants the row that says get_airport_weather ran, with
+     * its arguments and its timing, next to the calls the browser made — the promise is
+     * that every figure can be traced to a call, and a number in a summary line is not that.
+     */
+    serverEntries: actual
+      .filter((e) => e.ranOn === 'server')
+      .map(({ callId, tool, args, ms, digest, failed }) => ({ callId, tool, args, ms, digest, failed })),
     claimedCalls: claimed.length,
     fabricated,
     altered,

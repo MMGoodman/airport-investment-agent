@@ -436,3 +436,32 @@
   padding: 0;
   block-size: auto;
 }
+
+/**
+ * In the rail, the trace gets the height there is.
+ *
+ * .ltrace-body caps itself at 11rem, which is right where it began — a strip under the
+ * conversation, sharing one column with everything else. In a rail that owns a whole column
+ * it is a 176px box with its own scrollbar and empty space beneath it: the reader scrolls a
+ * small window while a tall panel sits unused around it.
+ *
+ * The cap comes off here and the rail does the scrolling, so there is one scrollbar for one
+ * column instead of two nested ones.
+ */
+.ws-rail .ltrace-body {
+  max-height: none;
+  overflow: visible;
+  flex: 1;
+  min-block-size: 0;
+}
+
+/* The rail's own scroller, now the only one. */
+.ws-rail-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-rail-body > * {
+  flex: 1;
+  min-block-size: 0;
+}

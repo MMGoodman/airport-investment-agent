@@ -31,6 +31,16 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { placementOf, runTool, toolSchemas } from '../src/agent/tools.js'
 
 const HEADER = 'x-tool-secret'
+/**
+ * ElevenLabs substitutes {{system__conversation_id}} at call time, which is the id that
+ * crosses from their cloud to this server. The browser reads the same id off the SDK and
+ * uses it as its session id, so both halves of the hybrid land in one log and the audit
+ * can reconcile them as one set — the thing that was impossible an hour ago.
+ */
+const CONVERSATION_HEADER = 'x-conversation-id'
+
+/** Where the main server keeps the tool log. Localhost: this is not the tunnelled port. */
+const LOG_SINK = `http://localhost:${process.env.PORT || 3001}/api/tool-log/external`
 
 const publicBase = () => (process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, '')
 const secret = () => process.env.ELEVENLABS_WEBHOOK_SECRET || ''
@@ -109,7 +119,10 @@ export function webhookToolsFor() {
           ),
           required: t.parameters?.required ?? [],
         },
-        request_headers: { [HEADER]: secret() },
+        request_headers: {
+          [HEADER]: secret(),
+          [CONVERSATION_HEADER]: '{{system__conversation_id}}',
+        },
       },
     }))
 }
@@ -157,8 +170,32 @@ export function mountWebhookToolRoute(app) {
       })
     }
 
+    const started = Date.now()
     try {
-      res.json(await runTool(name, req.body ?? {}))
+      const result = await runTool(name, req.body ?? {})
+      res.json(result)
+
+      /**
+       * Tell the main server it happened, after answering rather than before.
+       *
+       * A trace that omits a call is the failure this fixes — a session answered "31
+       * degrees at Phoenix" with no weather call anywhere in it — but a caller waiting on
+       * an answer must not also wait on bookkeeping, and the log being unreachable is not
+       * a reason for the tool to fail.
+       */
+      const session = req.get(CONVERSATION_HEADER)
+      fetch(LOG_SINK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session,
+          tool: name,
+          args: req.body ?? {},
+          result,
+          ms: Date.now() - started,
+          failed: Boolean(result?.data?.error),
+        }),
+      }).catch((err) => console.warn(`webhook: could not record ${name} — ${err.message}`))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }

@@ -14,7 +14,7 @@
  * The agent's prompt and tool declarations are pushed from this repo by
  * `npm run sync:agent`, so nothing about its behaviour lives only in a dashboard.
  */
-import { callTool, parseArgs } from './tools.js'
+import { callTool, parseArgs, setToolSession } from './tools.js'
 
 /**
  * One handler per tool the agent was synced with.
@@ -106,6 +106,21 @@ export async function startElevenLabs({
       else onAssistantTranscript(message.trim(), true)
     },
   })
+
+  /**
+   * Adopt ElevenLabs' conversation id as this session's id.
+   *
+   * The hybrid's placed tools are fetched by their cloud, which carries this same id in a
+   * header — so recording both halves under it is what lets one audit reconcile them. Before
+   * this, a session answered "31 degrees at Phoenix" and the trace held no weather call at
+   * all: the figure was real, from the same engine, and this browser could not prove it.
+   *
+   * getId() is available as soon as the session resolves. If it is not, the browser keeps
+   * the id it generated and the server-side half simply stays uncorrelated, which is where
+   * this started rather than a new failure.
+   */
+  const conversationId = conversation.getId?.()
+  if (conversationId) setToolSession(conversationId)
 
   return {
     sendText(text) {

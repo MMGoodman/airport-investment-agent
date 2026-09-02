@@ -425,23 +425,21 @@ const toolReach = (reach) =>
           short: 'elevenlabs · hybrid',
           tools: toolReach('server'),
           /**
-           * The trace on this path is incomplete, and it has to say so.
+           * The placed calls arrive late here, and the trace should not pretend otherwise.
            *
-           * On the OpenAI hybrid the sideband's calls reach the browser anyway — OpenAI
-           * echoes conversation.item.added with the output in full — so the trace shows
-           * them and the audit counts them. Here ElevenLabs' cloud calls this server over
-           * HTTP and nothing tells the page it happened: a live session answered "31
-           * degrees at Phoenix" with four tool calls in the trace, none of them the weather
-           * one, and an audit line reading "3 tool calls match the server log".
+           * On the OpenAI hybrid the sideband's calls reach the browser live — OpenAI echoes
+           * conversation.item.added with the output in full — so they appear in order. Here
+           * ElevenLabs' cloud calls this server over HTTP and no event reaches the page at
+           * all; the rows are replayed from the server log when the turn reconciles, which
+           * is after the answer rather than before it.
            *
-           * That line was true and gave a false impression, which is worse than being
-           * wrong. The figures on this path are as real as anywhere else — they came from
-           * the same engine — but this browser cannot prove it, and the promise this
-           * project makes is that it can.
+           * They ARE shown and counted now, which they were not: a session answered "31
+           * degrees at Phoenix" under an audit line reading "3 tool calls match the server
+           * log", every word true and the impression false. What remains is the ordering,
+           * and saying so is cheaper than a reader wondering why a call appears late.
            */
-          toolTrace: 'partial',
-          toolTraceNote:
-            'their cloud calls the placed tools directly, so this browser never sees them',
+          toolTrace: 'replayed',
+          toolTraceNote: 'placed-tool calls appear when the turn reconciles, not as they run',
           transport: 'WebSocket · agent platform + webhook to your server',
         },
       ],

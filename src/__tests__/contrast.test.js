@@ -40,7 +40,7 @@ const tokensIn = (from, to) => {
   expect(start, `block not found: ${from}`).toBeGreaterThan(-1)
   const chunk = css.slice(start, to ? css.indexOf(to, start) : undefined)
   const found = {}
-  for (const m of chunk.matchAll(/--([a-z-]+):\s*(#[0-9a-f]{3,8})/gi)) found[m[1]] = m[2]
+  for (const m of chunk.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{3,8})/gi)) found[m[1]] = m[2]
   return found
 }
 
@@ -84,10 +84,10 @@ describe('tokens referenced by the app', () => {
       resolve(dirname(fileURLToPath(import.meta.url)), '../App.css'),
       'utf8',
     )
-    const used = new Set([...appCss.matchAll(/var\(--([a-z-]+)/g)].map((m) => m[1]))
+    const used = new Set([...appCss.matchAll(/var\(--([a-z0-9-]+)/g)].map((m) => m[1]))
     // App.css declares --gutter itself, so both files count as sources.
     const declared = new Set(
-      [...css.matchAll(/--([a-z-]+):/g), ...appCss.matchAll(/^\s*--([a-z-]+):/gm)].map(
+      [...css.matchAll(/--([a-z0-9-]+):/g), ...appCss.matchAll(/^\s*--([a-z0-9-]+):/gm)].map(
         (m) => m[1],
       ),
     )

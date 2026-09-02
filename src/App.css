@@ -1,12 +1,25 @@
+/**
+ * The agent fills the window.
+ *
+ * This used to be a single centred column at 54rem, which is right for one conversation
+ * and wrong for a workspace: three columns inside an 810px box left the middle at 130px,
+ * with the headline wrapping one word per line.
+ *
+ * The gutter stays as a token because the header and the composer still use it — only the
+ * page-wide cap goes.
+ */
 .app {
   --gutter: clamp(1rem, 4vw, 2rem);
-  max-width: 54rem;
-  margin: 0 auto;
-  padding: 0 var(--gutter) 1.25rem;
-  height: 100svh;
+  inline-size: 100%;
+  block-size: 100svh;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  overflow: hidden;
+}
+
+.app > .topbar {
+  flex-shrink: 0;
+  padding-inline: var(--gutter);
 }
 
 /* A live call needs the width: the transcript on one side, the trace and the pipeline
@@ -117,10 +130,40 @@
   color: var(--text-dim);
 }
 
+/**
+ * The controls never leave the window.
+ *
+ * The row wrapped but its last item — the model selector, the widest one — was clipped at
+ * the edge on a narrow screen instead of moving. A control you can see half of is worse
+ * than one that scrolls, because nothing says it continues.
+ *
+ * They wrap first; below that the strip scrolls sideways, which keeps the selector
+ * reachable without stacking five rows above the conversation.
+ */
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  min-inline-size: 0;
+}
+
+@media (max-width: 560px) {
+  .topbar-right {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-block-end: 2px;
+    scrollbar-width: thin;
+  }
+
+  .topbar-right > * {
+    flex-shrink: 0;
+  }
+
+  /* The switcher is the widest control and the one worth the room. */
+  .topbar-right .switcher:last-child {
+    max-inline-size: 60vw;
+  }
 }
 
 .toggle {

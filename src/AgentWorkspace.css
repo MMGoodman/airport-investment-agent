@@ -12,8 +12,17 @@
  * not a sentence, and the desk does not flip when the language does.
  */
 
+/**
+ * Height from the flex parent, not from a guess.
+ *
+ * This was calc(100svh - 64px) with the header assumed to be 64px. It is 114 when the
+ * controls wrap to a second row, so the workspace ran off the bottom of the window by
+ * exactly the difference — a magic number that is right at one width and wrong at every
+ * other.
+ */
 .ws {
-  block-size: calc(100svh - var(--ws-top, 64px));
+  flex: 1;
+  min-block-size: 0;
   display: grid;
   grid-template-columns: var(--ws-side, 260px) minmax(0, 1fr);
   overflow: hidden;
@@ -311,16 +320,42 @@
   inline-size: 100%;
 }
 
-/* The centre column scrolls on its own, so the composer stays put while the conversation
-   moves under it. */
+/**
+ * The column is wide; the reading is not.
+ *
+ * Removing the page cap gave the middle 1180px, and a paragraph set across 1180px is
+ * unreadable — the eye loses the line on the way back. The COLUMN keeps its width, because
+ * that is what makes the three-column layout work, and the CONTENT inside it gets a
+ * measure. Two different problems that a single max-width on the page had been solving as
+ * one, badly.
+ */
 .ws-center > .messages {
   flex: 1;
   min-block-size: 0;
   overflow-y: auto;
+  padding-inline: var(--gutter);
+}
+
+.ws-center > .messages > * {
+  inline-size: min(100%, 68rem);
+  margin-inline: auto;
+}
+
+.ws-center > .composer-inner {
+  inline-size: min(100%, 68rem);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
 }
 
 .ws-center > .composer-inner {
   flex-shrink: 0;
+}
+
+/* Prose keeps a tighter measure than the cards and the transcript, which are scannable
+   rather than read line by line. */
+.ws-center .empty p,
+.ws-center .msg {
+  max-inline-size: 62rem;
 }
 
 /* The panel keeps its call controls in the middle; its board and its trace are portalled

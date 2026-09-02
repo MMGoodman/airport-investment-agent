@@ -626,7 +626,7 @@ export const toolSchemas = [
   {
     name: 'get_airport_profile',
     description:
-      'Full metric history, component scores, explanation and caveats for one airport. Use for "why" and "unmet demand at X" questions.',
+      'Metric history, component scores, explanation and caveats for one airport, from the dataset. Use for "why" and "unmet demand at X" questions. It holds nothing live and nothing outside the dataset — no weather, no delays, no today: asked for the weather with no weather tool available, a model reached for this one and read out a load factor instead.',
     parameters: {
       type: 'object',
       properties: { iata: { type: 'string', description: 'IATA code, e.g. "SFO".' } },

@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "server": "node server/index.js",
+    "server:watch": "node --watch server/index.js",
     "dev:all": "concurrently npm:server npm:dev",
     "ingest": "node src/ingest/run.js",
     "test": "vitest run",

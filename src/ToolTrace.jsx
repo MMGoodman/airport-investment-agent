@@ -32,11 +32,28 @@ export default function ToolTrace({ calls }) {
                       .join('  ·  ')
                   : 'no arguments'}
               </span>
-              <span className="trace-ms">{call.ms} ms</span>
+              {/* A call the server answered has no duration and no payload here, because
+                  this panel only ever sees what the browser ran. It said "  ms" with the
+                  number missing and opened to the word null, which reads as a broken row
+                  rather than the design working. */}
+              <span className="trace-ms">
+                {call.ranOn === 'server' ? 'ran on your server' : `${call.ms} ms`}
+              </span>
             </button>
 
             {open && (
-              <pre className="trace-body">{JSON.stringify(call.result, null, 2)}</pre>
+              <pre className="trace-body">
+                {call.ranOn === 'server'
+                  ? 'Your server answered this one, on its own connection to the same session.
+' +
+                    'The result went straight from the server to the model — this page never received it,
+' +
+                    'which is the whole reason the tool is placed there.
+
+' +
+                    'The spoken answer above IS that result, read out by the model.'
+                  : JSON.stringify(call.result, null, 2)}
+              </pre>
             )}
           </div>
         )

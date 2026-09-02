@@ -10,7 +10,16 @@
  * Writes nothing to .env — it prints the id and you paste it once.
  */
 import 'dotenv/config'
-import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
+import {
+  SYSTEM_PROMPT,
+  VOICE_ADDENDUM,
+  languageInstruction,
+  withheldNote,
+  ELEVENLABS_REMEDY,
+} from '../src/agent/prompt.js'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { asrKeywords } from '../src/agent/vocabulary.js'
 
@@ -63,6 +72,17 @@ function toElevenLabsParam(schema, name = 'value') {
  */
 const { tools: offered, withheld } = toolSchemasFor('browser')
 
+/**
+ * The gap, named in the prompt rather than left for the model to improvise around.
+ *
+ * A trace that made this necessary: asked for the weather in San Juan, the agent called
+ * get_airport_profile — the wrong tool — and then said weather was outside its remit. It is
+ * not outside its remit; it is outside THIS LINE. Telling a caller the subject is beyond
+ * you, when another transport answers it in one call, is the worst of the available wrong
+ * answers, because they stop asking.
+ */
+const WITHHELD = withheldNote(withheld, ELEVENLABS_REMEDY)
+
 const tools = offered.map((t) => ({
   type: 'client',
   name: t.name,
@@ -87,7 +107,7 @@ const conversation_config = {
       'Airport investment agent, live. Ask me which airports are strong expansion candidates, ' +
       'or compare two of them.',
     prompt: {
-      prompt: SPOKEN_PROMPT + languageInstruction('en', true),
+      prompt: SPOKEN_PROMPT + languageInstruction('en', true) + WITHHELD,
       // Same model tier as the text path on purpose: when you A/B the three providers,
       // the difference you hear should be the transport, not a smarter model.
       llm: process.env.ELEVENLABS_LLM || 'gemini-3.1-flash-lite',
@@ -111,7 +131,7 @@ const conversation_config = {
           language: 'he',
           first_message:
             'סוכן השקעות בשדות תעופה, בשידור חי. אפשר לשאול אילו שדות מועמדים חזקים להרחבה, או להשוות בין שניים.',
-          prompt: { prompt: SPOKEN_PROMPT + languageInstruction('he', true) },
+          prompt: { prompt: SPOKEN_PROMPT + languageInstruction('he', true) + WITHHELD },
         },
       },
     },
@@ -159,6 +179,24 @@ const conversation_config = {
     // interrupted and then repeated in full. Two wasted turns dwarf the few hundred
     // milliseconds eagerness buys.
     turn_eagerness: process.env.ELEVENLABS_TURN_EAGERNESS || 'normal',
+
+    /**
+     * How long a caller may think before the agent speaks again, in seconds.
+     *
+     * ElevenLabs defaults this to 7 and it is far too short for this agent. A trace: the
+     * agent finished a ranking of three airports, its audio ran about thirteen seconds, and
+     * seven seconds after it stopped the platform re-engaged — twice in one call, each time
+     * costing a full generation to ask "shall I elaborate?" while the caller was still
+     * reading the answer they had asked for.
+     *
+     * Worse with retranscribe_on_turn_timeout on, which is the setting above: the silence
+     * gets transcribed, comes back as "..." and enters the conversation as something the
+     * caller said. Two of those in this trace, 1.9s and 2.4s of generation spent on nothing.
+     *
+     * Twenty seconds suits a question whose answer is three airports and four figures. A
+     * chattier deployment can lower it.
+     */
+    turn_timeout: num(process.env.ELEVENLABS_TURN_TIMEOUT, 20),
 
     /**
      * Do not start answering before the turn is known to be over.
@@ -221,6 +259,7 @@ const platform_settings = {
   },
 }
 
+const BACKUPS = join(dirname(fileURLToPath(import.meta.url)), '..', '.backups')
 const headers = { 'xi-api-key': KEY, 'Content-Type': 'application/json' }
 
 async function findExisting() {
@@ -231,6 +270,33 @@ async function findExisting() {
 }
 
 const existing = await findExisting()
+
+/**
+ * Keep what is about to be overwritten.
+ *
+ * A PATCH here replaces the whole conversation_config, including anything set by hand in
+ * the ElevenLabs dashboard. speculative_turn had arrived exactly that way — on, against the
+ * documented default, with nothing in this repo recording it — and it was found by reading
+ * the live agent rather than by anything here knowing. The next such setting should be
+ * recoverable instead of merely gone.
+ *
+ * A snapshot is not a rollback, and it is not offered as one: it is the previous config on
+ * disk, in a directory git ignores, so a person can see what changed and put it back.
+ */
+async function snapshot(agentId) {
+  const res = await fetch(`${API}/agents/${agentId}`, { headers })
+  if (!res.ok) {
+    console.warn(`  could not snapshot the live agent (${res.status}) — continuing without one`)
+    return null
+  }
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  const path = join(BACKUPS, `elevenlabs-agent-${stamp}.json`)
+  await mkdir(BACKUPS, { recursive: true })
+  await writeFile(path, JSON.stringify(await res.json(), null, 2))
+  return path
+}
+
+const saved = existing ? await snapshot(existing.agent_id) : null
 
 // Never touch an agent we did not create — the configured id may belong to another project.
 const res = existing
@@ -259,6 +325,12 @@ if (withheld.length) {
     `  withheld (server-placed, and this platform has no sideband): ${withheld.join(', ')}`,
   )
 }
-console.log(`  prompt: ${SPOKEN_PROMPT.length} chars — the text path's prompt plus spoken-delivery rules`)
+// What was SENT, not what SPOKEN_PROMPT happens to be: the language instruction and the
+// withheld note are appended after it, and reporting the shorter number made a prompt that
+// had grown by 1,479 characters look unchanged.
+console.log(
+  `  prompt: ${conversation_config.agent.prompt.prompt.length} chars — the text path's prompt, spoken-delivery rules${WITHHELD ? ', and the withheld-tools note' : ''}`,
+)
+if (saved) console.log(`  previous config saved to ${relative(process.cwd(), saved)}`)
 console.log('  languages: en, he (the preset switches transcriber and voice, not just wording)')
 console.log(`  ELEVENLABS_AGENT_ID=${id}\n`)

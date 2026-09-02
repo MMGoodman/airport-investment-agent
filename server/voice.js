@@ -10,7 +10,7 @@
  * Secrets never reach the browser. OpenAI gets a short-lived ephemeral key minted here;
  * ElevenLabs gets a signed WebSocket URL minted here.
  */
-import { languageInstruction } from '../src/agent/prompt.js'
+import { languageInstruction, withheldNote } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { skillsSummary } from '../src/agent/skills.js'
 import { attachSideband, detachSideband } from './sideband.js'
@@ -176,29 +176,6 @@ const asRealtimeTool = (t) => ({
       ? t.parameters
       : { type: 'object', properties: {} },
 })
-
-/**
- * Told to the model when a transport cannot offer a tool, so the gap is named rather than
- * improvised around. A model handed six tools where its instructions imply seven answers
- * the seventh from memory — which is exactly how a caller who asked for the weather got a
- * score summary instead.
- */
-function withheldNote(names) {
-  if (names.length === 0) return ''
-  const one = names.length === 1
-  return [
-    '',
-    '',
-    'NOT AVAILABLE ON THIS CONNECTION',
-    `${names.join(', ')} ${one ? 'is' : 'are'} not offered on this line. The caller's audio`,
-    `goes straight from their browser to you, so ${one ? 'that tool runs' : 'those tools run'} only where the server`,
-    'holds the connection.',
-    'Say so in one sentence and name the switch: the "via your server" option beside the',
-    'model selector puts the call on the relayed line, where it works. Do not answer from',
-    'memory, do not substitute figures from a different tool, and do not apologise at',
-    'length — it is a setting, not a limit of yours.',
-  ].join('\n')
-}
 
 /**
  * One realtime session config, built from a request's query.

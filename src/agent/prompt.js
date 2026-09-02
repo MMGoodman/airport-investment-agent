@@ -199,6 +199,53 @@ const HEBREW_TERMS_TABLE = `  the four components   ניצולת · צמיחה �
  * אחוז" is right out loud and imprecise on screen. One instruction for both produced the
  * worst of each — a spoken answer that read a decimal point aloud.
  */
+/** One switch away: the relayed line runs the same session with the server holding it. */
+export const OPENAI_REMEDY =
+  'Say so in one sentence and name the switch: the "via your server" option beside the\nmodel selector puts the call on the relayed line, where it works.'
+
+/**
+ * ElevenLabs has no second channel to the session, so no setting on that platform helps —
+ * the caller has to choose one of the OpenAI voice options instead.
+ */
+export const ELEVENLABS_REMEDY =
+  'Say so in one sentence and name the way round it: the caller should pick one of the\nOpenAI voice options in the model selector — "hybrid" or "via your server" — where this\nruns. There is no setting on this platform that enables it.'
+
+/**
+ * Told to the model when a transport cannot offer a tool, so the gap is named rather than
+ * improvised around. A model handed six tools where its instructions imply seven answers
+ * the seventh from memory — which is exactly how a caller who asked for the weather got a
+ * score summary instead.
+ *
+ * WHY THE REMEDY IS A PARAMETER
+ *
+ * This lived in voice.js and only the OpenAI paths ever called it, so ElevenLabs ran with a
+ * prompt asserting get_airport_weather is "the only live reading here" and no such tool in
+ * its hands. Asked for the weather in San Juan it called get_airport_profile instead, then
+ * explained that weather is outside its remit — which is false. Weather is squarely inside
+ * its remit; it is this LINE that cannot reach it, and the difference decides whether a
+ * caller ever asks again.
+ *
+ * The way out differs by transport, so it is passed in: OpenAI has a relayed line one
+ * switch away, ElevenLabs has no sideband at all.
+ */
+export function withheldNote(names, remedy = OPENAI_REMEDY) {
+  if (names.length === 0) return ''
+  const one = names.length === 1
+  return [
+    '',
+    '',
+    'NOT AVAILABLE ON THIS CONNECTION',
+    `${names.join(', ')} ${one ? 'is' : 'are'} not offered on this line. The caller's audio`,
+    `goes straight from their browser to you, so ${one ? 'that tool runs' : 'those tools run'} only where the server`,
+    'holds the connection.',
+    remedy,
+    'Do not answer from memory, do not substitute figures from a different tool, and do not',
+    'apologise at length — it is a setting, not a limit of yours. Above all do not say the',
+    'subject is outside what you do: it is not, and telling a caller so sends them away from',
+    'something this agent answers perfectly well on another line.',
+  ].join('\n')
+}
+
 export const languageInstruction = (lang, spoken = false) =>
   lang === 'he'
     ? `

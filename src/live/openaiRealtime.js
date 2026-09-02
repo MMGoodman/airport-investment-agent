@@ -39,6 +39,7 @@ export function createEventHandler({
   onPhantom = () => {},
   onServerToolCall = () => {},
   onServerToolResult = () => {},
+  onSkillLoaded = () => {},
   /** The vocabulary hint's own terms, for spotting it read back. */
   hintTerms = [],
   /**
@@ -50,6 +51,20 @@ export function createEventHandler({
    * POST /api/tool refuses a server-placed tool outright.
    */
   serverTools = [],
+  /**
+   * Instructions that arrive when they become relevant.
+   *
+   * `baseInstructions` is what the session opened with; each skill is a set of rules plus
+   * the tools that make them apply. The first time one of those tools is called, the skill
+   * is loaded — the model reaching for rank_airports IS the signal that the ranking rules
+   * are now relevant, so there is no router and no classifier, and the signal costs nothing
+   * because the tool call was happening anyway.
+   *
+   * session.update REPLACES instructions, so every load sends base plus everything already
+   * loaded. That is why the base is passed in rather than looked up.
+   */
+  baseInstructions = '',
+  skills = [],
   // Whether turn detection was configured to cancel a response when speech is detected.
   // With it off, speech is not a barge-in: the model keeps talking, so nothing about this
   // turn is stale and the request to speak after a tool must still go out.
@@ -92,6 +107,23 @@ export function createEventHandler({
    * has is as misleading as one that claims more.
    */
   const serverCalls = new Map()
+
+  /** Loaded already. A second send would be harmless but it is an update on a live call. */
+  const loadedSkills = new Set()
+
+  const loadSkillFor = (toolName) => {
+    const skill = skills.find((s) => !loadedSkills.has(s.id) && s.tools?.includes(toolName))
+    if (!skill || !baseInstructions) return
+    loadedSkills.add(skill.id)
+    const parts = [baseInstructions]
+    for (const s of skills) if (loadedSkills.has(s.id)) parts.push(s.instructions)
+    send({
+      type: 'session.update',
+      session: { type: 'realtime', instructions: parts.join('\n\n') },
+    })
+
+    onSkillLoaded(skill)
+  }
 
   let bargedIn = false
 
@@ -170,6 +202,8 @@ export function createEventHandler({
       // The model asked for a tool. Start it now; a function call ends the response, so
       // there is nothing left to wait for except the tool itself.
       case 'response.function_call_arguments.done':
+        // Before anything is answered: the rules for this kind of answer arrive first.
+        loadSkillFor(msg.name)
         // Not ours. The server is attached to this same session and is answering it there,
         // against its own credentials — the whole point of the sideband. Reported so the
         // trace still shows the call happened, then dropped.
@@ -263,7 +297,17 @@ export async function startOpenAIRealtime({
   const keyRes = await fetch(`/api/realtime/session?${params}`)
   const keyBody = await keyRes.json()
   if (!keyRes.ok) throw new Error(keyBody.error ?? 'Could not mint a realtime key')
-  const { clientSecret, model, vad, vocabulary, hintTerms = [], interrupts = true, withheldTools = [] } = keyBody
+  const {
+    clientSecret,
+    model,
+    vad,
+    vocabulary,
+    hintTerms = [],
+    interrupts = true,
+    withheldTools = [],
+    baseInstructions = '',
+    skills = [],
+  } = keyBody
   // Record what this call ran under, so a pasted trace can be compared against another
   // that was configured differently. The server reports what it USED, after clamping —
   // not what was asked for.
@@ -334,6 +378,10 @@ export async function startOpenAIRealtime({
     onPhantom,
     hintTerms,
     interrupts,
+    baseInstructions,
+    skills,
+    onSkillLoaded: (skill) =>
+      onStatus(`skill loaded: ${skill.name} · ${skill.instructions.length} chars`),
     onError,
   })
 

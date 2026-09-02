@@ -1417,36 +1417,127 @@
     </mxGraphModel>
   </diagram>
   <diagram id="hybrid-simple" name="12 - The hybrid, simply">
-    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1220" math="0" shadow="0">
+    <mxGraphModel dx="2000" dy="805" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1220" math="0" shadow="0">
       <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-        <mxCell id="s1" value="המודל ההיברידי — שאלה אחת על מזג אוויר, מהתחלה עד הסוף" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="60" y="26" width="1500" height="40" as="geometry"/></mxCell>
-        <mxCell id="s2" value="&lt;div dir='rtl' style='text-align:right'&gt;סשן אחד אצל OpenAI, ושני חיבורים אליו. עקוב אחרי המספרים — אחרי שבעה צעדים חוזרים לאותו מקום.&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontColor=#6b6b6b;" vertex="1" parent="1"><mxGeometry x="60" y="70" width="1500" height="24" as="geometry"/></mxCell>
-        <mxCell id="s3" value="&lt;div dir='rtl' style='text-align:center'&gt;אתה&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;מיקרופון ורמקול&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#e8e8e8;strokeColor=#9a9a9a;" vertex="1" parent="1"><mxGeometry x="155" y="120" width="210" height="66" as="geometry"/></mxCell>
-        <mxCell id="s4" value="&lt;div dir='rtl' style='text-align:center'&gt;הדפדפן&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="515" y="120" width="210" height="66" as="geometry"/></mxCell>
-        <mxCell id="s5" value="&lt;div dir='rtl' style='text-align:center'&gt;OpenAI&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;gpt-realtime&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="905" y="120" width="210" height="66" as="geometry"/></mxCell>
-        <mxCell id="s6" value="&lt;div dir='rtl' style='text-align:center'&gt;השרת שלך&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="1295" y="120" width="210" height="66" as="geometry"/></mxCell>
-        <mxCell id="s7" value="&lt;div dir='rtl' style='text-align:center'&gt;Open-Meteo&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1645" y="120" width="190" height="66" as="geometry"/></mxCell>
-        <mxCell id="s8" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="260" y="190" as="sourcePoint"/><mxPoint x="260" y="830" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s9" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#6c8ebf;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="190" as="sourcePoint"/><mxPoint x="620" y="830" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s10" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#b85450;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="190" as="sourcePoint"/><mxPoint x="1010" y="830" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s11" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#82b366;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="190" as="sourcePoint"/><mxPoint x="1400" y="830" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s12" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#d79b00;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1740" y="190" as="sourcePoint"/><mxPoint x="1740" y="830" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s13" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;מה זה Open-Meteo?&lt;/b&gt;&lt;br&gt;אתר מזג אוויר חינמי באינטרנט. &lt;b&gt;לא&lt;/b&gt; חלק מהפרויקט ולא קשור ל-OpenAI — רק דמיון בשם.&lt;br&gt;שולחים לו קו רוחב וקו אורך, הוא מחזיר מספרים: טמפרטורה, רוח, ראות. בלי מפתח ובלי חשבון.&lt;br&gt;הוא נבחר כי הוא &lt;b&gt;הדבר היחיד בכל הפרויקט שדורש לצאת לאינטרנט&lt;/b&gt; — וזו כל הסיבה שהכלי שלו יושב בשרת.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fff4e6;strokeColor=#d79b00;verticalAlign=top;spacingTop=10;" vertex="1" parent="1"><mxGeometry x="1130" y="870" width="740" height="110" as="geometry"/></mxCell>
-        <mxCell id="s14" value="1 · &quot;מה מזג האוויר בבוסטון?&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="260" y="245" as="sourcePoint"/><mxPoint x="620" y="245" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s15" value="2 · האודיו, ישירות" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="300" as="sourcePoint"/><mxPoint x="1010" y="300" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s16" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;3 · המודל מכריז לחדר:&lt;/b&gt; &quot;אני צריך get_airport_weather · BOS&quot;&lt;br&gt;ההכרזה נשמעת ב&lt;b&gt;שני&lt;/b&gt; החיבורים, עם השם והארגומנטים. הדפדפן שומע ושותק — השם לא ברשימה שלו.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="680" y="340" width="660" height="62" as="geometry"/></mxCell>
-        <mxCell id="s17" value="4 · הקריאה מגיעה גם לכאן" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="440" as="sourcePoint"/><mxPoint x="1400" y="440" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s18" value="5 · lat/lon של בוסטון" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="490" as="sourcePoint"/><mxPoint x="1740" y="490" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s19" value="6 · 15.3°C, בהיר, רוח 4 קשרים" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1740" y="540" as="sourcePoint"/><mxPoint x="1400" y="540" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s20" value="7 · המספרים חוזרים כ-JSON" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="590" as="sourcePoint"/><mxPoint x="1010" y="590" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s21" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;המודל מנסח משפט מהמספרים.&lt;/b&gt; הוא לא יודע מי ענה, ואין לו דרך לשאול.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="730" y="630" width="560" height="46" as="geometry"/></mxCell>
-        <mxCell id="s22" value="הקול חוזר" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="720" as="sourcePoint"/><mxPoint x="620" y="720" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s23" value="&quot;בבוסטון לוגן 15.3 מעלות, בהיר&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="770" as="sourcePoint"/><mxPoint x="260" y="770" as="targetPoint"/></mxGeometry></mxCell>
-        <mxCell id="s24" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;הדלת של השרת נכנסת בלבד.&lt;/b&gt; JSON נכנס בה. &lt;b&gt;אף פעם לא יוצא ממנה קול.&lt;/b&gt;&lt;br&gt;כל הקול — בלי יוצא מן הכלל — עובר בדלת של הדפדפן. לכן זה מהיר: 974ms · 796ms, נמדד.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0e4;strokeColor=#82b366;fontSize=15;align=right;verticalAlign=middle;spacingRight=14;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="870" width="1030" height="110" as="geometry"/></mxCell>
-        <mxCell id="s25" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ומה עם ששת הכלים האחרים?&lt;/b&gt; דירוגים, השוואות ופרופילים — הדפדפן מריץ אותם בעצמו: שומע את ההכרזה, רץ לשרת דרך POST /api/tool, ומקריא את התוצאה בחזרה. הם קוראים ממאגר מקומי שממילא שלך, אז אין נזק בכך שהוא רואה אותם. &lt;b&gt;רק מזג האוויר יוצא החוצה, ורק הוא יושב בשרת.&lt;/b&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1000" width="1810" height="70" as="geometry"/></mxCell>
-        <mxCell id="s26" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ומה זה לא עושה&lt;/b&gt; — שני החיבורים על סשן אחד, אז הדפדפן שומע שהקריאה קרתה. וכשהשרת מזריק את התוצאה, OpenAI משדר את הפריט ל&lt;b&gt;כל&lt;/b&gt; החיבורים — אז הדפדפן &lt;b&gt;כן מקבל את ה-JSON&lt;/b&gt;. 15.3 מעלות מגיעות אליו גם בלי שביקש. מה שנשלט הוא &lt;b&gt;מי מבצע&lt;/b&gt; — מי מחזיק את הקרדנציאלס, מי יוצא לאינטרנט, ומי יכול לקרוא לכלי עם ארגומנטים משלו. &lt;b&gt;לא&lt;/b&gt; מי רואה. לסודיות מלאה כל השיחה צריכה לעבור בשרת — וזה פי 4-5 בלטנסי.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1090" width="1810" height="70" as="geometry"/></mxCell>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="s1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" value="המודל ההיברידי — שאלה אחת על מזג אוויר, מהתחלה עד הסוף" vertex="1">
+          <mxGeometry height="40" width="1500" x="60" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontColor=#6b6b6b;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;סשן אחד אצל OpenAI, ושני חיבורים אליו. עקוב אחרי המספרים — אחרי שבעה צעדים חוזרים לאותו מקום.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="24" width="1500" x="60" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#e8e8e8;strokeColor=#9a9a9a;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;אתה&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;מיקרופון ורמקול&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="66" width="210" x="155" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;הדפדפן&lt;/div&gt;" vertex="1">
+          <mxGeometry height="66" width="210" x="515" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;OpenAI&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;gpt-realtime&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="66" width="210" x="905" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;השרת שלך&lt;/div&gt;" vertex="1">
+          <mxGeometry height="66" width="210" x="1295" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;Open-Meteo&lt;/div&gt;" vertex="1">
+          <mxGeometry height="66" width="190" x="1645" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#9a9a9a;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="190" as="sourcePoint" />
+            <mxPoint x="260" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s9" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#6c8ebf;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="620" y="190" as="sourcePoint" />
+            <mxPoint x="620" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s10" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#b85450;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1010" y="190" as="sourcePoint" />
+            <mxPoint x="1010" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s11" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#82b366;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1400" y="190" as="sourcePoint" />
+            <mxPoint x="1400" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s12" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#d79b00;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1740" y="190" as="sourcePoint" />
+            <mxPoint x="1740" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fff4e6;strokeColor=#d79b00;verticalAlign=top;spacingTop=10;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;מה זה Open-Meteo?&lt;/b&gt;&lt;br&gt;אתר מזג אוויר חינמי באינטרנט. &lt;b&gt;לא&lt;/b&gt; חלק מהפרויקט ולא קשור ל-OpenAI — רק דמיון בשם.&lt;br&gt;שולחים לו קו רוחב וקו אורך, הוא מחזיר מספרים: טמפרטורה, רוח, ראות. בלי מפתח ובלי חשבון.&lt;br&gt;הוא נבחר כי הוא &lt;b&gt;הדבר היחיד בכל הפרויקט שדורש לצאת לאינטרנט&lt;/b&gt; — וזו כל הסיבה שהכלי שלו יושב בשרת.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="740" x="1130" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="s14" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" value="1 · &quot;מה מזג האוויר בבוסטון?&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="245" as="sourcePoint" />
+            <mxPoint x="620" y="245" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s15" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" value="2 · האודיו, ישירות">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="620" y="300" as="sourcePoint" />
+            <mxPoint x="1010" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;3 · המודל מכריז לחדר:&lt;/b&gt; &quot;אני צריך get_airport_weather · BOS&quot;&lt;br&gt;ההכרזה נשמעת ב&lt;b&gt;שני&lt;/b&gt; החיבורים, עם השם והארגומנטים. הדפדפן שומע ושותק — השם לא ברשימה שלו.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="62" width="660" x="680" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="s17" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" value="4 · הקריאה מגיעה גם לכאן">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1010" y="440" as="sourcePoint" />
+            <mxPoint x="1400" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s18" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" value="5 · lat/lon של בוסטון">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1400" y="490" as="sourcePoint" />
+            <mxPoint x="1740" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s19" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" value="6 · 15.3°C, בהיר, רוח 4 קשרים">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1740" y="540" as="sourcePoint" />
+            <mxPoint x="1400" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s20" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" value="7 · המספרים חוזרים כ-JSON">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1400" y="590" as="sourcePoint" />
+            <mxPoint x="1010" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;המודל מנסח משפט מהמספרים.&lt;/b&gt; הוא לא יודע מי ענה, ואין לו דרך לשאול.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="46" width="560" x="730" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="s22" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" value="הקול חוזר">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1010" y="720" as="sourcePoint" />
+            <mxPoint x="620" y="720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s23" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" value="&quot;בבוסטון לוגן 15.3 מעלות, בהיר&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="620" y="770" as="sourcePoint" />
+            <mxPoint x="260" y="770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0e4;strokeColor=#82b366;fontSize=15;align=right;verticalAlign=middle;spacingRight=14;arcSize=6;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;הדלת של השרת נכנסת בלבד.&lt;/b&gt; JSON נכנס בה. &lt;b&gt;אף פעם לא יוצא ממנה קול.&lt;/b&gt;&lt;br&gt;כל הקול — בלי יוצא מן הכלל — עובר בדלת של הדפדפן. לכן זה מהיר: 974ms · 796ms, נמדד.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="1030" x="60" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="s25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;ומה עם ששת הכלים האחרים?&lt;/b&gt; דירוגים, השוואות ופרופילים — הדפדפן מריץ אותם בעצמו: שומע את ההכרזה, רץ לשרת דרך POST /api/tool, ומקריא את התוצאה בחזרה. הם קוראים ממאגר מקומי שממילא שלך, אז אין נזק בכך שהוא רואה אותם. &lt;b&gt;רק מזג האוויר יוצא החוצה, ורק הוא יושב בשרת.&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="1810" x="60" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="s26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;ומה זה לא עושה&lt;/b&gt; — שני החיבורים על סשן אחד, אז הדפדפן שומע שהקריאה קרתה. וכשהשרת מזריק את התוצאה, OpenAI משדר את הפריט ל&lt;b&gt;כל&lt;/b&gt; החיבורים — אז הדפדפן &lt;b&gt;כן מקבל את ה-JSON&lt;/b&gt;. 15.3 מעלות מגיעות אליו גם בלי שביקש. מה שנשלט הוא &lt;b&gt;מי מבצע&lt;/b&gt; — מי מחזיק את הקרדנציאלס, מי יוצא לאינטרנט, ומי יכול לקרוא לכלי עם ארגומנטים משלו. &lt;b&gt;לא&lt;/b&gt; מי רואה. לסודיות מלאה כל השיחה צריכה לעבור בשרת — וזה פי 4-5 בלטנסי.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="1810" x="60" y="1090" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

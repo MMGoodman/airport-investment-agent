@@ -30,6 +30,7 @@ import { toolSchemas, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { transcriptionPrompt, PHANTOM_TERM_THRESHOLD } from '../src/agent/vocabulary.js'
 import { cases } from '../eval/cases.js'
+import { skillsSummary, skillForTool } from '../src/agent/skills.js'
 
 /**
  * In-memory only, and gone on restart.
@@ -153,10 +154,16 @@ export async function workbenchState() {
       // Two languages produce two different instruction blocks from the same prompt.
       languageBlock: { he: languageInstruction('he', true), en: languageInstruction('en', true) },
     },
+    // Every skill with its instructions and the tools that trigger it, so the console can
+    // show the link from either side — open a skill and see its tools, open a tool and see
+    // which skill it brings with it.
+    skills: skillsSummary(),
     tools: toolSchemas.map((t) => ({
       name: t.name,
       description: t.description,
       placement: placementOf(t.name),
+      skill: skillForTool(t.name)?.id ?? null,
+      skillName: skillForTool(t.name)?.name ?? null,
       enabled: toolIsEnabled(t.name),
       parameters: t.parameters ?? { type: 'object', properties: {} },
       required: t.parameters?.required ?? [],

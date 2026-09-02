@@ -45,6 +45,14 @@ function Icon({ name }) {
       </svg>
     )
   }
+  if (name === 'skills') {
+    return (
+      <svg {...common}>
+        <path d="M12 3 4 7v6c0 4.4 3.4 7.4 8 8 4.6-.6 8-3.6 8-8V7z" />
+        <path d="M9.5 12l1.8 1.9 3.4-3.6" />
+      </svg>
+    )
+  }
   if (name === 'tools') {
     return (
       <svg {...common}>

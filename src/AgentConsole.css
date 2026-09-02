@@ -595,3 +595,113 @@
 .switcher.agent-open:hover {
   color: var(--text-strong);
 }
+
+/* ---- disclosure ----------------------------------------------------------
+   Used by both skills and tools, because the question is the same from either
+   side: what is this, and what is it linked to. A list of names you cannot open
+   sends you to the source; everything expanded is the wall the pipeline board
+   used to be. */
+
+.ac-disc {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--bg-sunk);
+}
+
+.ac-disc + .ac-disc {
+  margin-block-start: var(--space-2);
+}
+
+.ac-disc.open {
+  border-color: var(--rule-strong);
+}
+
+/* The base skill is always sent, so it is the one row that is not a choice. */
+.ac-disc.always {
+  border-color: color-mix(in srgb, var(--live) 35%, transparent);
+  background: var(--live-soft);
+}
+
+.ac-disc.off {
+  opacity: 0.55;
+}
+
+.ac-disc-head {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-block-size: 48px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ac-disc-caret {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  flex-shrink: 0;
+}
+
+.ac-disc-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.ac-disc-meta {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ac-disc-body {
+  padding: 0 var(--space-4) var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Which skill a tool brings with it, said on the collapsed row. */
+.ac-tool-skill {
+  padding: 2px var(--space-2);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--live) 35%, transparent);
+  color: var(--live);
+}
+
+/* A skill's instructions are the thing you came to read. */
+.ac-skill-text {
+  margin: 0;
+  padding: var(--space-3);
+  max-block-size: 22rem;
+  overflow: auto;
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+}
+
+/* A tool name in a skill is a way to get to the tool. */
+.ac-term-link {
+  cursor: pointer;
+}
+
+.ac-term-link:hover {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 45%, transparent);
+}
+
+.ac-field {
+  display: grid;
+  gap: var(--space-2);
+}

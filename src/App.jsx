@@ -333,6 +333,7 @@ function App() {
             label: 'הגדרה',
             items: [
               { id: 'prompt', label: 'הוראות', icon: 'prompt' },
+              { id: 'skills', label: 'סקילים', icon: 'skills' },
               { id: 'tools', label: 'כלים', icon: 'tools' },
             ],
           },
@@ -372,7 +373,7 @@ function App() {
               )}
             </div>
           ) : wsPane ? (
-            <AgentConsole bare pane={wsPane} />
+            <AgentConsole bare pane={wsPane} onPaneChange={setWsPane} />
           ) : null
         }
         rail={live ? <div ref={setTraceSlot} /> : null}

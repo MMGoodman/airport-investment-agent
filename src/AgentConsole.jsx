@@ -49,6 +49,14 @@ function Icon({ name }) {
       </svg>
     )
   }
+  if (name === 'skills') {
+    return (
+      <svg {...common}>
+        <path d="M12 3 4 7v6c0 4.4 3.4 7.4 8 8 4.6-.6 8-3.6 8-8V7z" />
+        <path d="M9.5 12l1.8 1.9 3.4-3.6" />
+      </svg>
+    )
+  }
   if (name === 'knowledge') {
     return (
       <svg {...common}>
@@ -79,6 +87,7 @@ const GROUPS = [
     label: 'הגדרה',
     items: [
       { id: 'prompt', label: 'הוראות', icon: 'prompt' },
+      { id: 'skills', label: 'סקילים', icon: 'skills' },
       { id: 'tools', label: 'כלים', icon: 'tools' },
     ],
   },
@@ -141,6 +150,27 @@ function PromptBlock({ title, value, file, overridden, onChange, onRevert, hint 
 }
 
 /**
+ * A collapsed row that opens to everything belonging to it.
+ *
+ * Used by both skills and tools, because the question is the same from either side: what is
+ * this, and what is it linked to. A list of names with no way to see inside makes you go and
+ * read the source; a list of everything expanded is the wall the pipeline board used to be.
+ */
+function Disclosure({ title, meta, tone, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className={`ac-disc ${open ? 'open' : ''} ${tone ?? ''}`}>
+      <button type="button" className="ac-disc-head" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="ac-disc-caret" aria-hidden="true">{open ? '▾' : '◂'}</span>
+        <span className="ac-disc-title">{title}</span>
+        {meta && <span className="ac-disc-meta mono">{meta}</span>}
+      </button>
+      {open && <div className="ac-disc-body">{children}</div>}
+    </div>
+  )
+}
+
+/**
  * `bare` renders one pane and nothing around it.
  *
  * The workspace owns the rail and the frame now, so the console's own scrim, rail and
@@ -148,7 +178,7 @@ function PromptBlock({ title, value, file, overridden, onChange, onRevert, hint 
  * than extracting them means the sheet and the workspace can never drift into showing
  * different things under the same name.
  */
-export default function AgentConsole({ open, onClose, bare = false, pane: panePropCargo }) {
+export default function AgentConsole({ open, onClose, bare = false, pane: panePropCargo, onPaneChange }) {
   const [state, setState] = useState(null)
   const [error, setError] = useState(null)
   const [panePriv, setPane] = useState('prompt')
@@ -315,53 +345,120 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
           </div>
         )}
 
+        {state && pane === 'skills' && (
+          <div className="ac-pane">
+            <p className="ac-hint">
+              הבסיס נשלח תמיד. הרחבה נטענת ברגע שאחד <b>מהכלים שלה</b> נקרא לראשונה — המודל
+              שמושיט יד ל־<code>rank_airports</code> הוא הסימן שכללי הדירוג רלוונטיים עכשיו,
+              אז אין נתב ואין מסווג, והסימן לא עולה כלום כי הקריאה קרתה ממילא.
+            </p>
+
+            {state.skills?.map((skill) => (
+              <Disclosure
+                key={skill.id}
+                title={skill.name}
+                tone={skill.always ? 'always' : ''}
+                meta={
+                  skill.always
+                    ? 'נשלח תמיד'
+                    : `${skill.chars.toLocaleString()} תווים · ${skill.tools.length} כלים`
+                }
+              >
+                <p className="ac-hint">{skill.summary}</p>
+
+                {skill.tools.length > 0 && (
+                  <div className="ac-field">
+                    <span className="ac-prompt-title">כלים שטוענים אותה</span>
+                    <div className="ac-terms">
+                      {skill.tools.map((tool) => (
+                        <button
+                          key={tool}
+                          type="button"
+                          className="ac-term ac-term-link mono"
+                          onClick={() => onPaneChange?.('tools')}
+                          title="עבור לכלים"
+                        >
+                          {tool}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {skill.instructions ? (
+                  <pre className="ac-skill-text mono" dir="ltr">
+                    {skill.instructions}
+                  </pre>
+                ) : (
+                  <p className="ac-hint">
+                    ההוראות של הבסיס הן <code>SYSTEM_PROMPT</code> — נמצאות בטאב ״הוראות״,
+                    שם אפשר גם לערוך אותן.
+                  </p>
+                )}
+              </Disclosure>
+            ))}
+          </div>
+        )}
+
+
         {state && pane === 'tools' && (
           <div className="ac-pane">
-            <ul className="ac-tools">
-              {state.tools.map((tool) => {
-                const params = Object.entries(tool.parameters?.properties ?? {})
-                return (
-                  <li key={tool.name} className={`ac-tool ${tool.enabled ? '' : 'off'}`}>
-                    <div className="ac-tool-head">
-                      <label className="ac-tool-toggle">
-                        <input
-                          type="checkbox"
-                          checked={tool.enabled}
-                          onChange={(event) => {
-                            const off = new Set(
-                              state.tools.filter((t) => !t.enabled).map((t) => t.name),
-                            )
-                            if (event.target.checked) off.delete(tool.name)
-                            else off.add(tool.name)
-                            patch({ disabledTools: [...off] })
-                          }}
-                        />
-                        <span className="ac-tool-name mono">{tool.name}</span>
-                      </label>
+            {state.tools.map((tool) => {
+              const params = Object.entries(tool.parameters?.properties ?? {})
+              return (
+                <Disclosure
+                  key={tool.name}
+                  title={<span className="mono">{tool.name}</span>}
+                  tone={tool.enabled ? '' : 'off'}
+                  meta={
+                    <>
+                      {tool.skillName && <span className="ac-tool-skill">{tool.skillName}</span>}
                       <span className={`ac-place ${tool.placement}`}>
                         {tool.placement === 'server' ? 'השרת שלך' : 'הדפדפן'}
                       </span>
-                    </div>
-                    <p className="ac-tool-desc">{tool.description}</p>
-                    {params.length > 0 && (
-                      <ul className="ac-params">
-                        {params.map(([name, spec]) => (
-                          <li key={name}>
-                            <code className="mono">{name}</code>
-                            <span className="ac-param-type mono">
-                              {spec.enum ? spec.enum.join(' | ') : spec.type}
-                            </span>
-                            {(tool.required ?? []).includes(name) && (
-                              <span className="ac-required">חובה</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+                    </>
+                  }
+                >
+                  <label className="ac-tool-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tool.enabled}
+                      onChange={(event) => {
+                        const off = new Set(
+                          state.tools.filter((t) => !t.enabled).map((t) => t.name),
+                        )
+                        if (event.target.checked) off.delete(tool.name)
+                        else off.add(tool.name)
+                        patch({ disabledTools: [...off] })
+                      }}
+                    />
+                    <span>מוצע למודל</span>
+                  </label>
+                  <p className="ac-tool-desc">{tool.description}</p>
+                  {tool.skillName && (
+                    <p className="ac-hint">
+                      קריאה ראשונה לכלי הזה טוענת את הסקיל <b>{tool.skillName}</b> — הכללים שלו
+                      מגיעים לפני שהמודל עונה.
+                    </p>
+                  )}
+                  {params.length > 0 && (
+                    <ul className="ac-params">
+                      {params.map(([name, spec]) => (
+                        <li key={name}>
+                          <code className="mono">{name}</code>
+                          <span className="ac-param-type mono">
+                            {spec.enum ? spec.enum.join(' | ') : spec.type}
+                          </span>
+                          {(tool.required ?? []).includes(name) && (
+                            <span className="ac-required">חובה</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Disclosure>
+              )
+            })}
             <p className="ac-hint">
               <b>המיקום אינו ניתן לעריכה כאן.</b> מי מריץ כלי נקבע לפני שהשיחה מתחילה — זה
               הטיעון כולו לשים אותו ברשימת הכלים ולא בהוראות, שאיתן אפשר להתווכח. כיבוי כאן

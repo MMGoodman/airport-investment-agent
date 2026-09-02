@@ -12,6 +12,7 @@
  */
 import { languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
+import { skillsSummary } from '../src/agent/skills.js'
 import { attachSideband, detachSideband } from './sideband.js'
 import { mountAgentRoutes } from './agents.js'
 import { mountScenarioRoutes } from './scenarios.js'
@@ -230,6 +231,26 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
     // caller discovering it when an answer goes missing.
     toolNames: tools.map((t) => t.name),
     withheldTools: withheld,
+    /**
+     * The base as sent, and the extensions that are not.
+     *
+     * session.update REPLACES instructions rather than appending, so whoever loads a skill
+     * has to send base + everything loaded so far. Handing both over here means that
+     * composition happens where the tool call is seen, without a round trip on a live call.
+     */
+    baseInstructions:
+      effectivePrompt() +
+      effectiveVoiceAddendum() +
+      languageInstruction(lang, true) +
+      withheldNote(withheld),
+    skills: skillsSummary()
+      .filter((skill) => !skill.always)
+      .map(({ id, name, tools: skillTools, instructions }) => ({
+        id,
+        name,
+        tools: skillTools,
+        instructions,
+      })),
     // The hint's own terms, so the browser can recognise it being read back at it.
     hintTerms: hint.split(',').map((t) => t.trim()).filter((t) => t.length > 2),
     model: OPENAI_MODEL,
@@ -481,6 +502,8 @@ export function mountVoiceRoutes(app) {
         interrupts: built.interrupts,
         toolNames: built.toolNames,
         withheldTools: built.withheldTools,
+        baseInstructions: built.baseInstructions,
+        skills: built.skills,
         hintTerms: built.hintTerms,
       })
     } catch (err) {

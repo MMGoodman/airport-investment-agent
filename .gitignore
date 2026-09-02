@@ -1,5 +1,8 @@
 ﻿node_modules/
 .env
+# Copies of it are copies of the keys. `.env.example` is the tracked one.
+.env.*
+!.env.example
 dist/
 data/raw/
 

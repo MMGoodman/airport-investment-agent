@@ -73,7 +73,9 @@ describe('webhookToolsFor', () => {
     // The trailing slash on the base must not survive into a double slash in the path.
     expect(weather.api_schema.url).toBe('https://example.ngrok-free.app/api/tool/hook/get_airport_weather')
     expect(weather.api_schema.method).toBe('POST')
-    expect(weather.api_schema.request_body_schema.iata.type).toBe('string')
+    expect(weather.api_schema.request_body_schema.type).toBe('object')
+    expect(weather.api_schema.request_body_schema.properties.iata.type).toBe('string')
+    expect(weather.api_schema.request_body_schema.required).toContain('iata')
     expect(weather.api_schema.request_headers['x-tool-secret']).toBe('a-secret')
   })
 
@@ -83,6 +85,6 @@ describe('webhookToolsFor', () => {
     // silently stops arriving is the hardest kind of bug to see from a voice call.
     configure('https://example.ngrok-free.app', 'a-secret')
     const search = webhookToolsFor().find((t) => t.name === 'search_knowledge')
-    expect(search.api_schema.request_body_schema.topK.type).toBe('number')
+    expect(search.api_schema.request_body_schema.properties.topK.type).toBe('number')
   })
 })

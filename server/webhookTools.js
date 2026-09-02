@@ -84,14 +84,31 @@ export function webhookToolsFor() {
       api_schema: {
         url: `${url}/api/tool/hook/${t.name}`,
         method: 'POST',
-        // Their parameter schema is a flat map of name to {type, description}, so the
-        // tool's own JSON Schema properties map across directly.
-        request_body_schema: Object.fromEntries(
-          Object.entries(t.parameters?.properties ?? {}).map(([name, spec]) => [
-            name,
-            { type: spec.type === 'integer' ? 'number' : spec.type, description: spec.description },
-          ]),
-        ),
+        /**
+         * A full object schema, not the flat map the docs summary implied.
+         *
+         * Sent flat first and the API answered 422 `extra_forbidden` on every parameter
+         * name: it wants the same shape a client tool's `parameters` takes. Every
+         * description must be non-empty too, or the whole agent is rejected — the same
+         * rule the client-tool mapper already works around.
+         */
+        request_body_schema: {
+          type: 'object',
+          description: `Arguments for ${t.name}.`,
+          properties: Object.fromEntries(
+            Object.entries(t.parameters?.properties ?? {}).map(([name, spec]) => [
+              name,
+              {
+                // They have no integer type; an unrecognised one is dropped rather than
+                // rejected, and a parameter that silently stops arriving is the hardest
+                // kind of bug to see from a voice call.
+                type: spec.type === 'integer' ? 'number' : (spec.type ?? 'string'),
+                description: spec.description?.trim() || `The ${name}.`,
+              },
+            ]),
+          ),
+          required: t.parameters?.required ?? [],
+        },
         request_headers: { [HEADER]: secret() },
       },
     }))

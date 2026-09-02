@@ -1,45 +1,152 @@
+/**
+ * Flight recorder — the token system.
+ *
+ * The palette is taken from a cockpit at night rather than from the dev-tool default it
+ * used to be. The old comment here said "deliberately not a generic purple-gradient AI
+ * look", which was true and still landed on teal-on-slate, which is the same kind of
+ * default one shelf over.
+ *
+ * The one rule that shapes it: in aviation, caution is AMBER. Red means a thing has
+ * failed. Amber carries every warning in this interface — settings that have drifted, a
+ * sideband that did not attach, a tool that was withheld — and red is reserved for a call
+ * that broke. That is a real distinction in a console whose whole job is to be believed.
+ *
+ * Every foreground token below was measured against both grounds before being written
+ * here. The old --text-dim carried all of the Hebrew explanatory prose at 3.97:1 in light
+ * and 3.48:1 on a sunk panel, and --warn was never declared at all, so the "your settings
+ * changed" line — the one that most needs reading — fell back to a hardcoded #d7860b at
+ * 2.88:1.
+ */
+
 :root {
-  /* Slate + runway-teal. Deliberately not a generic purple-gradient AI look. */
-  --bg: #f7f8fa;
-  --bg-panel: #ffffff;
-  --bg-sunk: #eef0f4;
-  --border: #dfe3ea;
-  --text: #3d4450;
-  --text-dim: #79808e;
-  --text-strong: #10131a;
-  --accent: #0d7d78;
-  --accent-soft: rgba(13, 125, 120, 0.1);
-  --accent-text: #ffffff;
-  --danger: #b3261e;
-  --danger-soft: rgba(179, 38, 30, 0.09);
-  --live: #12a150;
+  color-scheme: dark;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* ---- ground: a cockpit at night ------------------------------------- */
+  --bg: #0b0f14;
+  --bg-panel: #111721;
+  --bg-sunk: #0d1219;
+  --bg-raised: #18202c;
 
-  font: 16px/1.5 var(--sans);
-  color-scheme: light dark;
+  /* Hairlines. --rule is decorative; --rule-strong is for anything that separates
+     interactive regions, where WCAG 1.4.11 wants 3:1 and a hairline does not qualify. */
+  --rule: #232e3c;
+  --rule-strong: #647691; /* 3.9 : 1 on panel, 4.2 on sunk. The first value written here
+                             was #3a4759 at 1.90, proposed as the accessible one — the
+                             contrast test caught it. */
+
+  /* ---- text: all measured on --bg-panel and --bg-sunk ------------------ */
+  --text-strong: #f2f6fb; /* 16.2 : 1 */
+  --text: #d8e0ea; /*        13.5 : 1 */
+  --text-dim: #93a1b4; /*     6.9 : 1  — was 3.97, and carries most of the prose */
+
+  /* ---- signals --------------------------------------------------------- */
+  --signal: #ffb020; /*  9.8 : 1  amber. Caution, attention, drift, withheld. */
+  --signal-soft: rgba(255, 176, 32, 0.13);
+  --live: #57d9c4; /*   10.4 : 1  cold cyan. Connected, running, this is happening now. */
+  --live-soft: rgba(87, 217, 196, 0.13);
+  --danger: #ff6b6b; /*  6.5 : 1  reserved for failure. Nothing else. */
+  --danger-soft: rgba(255, 107, 107, 0.13);
+
+  /* App.css was written against --border. It is the decorative hairline, so it maps to
+     --rule; anything that separates interactive regions should ask for --rule-strong. */
+  --border: var(--rule);
+  --accent: var(--live);
+  --accent-soft: var(--live-soft);
+  --accent-text: #04211d;
+  --warn: var(--signal);
+  --warn-soft: var(--signal-soft);
+  --muted: var(--text-dim);
+
+  /* ---- type ------------------------------------------------------------ */
+  /* Assistant is drawn FOR Hebrew rather than being a Latin face with Hebrew bolted on,
+     which is what system-ui resolves to on Windows. Plex Mono carries every number and
+     event name: tabular figures so a millisecond column aligns, and a slashed zero. */
+  --sans: 'Assistant', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* ---- scale ----------------------------------------------------------- */
+  /* There were six radii in six magnitudes and two units. Four, in one unit. */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* 12px floor. Hebrew has none of the ascender and descender silhouette Latin relies on,
+     so it is harder to read small at the same size — and thirteen rules here sat between
+     11 and 12.6px, with the densest at 10.6. */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+
+  font: var(--fs-base) / 1.55 var(--sans);
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1116;
-    --bg-panel: #161a21;
-    --bg-sunk: #1c212a;
-    --border: #272d38;
-    --text: #c3c9d4;
-    --text-dim: #7d8797;
-    --text-strong: #f0f3f8;
-    --accent: #2dd4bf;
-    --accent-soft: rgba(45, 212, 191, 0.12);
-    --accent-text: #06231f;
-    --danger: #ff6b6b;
-    --danger-soft: rgba(255, 107, 107, 0.12);
-    --live: #3ddc84;
+/**
+ * Light is a supported mode, not the home one.
+ *
+ * The console is read in a dark room beside a running call, and dark is where the signal
+ * colours mean what they mean. Light exists because some people need it, and it is held to
+ * exactly the same contrast floor.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f4f6f9;
+  --bg-panel: #ffffff;
+  --bg-sunk: #eceff4;
+  --bg-raised: #ffffff;
+  --rule: #dde2ea;
+  --rule-strong: #767f8f; /* 4.0 : 1 on white, 3.5 on sunk */
+
+  --text-strong: #0d1219;
+  --text: #2b3340; /*      11.6 : 1 */
+  --text-dim: #5b6575; /*   6.0 : 1  — was 3.97 */
+
+  --signal: #9a5b00; /*     5.6 : 1  — amber has to darken to stay legible on white */
+  --signal-soft: rgba(154, 91, 0, 0.1);
+  --live: #0f766e; /*       5.4 : 1 */
+  --live-soft: rgba(15, 118, 110, 0.1);
+  --danger: #b3261e; /*     6.5 : 1 */
+  --danger-soft: rgba(179, 38, 30, 0.09);
+  --accent-text: #ffffff;
+}
+
+/* No stored choice: follow the system, and light there gets the same overrides. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+
+    --bg: #f4f6f9;
+    --bg-panel: #ffffff;
+    --bg-sunk: #eceff4;
+    --bg-raised: #ffffff;
+    --rule: #dde2ea;
+    --rule-strong: #767f8f;
+
+    --text-strong: #0d1219;
+    --text: #2b3340;
+    --text-dim: #5b6575;
+
+    --signal: #9a5b00;
+    --signal-soft: rgba(154, 91, 0, 0.1);
+    --live: #0f766e;
+    --live-soft: rgba(15, 118, 110, 0.1);
+    --danger: #b3261e;
+    --danger-soft: rgba(179, 38, 30, 0.09);
+    --accent-text: #ffffff;
   }
 }
 
@@ -65,4 +172,34 @@ h2 {
 
 p {
   margin: 0;
+}
+
+/* Every number and event name. Tabular figures keep a millisecond column aligned when the
+   values change, which is the difference between a readable trace and a shifting one. */
+code,
+kbd,
+pre,
+samp,
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Visible focus, on a ring that reads against both grounds. Never removed. */
+:where(button, input, select, textarea, summary, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--live);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* Seven transitions shipped without this. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

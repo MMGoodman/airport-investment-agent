@@ -5,6 +5,32 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>airport-investment-agent</title>
+
+    <!--
+      Assistant is drawn for Hebrew rather than being a Latin face with Hebrew attached,
+      which is what system-ui resolves to here. Plex Mono carries every number and event
+      name in the trace: tabular figures so a millisecond column stays aligned as values
+      change, and a slashed zero.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!--
+      Applied before first paint. Reading the stored choice from React would flash the
+      wrong ground on every load, which on a dark-first console is the whole screen.
+    -->
+    <script>
+      try {
+        var t = localStorage.getItem('theme')
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+      } catch (e) {
+        /* private window, or site data blocked — the media query still decides */
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

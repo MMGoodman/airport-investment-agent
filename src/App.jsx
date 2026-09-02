@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { applyTheme, readTheme } from './theme.js'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -28,6 +29,8 @@ function App() {
   const [providerId, setProviderId] = useState('gemini')
   // Applies to all three paths: it steers the reply, and on the live paths the
   // transcriber and the voice as well.
+  // Read once from storage; the inline script in index.html already applied it.
+  const [theme, setTheme] = useState(readTheme)
   const [lang, setLang] = useState('he')
   const [readAloud, setReadAloud] = useState(false)
   const bottomRef = useRef(null)
@@ -205,6 +208,20 @@ function App() {
             </svg>
             <span>{readAloud ? 'voice on' : 'voice off'}</span>
           </button>
+
+          {/* Three states, because "system" is a real choice and a two-way toggle cannot
+              return to it. Labelled by what it does, not by an icon alone. */}
+          <label className="switcher theme" title="Which ground the console is read on">
+            <select
+              value={theme}
+              onChange={(event) => setTheme(applyTheme(event.target.value))}
+              aria-label="Theme"
+            >
+              <option value="system">מערכת</option>
+              <option value="dark">כהה</option>
+              <option value="light">בהיר</option>
+            </select>
+          </label>
 
           <label
             className="switcher lang"

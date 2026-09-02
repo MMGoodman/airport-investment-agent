@@ -159,6 +159,33 @@ const conversation_config = {
     // interrupted and then repeated in full. Two wasted turns dwarf the few hundred
     // milliseconds eagerness buys.
     turn_eagerness: process.env.ELEVENLABS_TURN_EAGERNESS || 'normal',
+
+    /**
+     * Do not start answering before the turn is known to be over.
+     *
+     * The live agent had this ON, which is not the documented default — so it was set in
+     * the dashboard, outside git, and nothing here recorded it. It "starts generating LLM
+     * responses during silence before full turn confidence is reached", which is the
+     * eagerness trade again in a different costume, and it loses to the same argument: a
+     * hesitant caller — "אמ... אני רוצה... להשוות בין שניים: בוסטון ו... איך הוא נקרא?" —
+     * is a run of silences that are not turn ends. Generating into one of them answers half
+     * a sentence, and half an answer has to be thrown away and asked again.
+     */
+    speculative_turn: process.env.ELEVENLABS_SPECULATIVE === 'on',
+
+    /**
+     * When the detector hears nothing, transcribe the audio anyway before giving up.
+     *
+     * "If VAD detects no speech, attempts to re-transcribe accumulated audio at turn
+     * timeout." Without it, speech the detector missed is simply gone, which is what
+     * "it did not hear me at all" looks like from the caller's chair: they spoke, the
+     * agent waited, and nothing they said ever became a turn.
+     *
+     * It costs money — ElevenLabs stops applying the silence discount to a turn this
+     * fires on. Worth it for a caller who has to repeat themselves; set
+     * ELEVENLABS_RETRANSCRIBE=off if a deployment would rather pay less than hear more.
+     */
+    retranscribe_on_turn_timeout: process.env.ELEVENLABS_RETRANSCRIBE !== 'off',
   },
   // The same vocabulary bias the OpenAI path gets as a transcription prompt. Without it a
   // transcriber has no reason to expect three-letter airport codes and guesses at them.

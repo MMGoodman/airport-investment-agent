@@ -1,11 +1,15 @@
 /**
  * ElevenLabs Agents — the managed alternative.
  *
- * The platform owns the audio pipeline and the turn-taking; we own the tools. Every
- * tool is registered as a CLIENT tool, so it executes in this browser and calls
- * POST /api/tool — the same deterministic engine the other two paths use. Server tools
- * would have ElevenLabs' cloud call us instead, which needs a public URL; client tools
- * keep the whole thing working on localhost with no tunnel.
+ * The platform owns the audio pipeline and the turn-taking; we own the tools. The tools
+ * this page registers are CLIENT tools, so they execute in this browser and call
+ * POST /api/tool — the same deterministic engine the other paths use — which keeps the
+ * project working on localhost with no tunnel.
+ *
+ * The placed tools are not among them, and when the webhook hybrid is configured they are
+ * not missing either: ElevenLabs' own backend calls this server for those, server to
+ * server, and nothing about that reaches this file. So the handler map below is exactly
+ * the client half, in both configurations. See server/webhookTools.js for the other half.
  *
  * The agent's prompt and tool declarations are pushed from this repo by
  * `npm run sync:agent`, so nothing about its behaviour lives only in a dashboard.

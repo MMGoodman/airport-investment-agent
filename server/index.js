@@ -5,6 +5,7 @@ import { runAgent } from '../src/agent/agent.js'
 import { runTool, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
+import { mountWebhookToolRoute } from './webhookTools.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile } from './toolLog.js'
 import { attachRelay } from './relay.js'
@@ -120,6 +121,8 @@ app.get('/api/rankings', async (req, res) => {
  * context, and audit metadata does not belong there costing tokens and inviting the model
  * to narrate it.
  */
+mountWebhookToolRoute(app)
+
 app.post('/api/tool', async (req, res) => {
   const { name, args } = req.body ?? {}
   const session = req.get('x-session-id') || null

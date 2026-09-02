@@ -21,6 +21,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { toolSchemasFor } from '../src/agent/tools.js'
+import { webhookToolsFor, webhookHybridStatus } from '../server/webhookTools.js'
 import { asrKeywords } from '../src/agent/vocabulary.js'
 
 const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback)
@@ -73,6 +74,18 @@ function toElevenLabsParam(schema, name = 'value') {
 const { tools: offered, withheld } = toolSchemasFor('browser')
 
 /**
+ * The hybrid half, when this deployment can be reached from outside.
+ *
+ * Empty on a laptop with no tunnel, which is the normal case and not a failure — the two
+ * placed tools then stay withheld exactly as before, and WITHHELD below says so to the model.
+ * Configure PUBLIC_BASE_URL and ELEVENLABS_WEBHOOK_SECRET and they move to ElevenLabs'
+ * server-to-server path instead, giving that platform the same tool surface the OpenAI
+ * hybrid has, by a completely different mechanism.
+ */
+const hybrid = webhookHybridStatus()
+const webhookTools = webhookToolsFor()
+
+/**
  * The gap, named in the prompt rather than left for the model to improvise around.
  *
  * A trace that made this necessary: asked for the weather in San Juan, the agent called
@@ -81,7 +94,8 @@ const { tools: offered, withheld } = toolSchemasFor('browser')
  * you, when another transport answers it in one call, is the worst of the available wrong
  * answers, because they stop asking.
  */
-const WITHHELD = withheldNote(withheld, ELEVENLABS_REMEDY)
+const stillWithheld = withheld.filter((name) => !webhookTools.some((t) => t.name === name))
+const WITHHELD = withheldNote(stillWithheld, ELEVENLABS_REMEDY)
 
 const tools = offered.map((t) => ({
   type: 'client',
@@ -97,6 +111,15 @@ const tools = offered.map((t) => ({
     ),
   },
 }))
+
+/**
+ * One list, two kinds.
+ *
+ * The six the browser runs, then whatever the webhook half added — which is nothing unless
+ * this deployment is reachable. The agent sees a single tool list either way; the difference
+ * is who ElevenLabs asks when the model reaches for one.
+ */
+const allTools = [...tools, ...webhookTools]
 
 const SPOKEN_PROMPT = SYSTEM_PROMPT + VOICE_ADDENDUM
 
@@ -119,7 +142,7 @@ const conversation_config = {
       // never cut mid-sentence — the ceiling is for the pathological case, not the normal
       // one.
       max_tokens: Number(process.env.ELEVENLABS_MAX_TOKENS) || 400,
-      tools,
+      tools: allTools,
     },
   },
   // Hebrew as a first-class preset rather than a prompt trick: the platform switches the
@@ -320,11 +343,15 @@ if (!res.ok) {
 const id = body.agent_id ?? existing?.agent_id
 console.log(`\n  ${existing ? 'updated' : 'created'} "${AGENT_NAME}"`)
 console.log(`  ${tools.length} client tools: ${tools.map((t) => t.name).join(', ')}`)
-if (withheld.length) {
+if (webhookTools.length) {
   console.log(
-    `  withheld (server-placed, and this platform has no sideband): ${withheld.join(', ')}`,
+    `  ${webhookTools.length} webhook tools (ElevenLabs' cloud calls this server): ${webhookTools.map((t) => t.name).join(', ')}`,
   )
 }
+if (stillWithheld.length) {
+  console.log(`  withheld: ${stillWithheld.join(', ')}`)
+}
+console.log(`  hybrid: ${hybrid.enabled ? 'ON' : 'off'} — ${hybrid.reason}`)
 // What was SENT, not what SPOKEN_PROMPT happens to be: the language instruction and the
 // withheld note are appended after it, and reporting the shorter number made a prompt that
 // had grown by 1,479 characters look unchanged.

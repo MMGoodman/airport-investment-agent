@@ -26,6 +26,7 @@ import {
 import { turnsForSession } from './sessionLog.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 import { mintFetch } from './mint.js'
+import { webhookHybridStatus } from './webhookTools.js'
 
 /**
  * Ephemeral keys awaiting their sideband, by the browser's session id.
@@ -387,7 +388,10 @@ const toolReach = (reach) =>
             `scribe_realtime → ${EL_LLM} → ${EL_TTS} (cascade)` +
             (EL_FAST_TTS && EL_FAST_TTS !== EL_TTS ? ` · English swaps to ${EL_FAST_TTS}` : ''),
           short: 'elevenlabs · cascade',
-          tools: toolReach('browser'),
+          // Six normally; eight when the webhook hybrid is configured, because their cloud
+          // then calls this server for the placed tools. Read at request time rather than at
+          // module load, so turning a tunnel on does not need a restart to show up here.
+          tools: toolReach(webhookHybridStatus().enabled ? 'server' : 'browser'),
           transport: 'WebSocket · agent platform',
         },
       ],

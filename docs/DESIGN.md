@@ -202,9 +202,28 @@ their dashboard — prompt, tools, model, all of it outside version control, whi
 the voice agent could silently drift from the text agent. `scripts/sync-elevenlabs-agent.js`
 pushes the repo's own `SYSTEM_PROMPT` and `toolSchemas` into the agent over their API, so the
 definition still lives in git and one command re-syncs it. It registers the tools as **client**
-tools rather than server tools deliberately: server tools would have ElevenLabs' cloud call
-back into us, which needs a public URL and a tunnel in development. Client tools execute in
-the browser and reach the same local endpoint.
+tools by default: server tools have ElevenLabs' cloud call back into us, which needs a public
+URL and a tunnel in development. Client tools execute in the browser and reach the same local
+endpoint, so the project runs on a laptop with nothing exposed.
+
+**The ElevenLabs hybrid.** For a long time the answer to "can a server-placed tool exist on
+that platform" was no, on the grounds that ElevenLabs has no sideband — no way to open a
+second connection to a running session, which is how the OpenAI hybrid works. That reasoning
+was right about the sideband and wrong about the conclusion: the platform supports it from
+the other direction. A tool declared `type: "webhook"` is called by ElevenLabs' backend over
+HTTP, and the browser is never in the path.
+
+    OpenAI hybrid       our server  →  second connection into the live session
+    ElevenLabs hybrid   their cloud →  HTTP call to an endpoint on our server
+
+Both give the same guarantee — the page cannot invoke that tool — by opposite arrows, and
+that is the reason to have both rather than one. The OpenAI shape keeps every credential
+inside a connection we opened outward. The ElevenLabs shape puts an endpoint on the public
+internet, which is easier to build and strictly more exposed: `POST /api/tool/hook/:name`,
+guarded by a shared secret, refusing anything that is not a server-placed tool so the
+published surface is two read-only lookups rather than the engine. Set `PUBLIC_BASE_URL` and
+`ELEVENLABS_WEBHOOK_SECRET` to turn it on; unset, the tools stay withheld and the sync says
+so.
 
 ### Making a spoken answer fast enough to feel live
 

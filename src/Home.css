@@ -1,0 +1,197 @@
+/**
+ * The environment's front door.
+ *
+ * Quiet on purpose. The one thing worth looking at here is the agent card, so everything
+ * around it is set at the low end of the type scale and the dim text colour, and the card
+ * is the only element with a hover state and a full-strength heading.
+ */
+
+.home {
+  direction: rtl;
+  max-inline-size: 940px;
+  margin-inline: auto;
+  padding: var(--space-6) var(--gutter) var(--space-6);
+  display: grid;
+  gap: var(--space-6);
+}
+
+.home-top {
+  padding-block-end: var(--space-5);
+  border-block-end: 1px solid var(--rule);
+}
+
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.home-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.home-brand h1 {
+  font-size: var(--fs-xl);
+  letter-spacing: -0.01em;
+}
+
+.home-brand p {
+  margin-block-start: 2px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.home-section h2 {
+  font-size: var(--fs-lg);
+}
+
+.home-hint {
+  margin-block-start: var(--space-2);
+  font-size: var(--fs-xs);
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.home-error {
+  margin-block-start: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--danger);
+}
+
+/* ---- general settings ---------------------------------------------------- */
+
+.home-settings {
+  margin-block-start: var(--space-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.home-field {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 180px;
+}
+
+.home-field > span {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.home-field select {
+  font: inherit;
+  font-size: var(--fs-sm);
+  min-block-size: 38px;
+  padding: 0 var(--space-3);
+  color: var(--text);
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.home-health {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 38px;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.home-health i {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--r-pill);
+  background: var(--danger);
+}
+
+.home-health.up i {
+  background: var(--live);
+}
+
+/* ---- agents -------------------------------------------------------------- */
+
+.home-agents {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+
+.home-loading {
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.home-agent {
+  inline-size: 100%;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  text-align: start;
+  background: var(--bg-panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-lg);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.home-agent:hover {
+  border-color: var(--live);
+  background: var(--bg-raised);
+}
+
+.home-agent-name {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.home-agent-tagline {
+  font-size: var(--fs-xs);
+  color: var(--live);
+}
+
+.home-agent-desc {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.home-agent-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-block-start: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* The arrow points the way reading runs, which in RTL is leftward. */
+.home-agent-go {
+  position: absolute;
+  inset-block-start: var(--space-5);
+  inset-inline-end: var(--space-5);
+  color: var(--text-dim);
+  font-size: var(--fs-lg);
+  transition: color 140ms ease, transform 140ms ease;
+}
+
+.home-agent:hover .home-agent-go {
+  color: var(--live);
+  transform: translateX(-3px);
+}
+
+@media (max-width: 560px) {
+  .home-agents {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1114,3 +1114,24 @@ kbd {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Back to the environment. The agent is a place you are inside of, and until now the
+   header said the product's name where it should say where you are. */
+.brand-back {
+  display: grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  margin-inline-end: var(--space-1);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.brand-back:hover {
+  color: var(--text);
+  background: var(--bg-sunk);
+  border-color: var(--rule);
+}

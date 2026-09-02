@@ -13,6 +13,7 @@
 import { languageInstruction } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
 import { attachSideband, detachSideband } from './sideband.js'
+import { mountAgentRoutes } from './agents.js'
 import {
   effectivePrompt,
   effectiveVoiceAddendum,
@@ -266,6 +267,7 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
 
 export function mountVoiceRoutes(app) {
   mountWorkbenchRoutes(app)
+  mountAgentRoutes(app)
 
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
   app.get('/api/voice/providers', (req, res) => {

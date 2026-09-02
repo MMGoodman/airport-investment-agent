@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { applyTheme, readTheme } from './theme.js'
 import AgentConsole from './AgentConsole.jsx'
+import Home from './Home.jsx'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -25,6 +26,45 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [health, setHealth] = useState(null)
+  const [agents, setAgents] = useState(null)
+  /**
+   * Which agent is open, or null for the environment's front door.
+   *
+   * Kept in the URL through the History API rather than a router: it is two views, the
+   * back button has to work, and a dependency for that would be more machinery than the
+   * problem. The path is the only state — reading it on popstate is what makes back and
+   * forward behave without a second source of truth.
+   */
+  const [agentId, setAgentId] = useState(() => {
+    const match = window.location.pathname.match(/^\/agents\/([\w-]+)/)
+    return match ? match[1] : null
+  })
+
+  const openAgent = useCallback((id) => {
+    window.history.pushState({ agentId: id }, '', `/agents/${id}`)
+    setAgentId(id)
+  }, [])
+
+  const goHome = useCallback(() => {
+    window.history.pushState({ agentId: null }, '', '/')
+    setAgentId(null)
+  }, [])
+
+  useEffect(() => {
+    const onPop = () => {
+      const match = window.location.pathname.match(/^\/agents\/([\w-]+)/)
+      setAgentId(match ? match[1] : null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/agents')
+      .then((r) => r.json())
+      .then(setAgents)
+      .catch(() => setAgents({ agents: [] }))
+  }, [])
   // Which brain answers, and over which pipe. All three share the same tools.
   const [providers, setProviders] = useState([])
   const [providerId, setProviderId] = useState('gemini')
@@ -159,14 +199,37 @@ function App() {
   const activeProvider = providers.find((p) => p.id === providerId) ?? null
   const live = activeProvider?.mode === 'live'
 
+  const openAgentRecord = agents?.agents?.find((a) => a.id === agentId) ?? null
+
+  if (!agentId) {
+    return (
+      <Home
+        agents={agents}
+        health={health}
+        lang={lang}
+        onLang={setLang}
+        onOpenAgent={openAgent}
+        error={error}
+      />
+    )
+  }
+
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">
+          {/* Back to the environment. The agent is a place you are inside of. */}
+          <button type="button" className="brand-back" onClick={goHome} aria-label="חזרה לסוכנים">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
           <span className="mark" aria-hidden="true" />
           <div>
-            <h1>Airport Investment Agent</h1>
-            <p className="tagline">US terminal expansion — demand opportunity analysis</p>
+            <h1>{openAgentRecord?.name ?? 'Airport Investment Agent'}</h1>
+            <p className="tagline">
+              {openAgentRecord?.tagline ?? 'US terminal expansion — demand opportunity analysis'}
+            </p>
           </div>
         </div>
         <div className="topbar-right">

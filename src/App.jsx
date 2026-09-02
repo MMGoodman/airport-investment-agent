@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { applyTheme, readTheme } from './theme.js'
+import AgentConsole from './AgentConsole.jsx'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -31,6 +32,7 @@ function App() {
   // transcriber and the voice as well.
   // Read once from storage; the inline script in index.html already applied it.
   const [theme, setTheme] = useState(readTheme)
+  const [consoleOpen, setConsoleOpen] = useState(false)
   const [lang, setLang] = useState('he')
   const [readAloud, setReadAloud] = useState(false)
   const bottomRef = useRef(null)
@@ -209,6 +211,16 @@ function App() {
             <span>{readAloud ? 'voice on' : 'voice off'}</span>
           </button>
 
+          {/* Between calls, not during one — which is why it is a sheet and not a column. */}
+          <button
+            type="button"
+            className="switcher agent-open"
+            onClick={() => setConsoleOpen(true)}
+            title="הוראות, כלים, ידע ואוצר מילים"
+          >
+            סוכן
+          </button>
+
           {/* Three states, because "system" is a real choice and a two-way toggle cannot
               return to it. Labelled by what it does, not by an icon alone. */}
           <label className="switcher theme" title="Which ground the console is read on">
@@ -264,6 +276,8 @@ function App() {
           </label>
         </div>
       </header>
+
+      <AgentConsole open={consoleOpen} onClose={() => setConsoleOpen(false)} />
 
       {/* Side by side while a call is live: the trace and the pipeline board are for
           reading WHILE talking, and stacked below the transcript they were always the

@@ -7,3 +7,6 @@ data/raw/
 
 notebooks/*.html
 data/knowledge/
+
+# Snapshots of remote agent config taken before a sync overwrites it.
+.backups/

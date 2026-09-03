@@ -33,12 +33,21 @@ const CASES = [
   { say: 'אוקיי, מגניב. אממ, טוב, תודה רבה לך.', end: false, note: 'thanks, with filler' },
   { say: 'שדה תעופה.', end: false, note: 'two words, mid-conversation' },
   { say: 'אוקיי.', end: false, note: 'an acknowledgement' },
+  {
+    // The one the first version of this probe missed: "תודה רבה" on its own passed, and the
+    // same words after a frustrated remark ended the call. Two reasons to stay, read as one
+    // to leave.
+    before: 'יאו, אתה דפוק לגמרי.',
+    say: 'תודה רבה.',
+    end: false,
+    note: 'thanks, right after being told the agent is useless',
+  },
   { say: 'ביי, להתראות.', end: true, note: 'an actual goodbye' },
   { say: 'סיימתי, תודה. אפשר לנתק.', end: true, note: 'explicitly asking to end' },
 ]
 
 /** One exchange on a fresh session, reporting only whether end_call was reached for. */
-async function runOne({ say }) {
+async function runOne({ say, before }) {
   const built = await (await fetch(`${API}/api/realtime/session?lang=he`)).json()
   if (!built.baseInstructions) throw new Error('the server did not return a session')
 
@@ -111,7 +120,21 @@ async function runOne({ say }) {
 
       if (msg.type === 'response.done') {
         if (stage === 'first') {
-          // The first answer is out. Now say the thing under test.
+          // The first answer is out. Some cases need a turn of context before the line under
+          // test — an insult, say — because the rule reads them together.
+          stage = before ? 'context' : 'second'
+          send({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'user',
+              content: [{ type: 'input_text', text: before ?? say }],
+            },
+          })
+          send({ type: 'response.create' })
+          return
+        }
+        if (stage === 'context') {
           stage = 'second'
           send({
             type: 'conversation.item.create',
@@ -141,29 +164,51 @@ async function runOne({ say }) {
   return { endCalled, reply }
 }
 
-console.log(`\n  Probing ${MODEL} with the session the server actually mints.\n`)
+/**
+ * Each case several times, because one run is not an answer.
+ *
+ * The first version ran everything once and printed PASS or FAIL. Then a case that had
+ * passed failed on the next run with nothing changed — which is what a sampled model does,
+ * and which means the single pass had never proved anything. It was an instrument reporting
+ * a probability as though it were a property.
+ *
+ * Three tells "reliably" from "sometimes" and is cheap enough to run after a prompt change.
+ * It is not enough to call 3/3 a guarantee, and the summary says so rather than implying it.
+ */
+const RUNS = Number(process.env.PROBE_RUNS) || 3
 
-let failures = 0
+console.log(`\n  Probing ${MODEL} with the session the server mints — ${RUNS} runs each.\n`)
+
+let wrong = 0
 for (const testCase of CASES) {
-  try {
-    const { endCalled, reply } = await runOne(testCase)
-    const ok = endCalled === testCase.end
-    if (!ok) failures += 1
-    console.log(
-      `  ${ok ? 'PASS' : 'FAIL'}  "${testCase.say}"\n` +
-        `        ${testCase.note} — expected ${testCase.end ? 'end_call' : 'no end_call'}, ` +
-        `got ${endCalled ? 'end_call' : 'none'}` +
-        (reply ? `\n        said: ${reply.slice(0, 110)}` : ''),
-    )
-  } catch (err) {
-    failures += 1
-    console.log(`  ERROR "${testCase.say}" — ${err.message}`)
+  const outcomes = []
+  for (let i = 0; i < RUNS; i += 1) {
+    try {
+      const { endCalled, reply } = await runOne(testCase)
+      outcomes.push({ ok: endCalled === testCase.end, reply })
+    } catch (err) {
+      outcomes.push({ ok: false, error: err.message })
+    }
   }
+
+  const good = outcomes.filter((o) => o.ok).length
+  if (good < RUNS) wrong += 1
+  // FLAKY is the interesting verdict: the rule is present and losing, not absent.
+  const mark = good === RUNS ? 'PASS' : good === 0 ? 'FAIL' : 'FLAKY'
+  const sample = outcomes.find((o) => o.reply)?.reply
+  const failed = outcomes.find((o) => o.error)
+
+  console.log(
+    `  ${mark.padEnd(5)} ${good}/${RUNS}  "${testCase.say}"\n` +
+      `        ${testCase.note} — expected ${testCase.end ? 'end_call' : 'no end_call'}` +
+      (sample ? `\n        said: ${sample.slice(0, 100)}` : '') +
+      (failed ? `\n        error: ${failed.error}` : ''),
+  )
 }
 
 console.log(
-  failures === 0
-    ? '\n  All six behaved. The rule is in hand before the decision it governs.\n'
-    : `\n  ${failures} of ${CASES.length} did not.\n`,
+  wrong === 0
+    ? `\n  Every case held across all ${RUNS} runs. Not a guarantee — a sampled model can still\n  surprise you — but the rule is reaching it before the decision it governs.\n`
+    : `\n  ${wrong} of ${CASES.length} did not hold across ${RUNS} runs.\n`,
 )
-process.exit(failures === 0 ? 0 : 1)
+process.exit(wrong === 0 ? 0 : 1)

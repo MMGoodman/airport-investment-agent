@@ -188,17 +188,30 @@ export default function AgentWorkspace({
 
       <div className="ws-center">
         {activePane && (
-          <aside className="ws-side-pane" aria-label={current?.label}>
+          <section className="ws-pane" aria-label={current?.label}>
             <div className="ws-pane-top">
               <h3>{current?.label}</h3>
-              <button type="button" className="ac-close" onClick={() => onPane(null)}>
-                סגור
+              {/* Back to the conversation, not "close". While you are editing instructions or
+                  reading the dashboard there is no reason to be looking at a composer you are
+                  not using — the pane takes the room instead of floating over it, so the way
+                  out has to name where it goes. */}
+              <button type="button" className="ws-to-call" onClick={() => onPane(null)}>
+                {railLive ? 'חזרה לשיחה החיה' : 'חזרה לשיחה'}
               </button>
             </div>
             <div className="ws-pane-body">{pane}</div>
-          </aside>
+          </section>
         )}
-        {center}
+        {/*
+          Hidden, never unmounted.
+          LivePanel holds the session — the peer connection, the microphone, the tool
+          handlers. Rendering the pane INSTEAD of it would tear all of that down and hang up
+          the call the moment somebody opened the settings, which is exactly when they are
+          least expecting to be disconnected. So it stays mounted and goes invisible.
+        */}
+        <div className="ws-center-body" hidden={Boolean(activePane)}>
+          {center}
+        </div>
       </div>
 
       {rail && (

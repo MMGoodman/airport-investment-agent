@@ -292,7 +292,19 @@ export function mountSessionRoutes(app, { onSaved } = {}) {
     res.json({ conversations: await listConversations({ limit: Number(req.query.limit) || 50 }) }),
   )
 
-  app.get('/api/sessions/:id', async (req, res) => res.json({ turns: await turnsOf(req.params.id) }))
+  /**
+   * One conversation, whole: its turns, the calls behind each, and the tags on them.
+   *
+   * Separate from the list because it is a different question — the list answers "what has
+   * happened", this answers "what happened in THAT one", and a reader arrives here having
+   * already picked a row.
+   */
+  app.get('/api/sessions/:id', async (req, res) => {
+    const store = await load()
+    const record = store.get(req.params.id)
+    if (!record) return res.status(404).json({ error: `no conversation ${req.params.id}` })
+    res.json({ conversation: { ...record, turnCount: record.turns.length } })
+  })
 
   app.get('/api/dashboard', async (_req, res) => {
     try {

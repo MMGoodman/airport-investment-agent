@@ -163,20 +163,45 @@
   display: none;
 }
 
-/* The settings pane opens over the middle when a rail item is chosen, so the sidebar can
-   stay narrow and the content still gets room. */
-.ws-side-pane {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: var(--ws-side, 260px);
-  inline-size: min(560px, 60vw);
-  z-index: 20;
-  background: var(--bg-panel);
-  border-inline-end: 1px solid var(--rule-strong);
-  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+/**
+ * The pane takes the middle column rather than floating over it.
+ *
+ * It used to be a drawer: absolutely positioned, shadowed, sitting on top of the
+ * conversation. Which meant that while you were editing instructions or reading the
+ * dashboard, a composer you were not using stayed visible behind it, and the way out was a
+ * button marked "close" that did not say what closing would reveal.
+ *
+ * The conversation is hidden rather than unmounted — LivePanel holds the session, and
+ * replacing it would hang up a live call the moment anyone opened the settings.
+ */
+.ws-pane {
+  grid-area: 1 / 1;
+  min-inline-size: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--bg-page);
+}
+
+.ws-center-body {
+  grid-area: 1 / 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/**
+ * An explicit display beats [hidden], every time.
+ *
+ * The attribute's own rule is `display: none` at user-agent weight, which any author rule
+ * with a display property overrides — so the conversation stayed on screen underneath the
+ * dashboard, welcome text and suggestion chips showing through the tables. Hiding it is the
+ * entire reason this element exists, so the rule that does it has to outrank the one that
+ * lays it out.
+ */
+.ws-center-body[hidden] {
+  display: none;
 }
 
 .ws-pane-top {
@@ -184,7 +209,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-4);
+  padding: var(--space-4) var(--gutter);
   border-block-end: 1px solid var(--rule);
 }
 
@@ -193,6 +218,25 @@
   font-weight: 600;
   color: var(--text-strong);
   margin: 0;
+}
+
+/* Named for where it goes. "Close" describes the pane; this describes the destination, and
+   the destination is the only reason anyone presses it. */
+.ws-to-call {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  min-block-size: 34px;
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--live) 35%, transparent);
+  background: var(--live-soft);
+  color: var(--live);
+  cursor: pointer;
+}
+
+.ws-to-call:hover {
+  background: color-mix(in srgb, var(--live) 16%, transparent);
 }
 
 .ws-pane-body {
@@ -205,8 +249,11 @@
 .ws-center {
   grid-column: 2;
   min-inline-size: 0;
-  display: flex;
-  flex-direction: column;
+  /* One cell, two children: the pane and the conversation occupy the same space, and which
+     one is visible is decided by `hidden` rather than by which is mounted. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
   position: relative;
 }
@@ -305,9 +352,8 @@
     padding-inline: 0;
   }
 
-  .ws-side-pane {
-    inline-size: min(420px, calc(100vw - 56px));
-  }
+  /* The pane already fills the column at every width — it is not a drawer any more, so it
+     has nothing left to size against the viewport. */
 }
 
 /* The model pane: the switcher, then whatever board the transport offers. */

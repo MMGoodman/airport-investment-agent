@@ -307,3 +307,111 @@
     white-space: normal;
   }
 }
+
+/* ---- reading one conversation ------------------------------------------- */
+
+.db-call {
+  inline-size: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  color: inherit;
+  cursor: pointer;
+}
+
+.db-call:hover {
+  background: var(--bg-sunk);
+}
+
+.db-calls li {
+  padding: 0;
+}
+
+.db-turn {
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+.db-turn-ask {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.db-turn-reply {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  line-height: 1.7;
+  margin: 0 0 var(--space-3);
+}
+
+.db-turn-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* "No tool ran" is the evidence behind half the tags, so it is stated rather than left as a
+   blank space that could equally mean nothing was recorded. */
+.db-turn-tools.none {
+  color: var(--signal);
+}
+
+.db-turn-tools em {
+  font-style: normal;
+  color: var(--live);
+}
+
+.db-turn-ms {
+  margin-inline-start: auto;
+}
+
+.db-turn-tags {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-block-start: 1px solid var(--rule);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.db-turn-tags li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.db-turn-tags li.llm .db-kind {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 35%, transparent);
+}
+
+.db-turn-why {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+}
+
+.db-turn-quote {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  font-style: italic;
+  color: var(--text);
+  padding-inline-start: var(--space-3);
+}

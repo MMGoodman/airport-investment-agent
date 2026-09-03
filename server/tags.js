@@ -27,6 +27,7 @@
  * had, written down so the next occurrence is found by the system rather than by luck.
  */
 import { describeUpstreamError } from '../src/upstreamError.js'
+import { toolSchemas } from '../src/agent/tools.js'
 
 /**
  * The predicates a rule tag may use.
@@ -392,6 +393,14 @@ export function mountTagRoutes(app) {
     res.json({
       tags: listTags(),
       predicates: predicateNames(),
+      /**
+       * The tool names, so a rule can pick one instead of spelling it.
+       *
+       * usedTool takes an exact name and a typo produces a tag that matches nothing, quietly
+       * — the worst failure this feature can have, because a tag reporting zero looks
+       * identical to a problem that is not happening.
+       */
+      tools: toolSchemas.map((t) => t.name),
       note: 'A rule tag is a predicate over the turn record: free, instant, and not arguable. An LLM tag is for what only a reader can answer, and its verdict carries a reason.',
     }),
   )

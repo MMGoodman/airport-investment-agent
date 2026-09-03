@@ -35,7 +35,7 @@ const PREDICATE_HELP = {
   noFigures: 'אין בתשובה שום כמות — לא בספרות ולא במילים',
 }
 
-function RuleEditor({ draft, setDraft, predicates }) {
+function RuleEditor({ draft, setDraft, predicates, tools }) {
   const clauses = draft.rule?.all ?? []
 
   return (
@@ -58,17 +58,38 @@ function RuleEditor({ draft, setDraft, predicates }) {
             ))}
           </select>
 
-          {TAKES_ARG.has(name) && (
-            <input
-              type="text"
+          {/* A tool name is picked, never typed: usedTool matches exactly, and a typo makes
+              a tag that reports zero — which looks identical to a problem that is not
+              happening. The other arguments are genuinely free text. */}
+          {name === 'usedTool' ? (
+            <select
               value={arg ?? ''}
-              placeholder={name === 'slowerThan' ? '5000' : name === 'usedTool' ? 'end_call' : 'ביטוי'}
               onChange={(e) => {
                 const next = [...clauses]
                 next[i] = [name, e.target.value, negate]
                 setDraft({ ...draft, rule: { all: next } })
               }}
-            />
+            >
+              <option value="">בחר כלי…</option>
+              {tools.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          ) : (
+            TAKES_ARG.has(name) && (
+              <input
+                type="text"
+                value={arg ?? ''}
+                placeholder={name === 'slowerThan' ? '5000' : 'ביטוי'}
+                onChange={(e) => {
+                  const next = [...clauses]
+                  next[i] = [name, e.target.value, negate]
+                  setDraft({ ...draft, rule: { all: next } })
+                }}
+              />
+            )
           )}
 
           <label className="tg-negate">
@@ -115,6 +136,8 @@ function RuleEditor({ draft, setDraft, predicates }) {
 export default function TagsPane({ messages = [] }) {
   const [tags, setTags] = useState([])
   const [predicates, setPredicates] = useState([])
+  /** Tool names, so a usedTool clause is chosen from what exists. */
+  const [tools, setTools] = useState([])
   const [draft, setDraft] = useState(null)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
@@ -127,6 +150,7 @@ export default function TagsPane({ messages = [] }) {
       .then((d) => {
         setTags(d.tags ?? [])
         setPredicates(d.predicates ?? [])
+        setTools(d.tools ?? [])
       })
       .catch((err) => setError(err.message))
   }, [])
@@ -286,7 +310,7 @@ export default function TagsPane({ messages = [] }) {
             />
 
             {draft.kind === 'rule' ? (
-              <RuleEditor draft={draft} setDraft={setDraft} predicates={predicates} />
+              <RuleEditor draft={draft} setDraft={setDraft} predicates={predicates} tools={tools} />
             ) : (
               <textarea
                 rows={4}

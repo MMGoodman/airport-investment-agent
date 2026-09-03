@@ -289,9 +289,24 @@ const buildConfig = (webhookTools) => {
   },
   // The same vocabulary bias the OpenAI path gets as a transcription prompt. Without it a
   // transcriber has no reason to expect three-letter airport codes and guesses at them.
-  // Their four transcribers, all in-house: scribe_realtime, scribe_v2_turbo, scribe_v2,
-  // elevenlabs. All four take Hebrew. An external one — Soniox, say — is not an option
-  // here; the list is closed, which is the cost of a managed platform.
+  /**
+   * Which transcriber, and why it is the knob that matters most on this path.
+   *
+   * Three in-house options remain — scribe_realtime, scribe_v2_turbo, scribe_v2. A fourth,
+   * 'elevenlabs', is gone: the API answers "Original ASR has been removed". An external one
+   * is not an option at all; the list is closed, which is the cost of a managed platform.
+   *
+   * On a cascade the transcript IS the model's input, so a bad one is a bad question. A live
+   * Hebrew session produced "אממ, דף קמארה מתי, אממ, מסיגריה?" from a caller who had said
+   * nothing of the sort, and the agent answered the nonsense it was handed. The native
+   * speech-to-speech path does not have this failure — asked the same kind of question it
+   * transcribed "בניג" and still called rank_airports with state: ME, because it hears the
+   * audio and the transcript is only something to display.
+   *
+   * scribe_realtime is the fastest and the least accurate. Worth A/B-ing against
+   * scribe_v2_turbo on a real voice before deciding; accuracy and latency trade here and no
+   * default is right for every caller.
+   */
   asr: {
     provider: process.env.ELEVENLABS_ASR_PROVIDER || 'scribe_realtime',
     keywords: ASR_KEYWORDS,

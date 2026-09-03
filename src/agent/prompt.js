@@ -128,7 +128,27 @@ Resolve pronouns and references against the conversation. "Why is the second one
 third?" refers to the previous ranking; call the tools again for the specific airports rather
 than reasoning from memory of the earlier answer.
 
-Keep responses tight. Two or three short paragraphs, or a compact list. No preamble.`
+No preamble.`
+
+/**
+ * How long an answer should be — asked separately, because the two paths disagree.
+ *
+ * This sentence used to end SYSTEM_PROMPT, which meant every voice session was handed "two
+ * or three short paragraphs" and then, a few hundred characters later, the voice addendum's
+ * "two or three sentences". A contradiction is not a stricter rule; it is permission to pick
+ * the easier one, and a weak model picks the longer.
+ *
+ * It showed on the clock. On a cascade nothing is spoken until generation finishes, so a
+ * three-airport answer that ran to a paragraph about which years the data covers cost 15.7
+ * seconds to generate and 15.1 more to synthesise — half a minute before the caller heard a
+ * word, for an answer the addendum had already asked to be three sentences.
+ *
+ * Reading takes a fraction of the time hearing does, so on the text path the paragraphs are
+ * right. They travel with the path that wants them instead of with the prompt they share.
+ */
+export const TEXT_LENGTH = `
+
+Keep responses tight. Two or three short paragraphs, or a compact list.`
 
 /**
  * Appended to SYSTEM_PROMPT on the live voice paths only.

@@ -7,7 +7,7 @@
  * is what makes "the model never computes a number" verifiable rather than a claim.
  */
 import { runTool, toolSchemas } from './tools.js'
-import { SYSTEM_PROMPT, languageInstruction } from './prompt.js'
+import { SYSTEM_PROMPT, TEXT_LENGTH, languageInstruction } from './prompt.js'
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
@@ -77,7 +77,7 @@ export async function runAgent(messages, { apiKey, lang = 'en' } = {}) {
     parts: [{ text: m.content }],
   }))
 
-  const instructions = SYSTEM_PROMPT + languageInstruction(lang)
+  const instructions = SYSTEM_PROMPT + TEXT_LENGTH + languageInstruction(lang)
   const trace = []
 
   for (let turn = 1; turn <= MAX_TURNS; turn++) {

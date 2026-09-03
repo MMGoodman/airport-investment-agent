@@ -15,6 +15,7 @@
 import WebSocket from 'ws'
 import { runTool, toolSchemas } from '../src/agent/tools.js'
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
+import { eagerSkills } from '../src/agent/skills.js'
 
 const API = process.env.EVAL_API ?? 'http://localhost:3001'
 
@@ -75,7 +76,26 @@ export async function openai(turns, lang = 'en') {
     session: {
       type: 'realtime',
       output_modalities: ['text'],
-      instructions: SYSTEM_PROMPT + VOICE_ADDENDUM + languageInstruction(lang, true),
+      /**
+       * The same assembly the live path sends, eager skills included.
+       *
+       * This was base + voice addendum alone, which stopped being what a browser is handed
+       * the moment call-control became eager. An eval that builds its own prompt tests a
+       * prompt nobody runs — and it would have reported the hangup fix as working or failing
+       * for the wrong reason either way.
+       *
+       * The lazily loaded skills still are not here, correctly: they arrive on a tool call in
+       * the live session, and this adapter is not the thing that models that.
+       */
+      instructions:
+        SYSTEM_PROMPT +
+        VOICE_ADDENDUM +
+        languageInstruction(lang, true) +
+        eagerSkills()
+          .map((skill) => `
+
+${skill.instructions}`)
+          .join(''),
       tools: toolSchemas.map((t) => ({
         type: 'function',
         name: t.name,

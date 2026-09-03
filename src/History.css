@@ -1,0 +1,230 @@
+/**
+ * The conversation history.
+ *
+ * A list you scan and one you read. The scanning view earns its density — a call is
+ * identified by its path, its size and when it happened, and nothing else belongs in a row
+ * you are passing over. The reading view is the opposite: it is the only place a tag can be
+ * checked, so the evidence gets room.
+ */
+
+.hs {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+
+.hs-filter {
+  margin-inline-start: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--live);
+  font-weight: 400;
+}
+
+.hs-refresh {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.hs-refresh:hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+/* ---- the list ----------------------------------------------------------- */
+
+.hs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.hs-list button {
+  inline-size: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: var(--bg-panel);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.hs-list button:hover {
+  background: var(--bg-sunk);
+}
+
+.hs-path {
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hs-meta,
+.hs-when {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* The rows worth opening are the ones with findings on them; a row that says nothing looks
+   like every other row and gets scrolled past, which is correct. */
+.hs-tags {
+  color: var(--signal);
+}
+
+.hs-tools {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.hs-tools.narrowed {
+  color: var(--signal);
+}
+
+/* ---- reading one -------------------------------------------------------- */
+
+.hs-turn {
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+.hs-ask {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.hs-reply {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  line-height: 1.7;
+  margin: 0 0 var(--space-3);
+  max-inline-size: 62rem;
+}
+
+.hs-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* "No tool ran" is the evidence behind half the tags, so it is stated rather than left as a
+   blank that could equally mean nothing was recorded. */
+.hs-tool.none {
+  color: var(--signal);
+}
+
+.hs-tool em {
+  font-style: normal;
+  color: var(--live);
+}
+
+.hs-ms {
+  margin-inline-start: auto;
+}
+
+.hs-turn-tags {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-block-start: 1px solid var(--rule);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.hs-turn-tags li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.hs-kind {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  padding: 1px var(--space-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+}
+
+.hs-turn-tags li.llm .hs-kind {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 35%, transparent);
+}
+
+.hs-why {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+}
+
+.hs-quote {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  font-style: italic;
+  color: var(--text);
+  padding-inline-start: var(--space-3);
+}
+
+@media (max-width: 720px) {
+  .hs-list button {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .hs-path {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+}
+
+.hs-clear {
+  margin-inline-start: var(--space-2);
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 1px var(--space-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.hs-clear:hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}

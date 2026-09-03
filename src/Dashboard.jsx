@@ -37,6 +37,67 @@ function verdictFor(row) {
     : { tone: 'fault', text: 'תקלה — הכלי היה זמין ולא רץ' }
 }
 
+/**
+ * What the agent actually does with a turn, as a shape rather than a list.
+ *
+ * The question "how is my agent behaving" is not answered by any single number here. It is
+ * answered by proportions: of everything it was asked, how much did it look something up,
+ * how much of that ran where the browser could not reach, and how much came back with a
+ * finding on it.
+ *
+ * A funnel rather than a pie, because these are nested — every server call is a tool call,
+ * and a tagged turn may or may not have used a tool. Widths are shares of all turns, so two
+ * bars can be compared by eye without reading either number.
+ *
+ * The last bar is the only one where bigger is worse, and it is the only one in amber.
+ */
+function Behaviour({ data }) {
+  const turns = data.totals.turns
+  if (turns === 0) return null
+
+  const withTools = data.toolUsage.reduce(
+    (n, path) => n + Object.values(path.tools).reduce((m, t) => m + t.calls, 0),
+    0,
+  )
+  const onServer = data.toolUsage.reduce(
+    (n, path) => n + Object.values(path.tools).reduce((m, t) => m + t.onServer, 0),
+    0,
+  )
+  const tagged = data.totals.tagHits
+
+  const bars = [
+    { label: 'תורות', value: turns, tone: 'base', note: 'כל מה שנשאל' },
+    { label: 'קריאות כלים', value: withTools, tone: 'tools', note: 'חיפש במקום לענות מהזיכרון' },
+    { label: 'רצו בשרת', value: onServer, tone: 'server', note: 'הדפדפן לא יכול היה להריץ' },
+    { label: 'תגיות שנדלקו', value: tagged, tone: 'flag', note: 'ממצא על תור' },
+  ]
+  const widest = Math.max(...bars.map((b) => b.value), 1)
+
+  return (
+    <section className="db-section">
+      <h4>איך הסוכן מתנהג</h4>
+      <p className="ac-hint">
+        פרופורציות על פני כל השיחות. השורה האחרונה היא היחידה שגבוה בה גרוע.
+      </p>
+      <ul className="db-bars">
+        {bars.map((bar) => (
+          <li key={bar.label} className={bar.tone}>
+            <span className="db-bar-label">{bar.label}</span>
+            <span className="db-bar-track">
+              <span className="db-bar-fill" style={{ inlineSize: `${(bar.value / widest) * 100}%` }} />
+            </span>
+            <span className="db-bar-value mono">{nf.format(bar.value)}</span>
+            <span className="db-bar-share mono">
+              {bar.value === turns ? '' : `${Math.round((bar.value / turns) * 100)}%`}
+            </span>
+            <span className="db-bar-note">{bar.note}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 function Stat({ label, value, hint }) {
   return (
     <div className="db-stat">
@@ -47,106 +108,18 @@ function Stat({ label, value, hint }) {
   )
 }
 
-/**
- * One stored conversation, read back.
- *
- * Where a count stops being a count. "Claim with no source: 2" means nothing until you can
- * see the sentence it fired on and the tool result it was measured against — and the reason
- * the grader gave, which is the only thing that makes an LLM verdict checkable rather than
- * trusted.
- *
- * Every turn shows what ran, so a tag about something NOT running can be verified against an
- * empty list rather than taken on faith.
- */
-function Transcript({ state, onBack }) {
-  const { conversation, error } = state
-
-  return (
-    <div className="db">
-      <div className="db-head">
-        <button type="button" className="db-refresh" onClick={onBack}>
-          ← חזרה לדשבורד
-        </button>
-        {conversation && (
-          <div className="db-stats">
-            <Stat label="תורות" value={nf.format(conversation.turns.length)} />
-            <Stat
-              label="נתיב"
-              value={conversation.providerLabel}
-              hint={
-                conversation.toolsOffered != null
-                  ? `${conversation.toolsOffered}/${conversation.toolsTotal} כלים`
-                  : null
-              }
-            />
-          </div>
-        )}
-      </div>
-
-      {error && <p className="ac-warn-note">{error}</p>}
-      {!conversation && !error && <p className="ac-hint">טוען…</p>}
-
-      {conversation?.turns.map((turn) => (
-        <article className="db-turn" key={turn.idx}>
-          <p className="db-turn-ask">{turn.ask}</p>
-          <p className="db-turn-reply">{turn.reply}</p>
-
-          <div className="db-turn-foot">
-            {/* An empty list is evidence, not an absence of it: it is what makes a tag about
-                something not running checkable. */}
-            {turn.toolCalls.length === 0 ? (
-              <span className="db-turn-tools none">אף כלי לא רץ</span>
-            ) : (
-              turn.toolCalls.map((call, at) => (
-                <span className="db-turn-tools mono" key={at}>
-                  {call.tool}
-                  {call.ranOn === 'server' && <em> · בשרת</em>}
-                </span>
-              ))
-            )}
-            {Number.isFinite(turn.ms) && <span className="db-turn-ms mono">{nf.format(turn.ms)} ms</span>}
-          </div>
-
-          {(turn.tags ?? []).length > 0 && (
-            <ul className="db-turn-tags">
-              {turn.tags.map((tag, at) => (
-                <li key={at} className={tag.kind}>
-                  <span className="db-kind mono">{tag.kind}</span>
-                  <b>{tag.name}</b>
-                  {tag.why && <span className="db-turn-why">{tag.why}</span>}
-                  {/* The words the verdict is about. A grader that cannot quote them was
-                      measurably wrong here before, so the quote is what makes it checkable. */}
-                  {tag.quote && <q className="db-turn-quote">{tag.quote}</q>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
-      ))}
-
-      {conversation?.turns.length === 0 && <p className="ac-hint">אין תורות בשיחה הזו.</p>}
-    </div>
-  )
-}
-
-export default function Dashboard() {
+export default function Dashboard({ onOpenPath }) {
   const [data, setData] = useState(null)
-  const [conversations, setConversations] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-  /** The conversation being read, if any. Null means the aggregate view. */
-  const [open, setOpen] = useState(null)
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.all([
-      fetch('/api/dashboard').then((r) => r.json()),
-      fetch('/api/sessions?limit=20').then((r) => r.json()),
-    ])
-      .then(([dash, sessions]) => {
+    fetch('/api/dashboard')
+      .then((r) => r.json())
+      .then((dash) => {
         if (dash.error) throw new Error(dash.error)
         setData(dash)
-        setConversations(sessions.conversations ?? [])
         setError(null)
       })
       .catch((err) => setError(err.message))
@@ -155,23 +128,8 @@ export default function Dashboard() {
 
   useEffect(load, [load])
 
-  const openConversation = useCallback((id) => {
-    setOpen({ id, loading: true })
-    fetch(`/api/sessions/${encodeURIComponent(id)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) throw new Error(d.error)
-        setOpen({ id, conversation: d.conversation })
-      })
-      .catch((err) => setOpen({ id, error: err.message }))
-  }, [])
-
   if (loading && !data) return <p className="ac-hint">טוען…</p>
   if (error) return <p className="ac-warn-note">{error}</p>
-
-  if (open) {
-    return <Transcript state={open} onBack={() => setOpen(null)} />
-  }
 
   const empty = (data?.totals?.conversations ?? 0) === 0
 
@@ -201,6 +159,8 @@ export default function Dashboard() {
 
       {!empty && (
         <>
+          <Behaviour data={data} />
+
           <section className="db-section">
             <h4>לפי נתיב</h4>
             <div className="db-table" role="table">
@@ -212,7 +172,15 @@ export default function Dashboard() {
                 <span>כלים</span>
               </div>
               {data.byProvider.map((row) => (
-                <div className="db-row" role="row" key={row.provider}>
+                /* Every row is a claim about a set of conversations, and the only way to
+                   check a claim is to read one — so a row is a way in, not a dead end. */
+                <button
+                  type="button"
+                  className="db-row db-row-go"
+                  key={row.provider}
+                  onClick={() => onOpenPath?.({ provider: row.provider })}
+                  title={`הצג את השיחות של ${row.providerLabel}`}
+                >
                   <span className="db-path mono">{row.providerLabel}</span>
                   <span className="mono">{nf.format(row.conversations)}</span>
                   <span className="mono">{nf.format(row.turns)}</span>
@@ -226,7 +194,7 @@ export default function Dashboard() {
                   >
                     {row.toolsOffered ?? '?'}/{row.toolsTotal ?? '?'}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           </section>
@@ -241,7 +209,12 @@ export default function Dashboard() {
                 const verdict = verdictFor(row)
                 return (
                   <li key={`${row.tagId}:${row.provider}`} className={verdict?.tone ?? ''}>
-                    <div className="db-tag-head">
+                    <button
+                      type="button"
+                      className="db-tag-head db-row-go"
+                      onClick={() => onOpenPath?.({ provider: row.provider })}
+                      title="הצג את השיחות של הנתיב הזה"
+                    >
                       <span className="db-hits mono">{nf.format(row.hits)}</span>
                       <b>{row.name}</b>
                       <span className="db-kind mono">{row.kind}</span>
@@ -253,7 +226,7 @@ export default function Dashboard() {
                       >
                         {row.toolsOffered ?? '?'}/{row.toolsTotal ?? '?'}
                       </span>
-                    </div>
+                    </button>
                     {verdict && <p className={`db-verdict ${verdict.tone}`}>{verdict.text}</p>}
                     <p className="db-tag-meta">
                       ב-{nf.format(row.conversations)} {row.conversations === 1 ? 'שיחה' : 'שיחות'}
@@ -305,28 +278,6 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <section className="db-section">
-            <h4>שיחות אחרונות</h4>
-            {/* The aggregate is the point of the screen and the transcript is where a number
-                stops being a number: a count of "claim with no source" means nothing until
-                you read the sentence it fired on. */}
-            <p className="ac-hint">לחץ על שיחה כדי לקרוא אותה.</p>
-            <ul className="db-calls">
-              {conversations.map((c) => (
-                <li key={c.id}>
-                  <button type="button" className="db-call" onClick={() => openConversation(c.id)}>
-                    <span className="db-path mono">{c.providerLabel}</span>
-                    <span className="db-call-meta mono">
-                      {c.turnCount} תורות · {c.tagHits} תגיות
-                    </span>
-                    <span className="db-call-when">
-                      {c.endedAt ? new Date(c.endedAt).toLocaleString('he-IL') : ''}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
         </>
       )}
     </div>

@@ -415,3 +415,112 @@
   color: var(--text);
   padding-inline-start: var(--space-3);
 }
+
+/* A row is a way in, not a dead end: every count here is a claim about a set of
+   conversations, and the only way to check a claim is to read one of them. */
+.db-row-go {
+  border: 0;
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  color: inherit;
+  cursor: pointer;
+  inline-size: 100%;
+}
+
+.db-row-go:hover {
+  background: var(--bg-sunk);
+}
+
+.db-tag-head.db-row-go {
+  background: none;
+  padding: 0;
+}
+
+.db-tag-head.db-row-go:hover .db-tag-path {
+  color: var(--live);
+}
+
+/* ---- how the agent behaves ---------------------------------------------- */
+
+.db-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.db-bars li {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) 3rem 2.5rem;
+  gap: var(--space-3);
+  align-items: center;
+  font-size: var(--fs-sm);
+}
+
+.db-bar-label {
+  color: var(--text-strong);
+}
+
+.db-bar-track {
+  block-size: 10px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.db-bar-fill {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--r-pill);
+  background: var(--text-dim);
+  transition: inline-size 200ms ease;
+}
+
+/* Only one bar means something is wrong, and it is the only one that is amber. The others
+   are shades of the same neutral so the eye compares lengths and not colours. */
+.db-bars li.tools .db-bar-fill,
+.db-bars li.server .db-bar-fill {
+  background: var(--live);
+}
+
+.db-bars li.server .db-bar-fill {
+  opacity: 0.6;
+}
+
+.db-bars li.flag .db-bar-fill {
+  background: var(--signal);
+}
+
+.db-bar-value {
+  text-align: end;
+  color: var(--text-strong);
+}
+
+.db-bar-share {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  text-align: end;
+}
+
+.db-bar-note {
+  grid-column: 2 / -1;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin-block-start: -2px;
+}
+
+@media (max-width: 720px) {
+  .db-bars li {
+    grid-template-columns: minmax(0, 1fr) 3rem 2.5rem;
+  }
+
+  .db-bar-label {
+    grid-column: 1 / -1;
+  }
+
+  .db-bar-note {
+    grid-column: 1 / -1;
+  }
+}

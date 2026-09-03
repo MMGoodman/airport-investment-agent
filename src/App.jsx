@@ -6,6 +6,7 @@ import AgentWorkspace from './AgentWorkspace.jsx'
 import ScenarioCapture from './ScenarioCapture.jsx'
 import TagsPane from './TagsPane.jsx'
 import Dashboard from './Dashboard.jsx'
+import History from './History.jsx'
 import { turnsFrom } from './turns.js'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
@@ -88,6 +89,8 @@ function App() {
    */
   /** The turn being turned into an eval case, or null. */
   const [capturing, setCapturing] = useState(null)
+  /** Set when a dashboard row is clicked, consumed by the history pane it navigates to. */
+  const [historyFocus, setHistoryFocus] = useState(null)
   const [wsPane, setWsPane] = useState(null)
   const [settingsSlot, setSettingsSlot] = useState(null)
   const [traceSlot, setTraceSlot] = useState(null)
@@ -481,6 +484,7 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
               { id: 'evals', label: 'Evals', icon: 'evals' },
               { id: 'tags', label: 'Tags', icon: 'evals' },
               { id: 'dashboard', label: 'Dashboard', icon: 'evals' },
+              { id: 'history', label: 'History', icon: 'evals' },
             ],
           },
         ]}
@@ -511,9 +515,17 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
               )}
             </div>
           ) : wsPane === 'dashboard' ? (
-            /* Across every stored conversation rather than this one — the only pane here
-               that is about the corpus instead of the agent's configuration. */
-            <Dashboard />
+            /* Across every stored conversation rather than this one — the only panes here
+               that are about the corpus instead of the agent's configuration. A row is a
+               claim about a set of calls, so clicking one lands in History with that set. */
+            <Dashboard
+              onOpenPath={(focus) => {
+                setHistoryFocus(focus)
+                setWsPane('history')
+              }}
+            />
+          ) : wsPane === 'history' ? (
+            <History focus={historyFocus} onFocusUsed={() => setHistoryFocus(null)} />
           ) : wsPane === 'tags' ? (
             /* The one pane that reads the conversation rather than the agent's
                configuration: tagging is a question asked of what was just said. */

@@ -182,7 +182,18 @@
   background: none;
   color: var(--text-dim);
   cursor: pointer;
-  opacity: 0;
+  /**
+   * Quiet, not invisible.
+   *
+   * This was opacity 0 until the message was hovered, which is right for reading a
+   * transcript and wrong for the case it exists to serve: during a voice call you are
+   * talking, not hovering, and the button that turns what just happened into a test case
+   * was not there to be found. A caller asked for the feature that had been built.
+   *
+   * Faint enough not to compete with the answers, present enough to be discovered — and on
+   * a touch screen, where there is no hover at all, the difference is the whole feature.
+   */
+  opacity: 0.4;
   transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 

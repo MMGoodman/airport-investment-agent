@@ -6,6 +6,7 @@ import { runTool, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 import { mountWebhookToolRoute } from './webhookTools.js'
+import { mountTagRoutes } from './tags.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile, mostRecentSession } from './toolLog.js'
 import { attachRelay } from './relay.js'
@@ -122,6 +123,7 @@ app.get('/api/rankings', async (req, res) => {
  * to narrate it.
  */
 mountWebhookToolRoute(app)
+mountTagRoutes(app)
 
 app.post('/api/tool', async (req, res) => {
   const { name, args } = req.body ?? {}

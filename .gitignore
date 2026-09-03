@@ -13,3 +13,6 @@ data/knowledge/
 
 # Snapshots of remote agent config taken before a sync overwrites it.
 .backups/
+
+# Working files for probes and one-off checks.
+.scratch/

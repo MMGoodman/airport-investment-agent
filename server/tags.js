@@ -125,6 +125,31 @@ export const DEFAULT_TAGS = [
     rule: { all: [['ranOnServer']] },
   },
   {
+    id: 'asked-and-not-answered',
+    name: 'ביקש מזג אוויר ולא קיבל',
+    kind: 'rule',
+    summary: 'השאלה הייתה על מזג אוויר והכלי לא רץ — תקין בנתיב שמונע אותו, תקלה בנתיב שלא',
+    /**
+     * The tag whose meaning depends on where it fired.
+     *
+     * On gpt-realtime · voice the weather tool is withheld by placement, so this is the
+     * design working and the agent correctly saying it cannot reach it. On
+     * elevenlabs · hybrid the same tag is a fault — the tunnel, the egress allowlist, or the
+     * model not reaching for a tool it holds. The dashboard keeps tools_offered beside every
+     * count for exactly this reason; without it the two average into one meaningless number.
+     */
+    rule: {
+      all: [
+        // The definite article is not optional in speech: nobody asks "מה מזג אוויר", they
+        // ask "מה מזג האוויר". Written without the ה this matched none of the real questions
+        // it was written for, and the tag reported zero on a conversation that was entirely
+        // about the weather.
+        ['askMatches', 'מזג ?ה?אוויר|weather|גשם|טמפרטור'],
+        ['usedTool', 'get_airport_weather', true],
+      ],
+    },
+  },
+  {
     id: 'unsupported-claim',
     name: 'טענה בלי מקור',
     kind: 'llm',

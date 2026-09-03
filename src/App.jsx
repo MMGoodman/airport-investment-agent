@@ -5,6 +5,7 @@ import Home from './Home.jsx'
 import AgentWorkspace from './AgentWorkspace.jsx'
 import ScenarioCapture from './ScenarioCapture.jsx'
 import TagsPane from './TagsPane.jsx'
+import { turnsFrom } from './turns.js'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -184,6 +185,59 @@ function App() {
     setMessages((prev) => [...prev, { ...message, spoken: true }])
     setError(null)
   }, [])
+
+  /**
+   * The latest conversation and transport, readable from a stable callback.
+   *
+   * saveConversation is handed to LivePanel, which lists it in the dependencies of the
+   * cleanup that hangs up a call. A callback that changed identity on every render would
+   * therefore end the session on every render — so it has to be stable, and stable means it
+   * cannot close over state directly.
+   */
+  const messagesRef = useRef(messages)
+  const providersRef = useRef(providers)
+  const providerIdRef = useRef(providerId)
+  useEffect(() => {
+    messagesRef.current = messages
+    providersRef.current = providers
+    providerIdRef.current = providerId
+  }, [messages, providers, providerId])
+
+  /**
+   * Store the call when it ends, and let the server tag it.
+   *
+   * Automatic on purpose. A dashboard that depends on someone remembering to press a button
+   * after every conversation is a dashboard of the calls somebody felt like recording, which
+   * is the opposite of what it is for.
+   *
+   * The provider goes with it, and so does how many tools that path carries — without those
+   * two columns "the caller asked for the weather and did not get it" reads the same whether
+   * the tool was withheld by design or failed, and those want opposite responses.
+   */
+  const saveConversation = useCallback(
+    (sessionId) => {
+      const turns = turnsFrom(messagesRef.current)
+      if (!sessionId || turns.length === 0) return
+      const path = providersRef.current.find((p) => p.id === providerIdRef.current)
+      fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: sessionId,
+          provider: path?.id ?? 'unknown',
+          providerLabel: path?.short ?? path?.label,
+          toolsOffered: path?.tools?.offered,
+          toolsTotal: path?.tools?.total,
+          lang,
+          endedAt: new Date().toISOString(),
+          turns,
+        }),
+      }).catch(() => {
+        /* Losing a stored conversation must not surface as an error in a finished call. */
+      })
+    },
+    [lang],
+  )
 
   /**
    * Add tool calls to an answer that is already on screen.
@@ -524,6 +578,7 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
             lang={lang}
             onAppend={appendLive}
             onAmendTools={amendLiveTools}
+            onEnded={saveConversation}
             onError={setError}
             slots={{ settings: settingsSlot, trace: traceSlot }}
           />

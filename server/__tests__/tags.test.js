@@ -102,6 +102,22 @@ describe('rule tags fire on the turns they were written for', () => {
     expect(matchesRule(rule, { toolCalls: [{ tool: 'rank_airports' }] })).toBe(false)
   })
 
+  it('catches a weather question that no weather call answered', () => {
+    const rule = byId('asked-and-not-answered').rule
+    // Real phrasings, with the definite article the first version of this regex forgot: it
+    // matched none of them and reported zero on a conversation entirely about the weather.
+    for (const ask of ['מה מזג האוויר בבוסטון?', 'מה המזג אוויר שם?', 'יורד גשם בשיקגו?']) {
+      expect(matchesRule(rule, { ask, toolCalls: [] }), `missed: ${ask}`).toBe(true)
+    }
+    // And it must stay quiet when the tool did answer.
+    expect(
+      matchesRule(rule, {
+        ask: 'מה מזג האוויר בבוסטון?',
+        toolCalls: [{ tool: 'get_airport_weather' }],
+      }),
+    ).toBe(false)
+  })
+
   it('catches a placed tool running off the browser', () => {
     expect(matchesRule(byId('placed-tool').rule, placedTurn)).toBe(true)
   })

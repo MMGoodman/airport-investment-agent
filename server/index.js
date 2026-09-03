@@ -6,7 +6,8 @@ import { runTool, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 import { mountWebhookToolRoute } from './webhookTools.js'
-import { mountTagRoutes } from './tags.js'
+import { mountTagRoutes, tagConversation } from './tags.js'
+import { mountSessionRoutes, saveTags, turnsOf } from './sessions.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile, mostRecentSession } from './toolLog.js'
 import { attachRelay } from './relay.js'
@@ -124,6 +125,37 @@ app.get('/api/rankings', async (req, res) => {
  */
 mountWebhookToolRoute(app)
 mountTagRoutes(app)
+
+/**
+ * Tag a conversation the moment it is stored, without making the caller wait.
+ *
+ * The rules are predicates over a record already in memory — instant and free, so there is no
+ * argument for deferring them. The LLM tags are a model call per turn per tag, which is why
+ * the save answers first and this runs behind it: a browser closing a call should not hang on
+ * a grader, and a grader that is slow or busy must not lose the conversation.
+ *
+ * Failures are logged and dropped. A conversation with rule tags and no LLM verdicts is still
+ * worth having; one that failed to store because grading fell over is not.
+ */
+async function tagOnSave(conversationId) {
+  if (!conversationId) return
+  try {
+    const stored = await turnsOf(conversationId)
+    if (stored.length === 0) return
+
+    // Rules first, saved immediately: the dashboard is useful before the model answers, and
+    // if the grader never does, what is stored is still worth reading.
+    const quick = await tagConversation({ turns: stored, useLlm: false })
+    await saveTags(conversationId, quick.turns.map((t, i) => ({ ...t, turnId: stored[i].turnId })))
+
+    const full = await tagConversation({ turns: stored, apiKey: process.env.GEMINI_API_KEY })
+    await saveTags(conversationId, full.turns.map((t, i) => ({ ...t, turnId: stored[i].turnId })))
+  } catch (err) {
+    console.warn(`tagging ${conversationId} failed: ${err.message}`)
+  }
+}
+
+mountSessionRoutes(app, { onSaved: (id) => void tagOnSave(id) })
 
 app.post('/api/tool', async (req, res) => {
   const { name, args } = req.body ?? {}

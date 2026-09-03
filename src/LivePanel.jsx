@@ -6,7 +6,7 @@ import { firstTokenStages, turnHasQuestion } from './live/stopwatch.js'
 import { startElevenLabs } from './live/elevenlabs.js'
 import { startSoniox } from './live/soniox.js'
 import LiveTrace from './LiveTrace.jsx'
-import { setToolSession, reconcileTools } from './live/tools.js'
+import { setToolSession, getToolSession, reconcileTools } from './live/tools.js'
 
 /**
  * The live-voice control surface.
@@ -129,7 +129,7 @@ const formatArgs = (args) =>
     .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
     .join(' · ')
 
-export default function LivePanel({ provider, lang, onAppend, onAmendTools, onError, slots }) {
+export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEnded, onError, slots }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
   const [speaking, setSpeaking] = useState(null)
@@ -265,7 +265,10 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEr
       push('session', 'nothing to hang up — no live session was held')
     }
     setStatus('idle')
-  }, [push])
+    // The id both halves of the hybrid logged under, so what is stored can be joined back to
+    // the tool log rather than becoming a second, unrelated record of the same call.
+    onEnded?.(getToolSession())
+  }, [push, onEnded])
 
   // A provider or language switch must not leave a microphone open on the old session.
   useEffect(() => () => void stop(), [provider, lang, stop])

@@ -16,3 +16,6 @@ data/knowledge/
 
 # Working files for probes and one-off checks.
 .scratch/
+
+# Stored conversations: transcripts, not recordings. Local to a deployment.
+data/sessions/

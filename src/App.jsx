@@ -216,26 +216,48 @@ function App() {
    * the tool was withheld by design or failed, and those want opposite responses.
    */
   const saveConversation = useCallback(
-    (sessionId) => {
+    async (sessionId, report = () => {}) => {
+      /**
+       * Say what happened, always.
+       *
+       * This swallowed every failure on the grounds that a finished call should not end in an
+       * error — which is true, and it made the storing invisible. A conversation went
+       * unsaved and the only way to notice was to open the dashboard and find it missing,
+       * with nothing anywhere saying why. A silent success is just as bad: you cannot tell
+       * "it worked" from "it never ran".
+       *
+       * So it reports into the session trace, which is where someone is already looking when
+       * a call ends, and never as an error banner over a call that went fine.
+       */
       const turns = turnsFrom(messagesRef.current)
-      if (!sessionId || turns.length === 0) return
+      if (!sessionId) return report('not stored — this call had no session id')
+      if (turns.length === 0) return report('not stored — no completed turns in this call')
+
       const path = providersRef.current.find((p) => p.id === providerIdRef.current)
-      fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: sessionId,
-          provider: path?.id ?? 'unknown',
-          providerLabel: path?.short ?? path?.label,
-          toolsOffered: path?.tools?.offered,
-          toolsTotal: path?.tools?.total,
-          lang,
-          endedAt: new Date().toISOString(),
-          turns,
-        }),
-      }).catch(() => {
-        /* Losing a stored conversation must not surface as an error in a finished call. */
-      })
+      try {
+        const res = await fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: sessionId,
+            provider: path?.id ?? 'unknown',
+            providerLabel: path?.short ?? path?.label,
+            toolsOffered: path?.tools?.offered,
+            toolsTotal: path?.tools?.total,
+            lang,
+            endedAt: new Date().toISOString(),
+            turns,
+          }),
+        })
+        const body = await res.json()
+        report(
+          res.ok
+            ? `stored ${body.turns} ${body.turns === 1 ? 'turn' : 'turns'} — tagging on the server`
+            : `not stored — ${body.error ?? res.status}`,
+        )
+      } catch (err) {
+        report(`not stored — ${err.message}`)
+      }
     },
     [lang],
   )

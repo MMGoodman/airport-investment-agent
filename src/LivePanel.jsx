@@ -266,8 +266,10 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
     }
     setStatus('idle')
     // The id both halves of the hybrid logged under, so what is stored can be joined back to
-    // the tool log rather than becoming a second, unrelated record of the same call.
-    onEnded?.(getToolSession())
+    // the tool log rather than becoming a second, unrelated record of the same call. The
+    // outcome lands in this trace, because a conversation that failed to store did so
+    // silently and the only way to find out was to open the dashboard and notice a gap.
+    onEnded?.(getToolSession(), (line) => push('session', line))
   }, [push, onEnded])
 
   // A provider or language switch must not leave a microphone open on the old session.

@@ -36,8 +36,18 @@ export default function ToolTrace({ calls }) {
                   this panel only ever sees what the browser ran. It said "  ms" with the
                   number missing and opened to the word null, which reads as a broken row
                   rather than the design working. */}
+              {/* A server-run call used to have no duration here at all: this panel only
+                  saw what the browser ran, so the row said "ran on your server" and nothing
+                  else. The reconcile brings the timing back with it now, and that is the
+                  number worth showing — a placed tool is the one whose cost you cannot
+                  otherwise see, and a row that arrives late earns its place by saying what
+                  the delay was made of. */}
               <span className="trace-ms">
-                {call.ranOn === 'server' ? 'ran on your server' : `${call.ms} ms`}
+                {call.ranOn === 'server'
+                  ? Number.isFinite(call.ms)
+                    ? `${call.ms} ms · your server`
+                    : 'ran on your server'
+                  : `${call.ms} ms`}
               </span>
             </button>
 
@@ -45,14 +55,30 @@ export default function ToolTrace({ calls }) {
               <pre className="trace-body">
                 {call.ranOn === 'server'
                   ? [
-                      'Your server answered this one, on its own connection to the same session.',
-                      'It ran the tool, holds the credentials, and made the outbound call.',
+                      'Your server ran this one. It holds the credentials and made the',
+                      'outbound call; this page did NOT run it and cannot, because /api/tool',
+                      'refuses the tool outright.',
                       '',
-                      'This page did NOT run it and cannot: /api/tool refuses the tool outright.',
-                      'It did receive the result below — OpenAI echoes every item to every',
-                      'connection on a session, so placement controls who EXECUTES, not who sees.',
+                      'How it got there depends on the path, and the difference is the whole',
+                      'reason both exist:',
                       '',
-                      JSON.stringify(call.result, null, 2),
+                      '  OpenAI hybrid      your server opens a second connection INTO the',
+                      '                     live session and answers on it. OpenAI echoes the',
+                      '                     result to every connection, so this page sees it',
+                      '                     as it happens.',
+                      '',
+                      '  ElevenLabs hybrid  their cloud calls an endpoint ON your server. No',
+                      '                     event reaches this page at all, so the row above',
+                      '                     is replayed from the server log when the turn',
+                      '                     reconciles. That is why it appears after the',
+                      '                     answer instead of before it, and why its timing',
+                      '                     is the only view you get of what it cost.',
+                      '',
+                      'Either way, placement decides who EXECUTES and never who sees.',
+                      '',
+                      call.result === undefined
+                        ? 'The payload stayed on the server on this path.'
+                        : JSON.stringify(call.result, null, 2),
                     ].join('\n')
                   : JSON.stringify(call.result, null, 2)}
               </pre>

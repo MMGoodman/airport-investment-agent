@@ -184,6 +184,29 @@ function App() {
     setError(null)
   }, [])
 
+  /**
+   * Add tool calls to an answer that is already on screen.
+   *
+   * On the ElevenLabs hybrid the placed tools are fetched by their cloud, so no event reaches
+   * this page while the turn is running — they are only known once the turn reconciles
+   * against the server log, which is after the answer has been appended. Without this the
+   * rail listed the weather call and the trace under the answer did not, so the same call was
+   * present in one place and missing in another, which is worse than missing in both.
+   *
+   * Added to the last assistant message rather than a new one, because that is the answer
+   * they belong to.
+   */
+  const amendLiveTools = useCallback((toolCalls) => {
+    if (!toolCalls?.length) return
+    setMessages((prev) => {
+      const at = prev.findLastIndex((m) => m.role === 'assistant')
+      if (at === -1) return prev
+      const next = [...prev]
+      next[at] = { ...next[at], toolCalls: [...(next[at].toolCalls ?? []), ...toolCalls] }
+      return next
+    })
+  }, [])
+
   function onKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -489,6 +512,7 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
             provider={activeProvider}
             lang={lang}
             onAppend={appendLive}
+            onAmendTools={amendLiveTools}
             onError={setError}
             slots={{ settings: settingsSlot, trace: traceSlot }}
           />

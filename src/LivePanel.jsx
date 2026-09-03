@@ -129,7 +129,7 @@ const formatArgs = (args) =>
     .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
     .join(' · ')
 
-export default function LivePanel({ provider, lang, onAppend, onError, slots }) {
+export default function LivePanel({ provider, lang, onAppend, onAmendTools, onError, slots }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
   const [speaking, setSpeaking] = useState(null)
@@ -401,12 +401,26 @@ export default function LivePanel({ provider, lang, onAppend, onError, slots }) 
                * it. The server has them; they arrive with the reconcile and are pushed here
                * once each, marked so nobody mistakes them for something this page did.
                */
-              for (const entry of audit.serverEntries ?? []) {
-                if (serverShown.current.has(entry.callId)) continue
+              const fresh = (audit.serverEntries ?? []).filter(
+                (e) => !serverShown.current.has(e.callId),
+              )
+              for (const entry of fresh) {
                 serverShown.current.add(entry.callId)
                 const a = formatArgs(entry.args)
                 push('tool', `${entry.tool}${a ? `  ${a}` : ''}   · your server ran it`)
               }
+              // And into the answer's own trace, so the call is not listed in the rail and
+              // absent from the block under the sentence it produced.
+              onAmendTools?.(
+                fresh.map((e) => ({
+                  tool: e.tool,
+                  args: e.args,
+                  ms: e.ms,
+                  callId: e.callId,
+                  digest: e.digest,
+                  ranOn: 'server',
+                })),
+              )
 
               push(
                 'audit',

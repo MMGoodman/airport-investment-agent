@@ -12,7 +12,7 @@
  */
 import { languageInstruction, withheldNote } from '../src/agent/prompt.js'
 import { toolSchemasFor } from '../src/agent/tools.js'
-import { skillsSummary } from '../src/agent/skills.js'
+import { skillsSummary, eagerSkills } from '../src/agent/skills.js'
 import { attachSideband, detachSideband } from './sideband.js'
 import { mountAgentRoutes } from './agents.js'
 import { mountScenarioRoutes } from './scenarios.js'
@@ -222,9 +222,16 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
       effectivePrompt() +
       effectiveVoiceAddendum() +
       languageInstruction(lang, true) +
-      withheldNote(withheld),
+      withheldNote(withheld) +
+      // Eager skills ride with the base. See skills.js: one that decides WHETHER to call its
+      // tool cannot be delivered by calling it, and end_call happens once.
+      eagerSkills()
+        .map((skill) => `
+
+${skill.instructions}`)
+        .join(''),
     skills: skillsSummary()
-      .filter((skill) => !skill.always)
+      .filter((skill) => !skill.always && !skill.eager)
       .map(({ id, name, tools: skillTools, instructions }) => ({
         id,
         name,

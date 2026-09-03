@@ -7,7 +7,7 @@
  * base actually shrank, that nothing was lost, and that a rule lives in exactly one place.
  */
 import { describe, it, expect } from 'vitest'
-import { SKILLS, ALL_SKILLS, skillForTool, skillsFor, skillsSummary } from '../skills.js'
+import { SKILLS, ALL_SKILLS, skillForTool, skillsFor, skillsSummary, eagerSkills } from '../skills.js'
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../prompt.js'
 import { toolSchemas } from '../tools.js'
 
@@ -81,5 +81,41 @@ describe('loading', () => {
     expect(summary.find((s) => s.id === 'base').always).toBe(true)
     expect(summary.filter((s) => !s.always)).toHaveLength(SKILLS.length)
     expect(ALL_SKILLS).toHaveLength(SKILLS.length + 1)
+  })
+})
+
+/**
+ * A skill that decides WHETHER to call its tool cannot be delivered by calling it.
+ *
+ * call-control was lazily loaded like every other skill, on the first use of end_call — so
+ * the rule against hanging up on "אה, תודה רבה" arrived as a consequence of hanging up on
+ * "אה, תודה רבה". And a first end_call is the only kind there is: the session is over.
+ *
+ * Four premature hangups before the pattern was visible. The distinction is not about
+ * importance, it is about direction: every other skill governs how to SPEAK about a result
+ * and arrives exactly on time with it.
+ */
+describe('skills that must arrive before their tool is called', () => {
+  it('sends call-control with the base rather than on end_call', () => {
+    const callControl = SKILLS.find((s) => s.id === 'call-control')
+    expect(callControl.eager, 'call-control must not wait for the call it governs').toBe(true)
+    expect(eagerSkills().map((s) => s.id)).toContain('call-control')
+  })
+
+  it('leaves the skills that govern delivery to load lazily', () => {
+    // Ranking rules apply to the sentence AFTER the result comes back, so arriving with the
+    // call is on time. Making everything eager would undo the split entirely.
+    const lazy = SKILLS.filter((s) => !s.eager).map((s) => s.id)
+    expect(lazy).toContain('ranking')
+    expect(lazy).toContain('weather')
+    expect(lazy).toContain('knowledge')
+  })
+
+  it('never offers an eager skill for lazy loading as well', () => {
+    // Sent twice is a session.update per turn on a live call, and the second one carries
+    // instructions the model already has.
+    const eagerIds = new Set(eagerSkills().map((s) => s.id))
+    const offered = skillsSummary().filter((s) => !s.always && !s.eager)
+    for (const skill of offered) expect(eagerIds.has(skill.id)).toBe(false)
   })
 })

@@ -213,3 +213,116 @@
     opacity: 1;
   }
 }
+
+/**
+ * One action for the conversation, under it.
+ *
+ * The per-answer button was `opacity: 0` until hover, which hid it during exactly the case
+ * it serves — a voice call, where you are talking rather than pointing. And it made a case
+ * out of one exchange, when what is usually worth keeping is a sequence: the question, the
+ * follow-up that misread it, and the correction.
+ *
+ * English on purpose. The rest of this interface is Hebrew, and this label names a thing in
+ * the eval vocabulary — a scenario is what it is called in eval/cases.js and in the export.
+ */
+.capture-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--gutter) var(--space-3);
+  inline-size: min(100%, 68rem);
+  margin-inline: auto;
+}
+
+.capture-go {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  min-block-size: 34px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.capture-go:hover {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 40%, transparent);
+  background: var(--live-soft);
+}
+
+.capture-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* ---- choosing which turns go in ----------------------------------------- */
+
+.sc-pick {
+  padding-block-end: var(--space-4);
+  margin-block-end: var(--space-4);
+  border-block-end: 1px solid var(--rule);
+}
+
+.sc-pick-head {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.sc-turns {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  /* A long call should not push the fields that matter off the sheet. */
+  max-block-size: 14rem;
+  overflow-y: auto;
+}
+
+.sc-turns li label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.sc-turns li.on label {
+  background: var(--live-soft);
+  color: var(--text);
+}
+
+.sc-turn-ask {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-turn-tools {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.sc-draft {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  min-block-size: 34px;
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--live) 35%, transparent);
+  background: var(--live-soft);
+  color: var(--live);
+  cursor: pointer;
+}
+
+.sc-draft:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

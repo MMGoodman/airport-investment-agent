@@ -452,7 +452,7 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
       </header>
 
 
-      <ScenarioCapture turn={capturing} onClose={() => setCapturing(null)} />
+      <ScenarioCapture open={capturing} turns={turnsFrom(messages)} onClose={() => setCapturing(null)} />
 
       <AgentWorkspace
         nav={[
@@ -557,25 +557,10 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
               {message.role === 'user' ? message.content : <Markdown text={message.content} />}
             </div>
             <ToolTrace calls={message.toolCalls} />
-            {/* An answer plus the question above it is a case. The button is quiet until
-                the message is hovered: capturing is occasional, and one on every answer
-                would compete with the answers. */}
-            {message.role === 'assistant' && messages[i - 1]?.role === 'user' && (
-              <button
-                type="button"
-                className="msg-capture"
-                onClick={() =>
-                  setCapturing({
-                    ask: messages[i - 1].content,
-                    reply: message.content,
-                    toolCalls: message.toolCalls ?? [],
-                    lang,
-                  })
-                }
-              >
-                צור מקרה בחינה
-              </button>
-            )}
+            {/* The per-answer button lived here and was the wrong shape: it made a case out
+                of ONE exchange, chosen by whichever answer you happened to be hovering, and
+                a conversation is what you actually want to keep. It moved to the composer
+                as a single action over the whole call, with the turns selectable there. */}
           </article>
         ))}
 
@@ -611,6 +596,25 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
             slots={{ settings: settingsSlot, trace: traceSlot }}
           />
         )}
+
+      {/*
+        One action over the whole conversation.
+        It used to be a button per answer, which made a case out of whichever exchange you
+        happened to be hovering — and the thing worth keeping is usually a sequence: the
+        question, the follow-up that misread it, and the correction. Which turns go in is
+        chosen inside, where you can see them all at once.
+      */}
+      {turnsFrom(messages).length > 0 && (
+        <div className="capture-bar">
+          <button type="button" className="capture-go" onClick={() => setCapturing({ lang })}>
+            Create scenario
+          </button>
+          <span className="capture-hint">
+            {turnsFrom(messages).length} {turnsFrom(messages).length === 1 ? 'turn' : 'turns'} in
+            this conversation
+          </span>
+        </div>
+      )}
 
       {!live && (
       <form

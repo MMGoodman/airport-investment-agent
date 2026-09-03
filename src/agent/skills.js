@@ -131,8 +131,28 @@ reporting and say which region it sits in.`,
   {
     id: 'call-control',
     name: 'ניהול השיחה',
-    summary: 'מתי מנתקים, ומתי לא. נטענת כשהמודל מושיט יד ל-end_call.',
+    summary: 'מתי מנתקים, ומתי לא. נשלחת מראש — היא קובעת אם לקרוא לכלי בכלל.',
     tools: ['end_call'],
+    /**
+     * Sent with the base, not loaded on the tool call.
+     *
+     * Every other skill governs how to SPEAK about a result, so arriving with the call is
+     * exactly on time: rank_airports returns, and the rules about what a percentile means
+     * apply to the sentence that comes next.
+     *
+     * This one governs whether to make the call at all — and it was being loaded by making
+     * it. The rule against hanging up on "אה, תודה רבה" arrived as a consequence of hanging
+     * up on "אה, תודה רבה". Every first end_call in every session happened without it, and
+     * a first end_call is the only kind there is: the session is over.
+     *
+     * It cost four premature hangups before the pattern was visible — on "תודה רבה", on
+     * "אוקיי, מגניב… טוב, תודה רבה", on "שדה תעופה", and once on nothing the transcript
+     * recorded at all.
+     *
+     * The test: does this skill decide WHETHER to call its tool, or how to talk about what
+     * the tool returned? The first kind cannot be lazily loaded by the thing it governs.
+     */
+    eager: true,
     instructions: `ENDING THE CALL — rules that apply to what you are about to do
 
 end_call closes the session — and ONLY end_call does. Announcing the end is not ending:
@@ -178,7 +198,16 @@ export const skillsSummary = () =>
     name: skill.name,
     summary: skill.summary,
     always: Boolean(skill.always),
+    eager: Boolean(skill.eager),
     tools: skill.tools,
     instructions: skill.instructions,
     chars: skill.instructions?.length ?? 0,
   }))
+
+/**
+ * The skills that must be in hand before the first tool call, not after it.
+ *
+ * A skill that decides WHETHER its tool should be called cannot be delivered by calling it.
+ * Everything else waits, which is the whole point of splitting them out.
+ */
+export const eagerSkills = () => SKILLS.filter((s) => s.eager)

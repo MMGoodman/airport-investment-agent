@@ -23,22 +23,42 @@
  * case — one blip, one retry — finishes sooner than the old dead end failed.
  */
 
-/** 15x the 386ms a healthy mint takes. Long enough to be slow, short enough to retry twice. */
-const MINT_TIMEOUT_MS = 6000
+/**
+ * How long one attempt waits, and how many there are.
+ *
+ * A healthy mint takes 237-385ms, measured. 3s is roughly ten times that: long enough that
+ * a slow answer still arrives, short enough that three attempts fit inside the time somebody
+ * is willing to stare at a button that did nothing.
+ *
+ * It was one 6s timeout and one immediate retry, and that failed in front of a caller: both
+ * attempts landed inside the same blip, back to back, and the panel reported the honest but
+ * useless "nothing came back — try again". Retrying instantly is barely retrying. The whole
+ * point of a second attempt is that conditions changed between them, and nothing changes in
+ * the microsecond it takes to call fetch again.
+ */
+const MINT_TIMEOUT_MS = 3000
+const BACKOFF_MS = [300, 900]
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function mintFetch(url, options = {}, label = 'the provider') {
   let firstError = null
+  const attempts = BACKOFF_MS.length + 1
 
-  for (const attempt of [1, 2]) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       return await fetch(url, { ...options, signal: AbortSignal.timeout(MINT_TIMEOUT_MS) })
     } catch (err) {
       // AbortSignal.timeout raises TimeoutError; a refused or reset socket arrives as a
       // TypeError with the real reason on .cause. Both mean nothing was answered.
       firstError = firstError ?? err
-      if (attempt === 2) throw firstError
+      if (attempt === attempts) throw firstError
       const why = err.cause?.code ?? err.cause?.message ?? err.name
-      console.warn(`mint: ${label} did not answer within ${MINT_TIMEOUT_MS}ms (${why}) — retrying once`)
+      const pause = BACKOFF_MS[attempt - 1]
+      console.warn(
+        `mint: ${label} did not answer within ${MINT_TIMEOUT_MS}ms (${why}) — retry ${attempt} of ${attempts - 1} in ${pause}ms`,
+      )
+      await wait(pause)
     }
   }
 }

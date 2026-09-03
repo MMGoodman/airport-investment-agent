@@ -7,6 +7,8 @@
  * else", and the tests are about refusing rather than about working.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { webhookHybridStatus, webhookToolsFor } from '../webhookTools.js'
 
 const KEEP = { url: process.env.PUBLIC_BASE_URL, key: process.env.ELEVENLABS_WEBHOOK_SECRET }
@@ -86,5 +88,50 @@ describe('webhookToolsFor', () => {
     configure('https://example.ngrok-free.app', 'a-secret')
     const search = webhookToolsFor().find((t) => t.name === 'search_knowledge')
     expect(search.api_schema.request_body_schema.properties.topK.type).toBe('number')
+  })
+})
+
+/**
+ * Who is allowed to reach the one endpoint that faces the internet.
+ *
+ * A shared secret proves whoever holds it. It lives in ElevenLabs' dashboard, travels in a
+ * header on every call, and would be replayable by anyone who ever saw one — so it answers
+ * "does this caller know the secret" and never "is this really ElevenLabs". Their published
+ * static egress addresses answer the second question, which is why their own guidance is to
+ * use both.
+ *
+ * Their HMAC signature is not an option here: measured against the live platform, a tool
+ * webhook arrives with no elevenlabs-* header at all. The signature exists for post-call
+ * webhooks, not for these.
+ */
+describe('who may reach the public endpoint', () => {
+  it('lists every published region, not a guess at which one this account uses', async () => {
+    // Getting this wrong fails as "the tool silently stopped working", and the full set is
+    // twelve addresses. US, EU, Asia and the three residency regions.
+    const src = await readFile(new URL('../webhookTools.js', import.meta.url), 'utf8')
+    for (const ip of ['34.67.146.145', '35.204.38.71', '35.185.187.110', '34.87.23.17']) {
+      expect(src, `${ip} missing from the egress allowlist`).toContain(ip)
+    }
+  })
+
+  it('reads the caller from cf-connecting-ip, not from the tunnel', () => {
+    // req.ip is cloudflared on every single request. Checking it would allow the world.
+    const src = readFileSync(new URL('../webhookTools.js', import.meta.url), 'utf8')
+    expect(src).toMatch(/cf-connecting-ip/)
+  })
+
+  it('checks the address before the secret', () => {
+    // So an address that cannot be ElevenLabs never gets to try a secret, and the endpoint
+    // is not an oracle to guess against.
+    // Anchored on the checks themselves rather than on their log text, which is wording and
+    // moved once already — breaking this test for a reason that had nothing to do with the
+    // order it exists to protect.
+    const src = readFileSync(new URL('../webhookTools.js', import.meta.url), 'utf8')
+    const route = src.slice(src.indexOf("app.post('/api/tool/hook/:name'"))
+    const ipCheck = route.indexOf('allow.has(ip)')
+    const secretCheck = route.indexOf('secretMatches(')
+    expect(ipCheck, 'the address is not checked in the route at all').toBeGreaterThan(-1)
+    expect(secretCheck, 'the secret is not checked in the route at all').toBeGreaterThan(-1)
+    expect(ipCheck, 'the secret is being checked first').toBeLessThan(secretCheck)
   })
 })

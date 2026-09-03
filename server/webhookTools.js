@@ -42,6 +42,85 @@ const CONVERSATION_HEADER = 'x-conversation-id'
 /** Where the main server keeps the tool log. Localhost: this is not the tunnelled port. */
 const LOG_SINK = `http://localhost:${process.env.PORT || 3001}/api/tool-log/external`
 
+/**
+ * ElevenLabs' published static egress addresses — every outbound request they make, webhook
+ * tools included, comes from one of these.
+ *
+ * All regions are listed rather than the one this account uses, because the wrong guess here
+ * fails as "the tool silently stopped working" and the set is twelve addresses.
+ *
+ * WHAT THIS DOES AND DOES NOT COVER
+ *
+ * It answers "is this really ElevenLabs", which the shared secret cannot: a secret proves
+ * whoever holds it, and it is stored in their dashboard, travels in a header on every call,
+ * and would be replayable by anyone who ever saw one. The IP check is the second, independent
+ * factor their own docs recommend pairing with it.
+ *
+ * It is NOT a signature. Their HMAC ElevenLabs-Signature exists for post-call webhooks; a
+ * tool webhook, measured against the live platform, arrives with no elevenlabs-* header at
+ * all — only Cloudflare's routing headers and the ones we configured. So there is nothing to
+ * verify cryptographically here and this is what is available instead.
+ */
+const ELEVENLABS_EGRESS = [
+  '34.67.146.145', '34.59.11.47',       // US (default)
+  '35.204.38.71', '34.147.113.54',      // EU
+  '35.185.187.110', '35.247.157.189',   // Asia
+  '34.77.234.246', '34.140.184.144',    // EU residency
+  '34.93.26.174', '34.93.252.69',       // India residency
+  '34.87.23.17', '34.126.179.103',      // Singapore residency
+]
+
+const allowedIps = () => {
+  const configured = (process.env.ELEVENLABS_ALLOWED_IPS || '').trim()
+  if (configured === 'off') return null
+  return new Set(configured ? configured.split(/[\s,]+/).filter(Boolean) : ELEVENLABS_EGRESS)
+}
+
+/**
+ * Who actually sent this, from behind the tunnel.
+ *
+ * req.ip is cloudflared, every time. The caller's address is the one Cloudflare puts in
+ * cf-connecting-ip, and trusting that header is only sound because nothing can reach this
+ * process except through the tunnel — it listens on localhost. Behind a different proxy, or
+ * exposed directly, that assumption has to be re-made.
+ */
+function callerIp(req) {
+  return (
+    req.get('cf-connecting-ip') ||
+    (req.get('x-forwarded-for') || '').split(',')[0].trim() ||
+    req.ip ||
+    ''
+  )
+}
+
+/**
+ * A short fixed window, per address.
+ *
+ * A public endpoint with no ceiling is one loop away from hammering Open-Meteo under this
+ * server's name. A real conversation makes at most a handful of tool calls a minute, so the
+ * limit is far above anything legitimate and far below anything abusive.
+ *
+ * Replay is deliberately not defended against: both placed tools are idempotent reads — a
+ * weather lookup and a search — so replaying one returns the same answer to nobody. If a
+ * placed tool ever writes, this comment stops being true and a nonce becomes necessary.
+ */
+const RATE_MAX = Number(process.env.WEBHOOK_RATE_MAX) || 60
+const RATE_WINDOW_MS = 60_000
+const hits = new Map()
+
+function overRateLimit(ip) {
+  const now = Date.now()
+  const seen = hits.get(ip)
+  if (!seen || now - seen.since > RATE_WINDOW_MS) {
+    hits.set(ip, { since: now, count: 1 })
+    // Bounded: one entry per address per window, cleared as windows roll over.
+    if (hits.size > 1000) for (const [k, v] of hits) if (now - v.since > RATE_WINDOW_MS) hits.delete(k)
+    return false
+  }
+  seen.count += 1
+  return seen.count > RATE_MAX
+}
+
 const publicBase = () => (process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, '')
 const secret = () => process.env.ELEVENLABS_WEBHOOK_SECRET || ''
 
@@ -147,14 +226,50 @@ function secretMatches(given) {
  */
 export function mountWebhookToolRoute(app) {
   app.post('/api/tool/hook/:name', async (req, res) => {
+    const { name } = req.params
     const { enabled } = webhookHybridStatus()
     if (!enabled) return res.status(503).json({ error: 'The webhook hybrid is not configured on this server.' })
+
+    /**
+     * Address first, then the secret.
+     *
+     * The order matters: an address that cannot be ElevenLabs never gets to try a secret,
+     * so the endpoint offers no oracle to guess against. Both are refused with the same
+     * shape of answer for the same reason.
+     */
+    const ip = callerIp(req)
+    const allow = allowedIps()
+    if (allow && !allow.has(ip)) {
+      /**
+       * Loud, and with the fix in it.
+       *
+       * This is the one guard that can break a working demo silently: if ElevenLabs ever
+       * calls from an address they have not published, the weather tool starts returning 403
+       * and the agent starts saying it cannot reach it — which looks like every other
+       * failure. Printing the address alongside the exact line that would admit it turns a
+       * mystery into a paste.
+       */
+      console.warn(
+        `
+  webhook: REFUSED ${name} from ${ip || 'an unknown address'} — not a published ElevenLabs egress IP.` +
+          `
+  If this was really them, add it:  ELEVENLABS_ALLOWED_IPS=${[...allow, ip].filter(Boolean).join(',')}` +
+          `
+  Or turn the check off for now:    ELEVENLABS_ALLOWED_IPS=off
+`,
+      )
+      return res.status(403).json({ error: 'Not permitted from this address.' })
+    }
+
+    if (overRateLimit(ip)) {
+      console.warn(`webhook: rate limited ${ip}`)
+      return res.status(429).json({ error: 'Too many requests.' })
+    }
 
     if (!secretMatches(req.get(HEADER))) {
       return res.status(401).json({ error: 'Bad or missing tool secret.' })
     }
 
-    const { name } = req.params
     // The inverse of the rule on /api/tool: that endpoint refuses server-placed tools, this
     // one refuses everything else. Together they mean each tool has exactly one door.
     const known = toolSchemas.some((t) => t.name === name)

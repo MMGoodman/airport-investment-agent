@@ -128,6 +128,33 @@ export function callsForSession(session) {
 }
 
 /**
+ * The session most recently seen, for a caller that cannot name its own.
+ *
+ * ElevenLabs' webhook is the one path with no id of its own. Their docs say a tool's headers
+ * may carry {{system__conversation_id}}; measured, they do not — the header arrives with the
+ * placeholder still in it, and two weather calls were filed under the literal string
+ * "{{system__conversation_id}}" while the browser's four sat correctly under the real
+ * conversation id. So the call cannot say which conversation it belongs to.
+ *
+ * It can be inferred, because the browser adopted that same conversation id and is calling
+ * this server throughout the same call. The most recent session with browser activity is the
+ * one in progress.
+ *
+ * This is an inference and it has a limit worth stating plainly: with two callers at once it
+ * can attribute a tool call to the wrong conversation. That is acceptable for a demo on one
+ * laptop and is not acceptable in production — the right fix is an id ElevenLabs actually
+ * substitutes, and this is here because the trace being empty is worse than the trace being
+ * approximately right while it is one person talking.
+ */
+export function mostRecentSession() {
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    const s = entries[i].session
+    if (s && s !== 'anonymous') return s
+  }
+  return null
+}
+
+/**
  * Compare what a client claims it ran against what this server actually ran.
  *
  * Three ways a claim can fail, and they are reported separately because they mean different

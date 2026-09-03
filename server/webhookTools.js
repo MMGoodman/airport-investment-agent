@@ -183,7 +183,27 @@ export function mountWebhookToolRoute(app) {
        * an answer must not also wait on bookkeeping, and the log being unreachable is not
        * a reason for the tool to fail.
        */
-      const session = req.get(CONVERSATION_HEADER)
+      /**
+       * Their placeholder, unsubstituted, is not an id.
+       *
+       * The docs say tool headers carry system dynamic variables. Measured against the live
+       * platform they do not: this header arrives holding the literal text
+       * "{{system__conversation_id}}", and two weather calls were filed under that string as
+       * though it were a conversation. Treated as absent, the main server attributes the
+       * call to the live session instead, which is at least true.
+       *
+       * The headers are logged once per call — at this volume that is a line, not noise, and
+       * it is how a real id will be found if they ever send one.
+       */
+      const raw = req.get(CONVERSATION_HEADER)
+      const session = raw && !raw.includes('{{') ? raw : null
+      console.log(
+        `webhook: ${name}${session ? ` for ${session}` : ' with no usable conversation id'} — headers: ${Object.keys(
+          req.headers,
+        )
+          .filter((h) => h !== 'x-tool-secret')
+          .join(', ')}`,
+      )
       fetch(LOG_SINK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

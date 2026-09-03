@@ -7,7 +7,7 @@ import { getStore } from '../src/data/store.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 import { mountWebhookToolRoute } from './webhookTools.js'
 import { mountVoiceRoutes } from './voice.js'
-import { recordToolCall, callsForSession, reconcile } from './toolLog.js'
+import { recordToolCall, callsForSession, reconcile, mostRecentSession } from './toolLog.js'
 import { attachRelay } from './relay.js'
 import { createServer } from 'node:http'
 
@@ -180,8 +180,19 @@ app.post('/api/tool', async (req, res) => {
 app.post('/api/tool-log/external', (req, res) => {
   const { session, tool, args, result, ms, failed } = req.body ?? {}
   if (!tool) return res.status(400).json({ error: 'Body must name a tool.' })
-  const entry = recordToolCall({ session, tool, args, result, ms, failed, ranOn: 'server' })
-  res.json({ callId: entry.callId })
+  // No id of its own means the live conversation, not a session called nothing. See
+  // mostRecentSession for what that inference costs.
+  const attributed = session || mostRecentSession()
+  const entry = recordToolCall({
+    session: attributed,
+    tool,
+    args,
+    result,
+    ms,
+    failed,
+    ranOn: 'server',
+  })
+  res.json({ callId: entry.callId, session: attributed, inferred: !session })
 })
 
 app.get('/api/tool-log', (req, res) => {

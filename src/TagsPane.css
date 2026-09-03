@@ -1,0 +1,384 @@
+/**
+ * The tags pane.
+ *
+ * Ordered by what you do rather than by what the data is: run first, results second,
+ * definitions last. A screen that opens on a form asks you to configure something before you
+ * have seen what it does — and the tags that ship already work, so the first useful action
+ * here is pressing a button, not filling a field.
+ */
+
+.tg {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* ---- run --------------------------------------------------------------- */
+
+.tg-run {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--bg-sunk);
+}
+
+.tg-run-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.tg-run-head b {
+  color: var(--text-strong);
+}
+
+.tg-run-go {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  min-block-size: 36px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--live) 40%, transparent);
+  background: var(--live-soft);
+  color: var(--live);
+  cursor: pointer;
+}
+
+.tg-run-go:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--live) 18%, transparent);
+}
+
+.tg-run-go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tg-llm-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+/* ---- results ------------------------------------------------------------ */
+
+.tg-result h4 {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.tg-result h4 + * {
+  margin-block-end: var(--space-4);
+}
+
+.tg-counts {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.tg-counts li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+/* A zero is an answer to "does this happen here?", so it stays on screen — just quiet. */
+.tg-counts li.hit {
+  background: var(--bg-sunk);
+  color: var(--text);
+}
+
+.tg-count {
+  text-align: end;
+  color: var(--text-dim);
+}
+
+.tg-counts li.hit .tg-count {
+  color: var(--signal);
+  font-weight: 600;
+}
+
+.tg-kind {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  padding: 1px var(--space-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+}
+
+.tg-turn {
+  padding: var(--space-3);
+  margin-block-end: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+.tg-ask {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-1);
+}
+
+.tg-reply {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin: 0 0 var(--space-3);
+  /* The answer is context for the verdict, not the thing being read. Two lines is enough to
+     recognise which turn this is. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tg-hits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tg-hits li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.tg-hits li.llm .tg-kind {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 35%, transparent);
+}
+
+.tg-hits li.failed .tg-kind {
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 45%, transparent);
+}
+
+/* The reason an LLM verdict gives is the verdict's whole value; it gets the room. */
+.tg-why {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+}
+
+/* ---- definitions -------------------------------------------------------- */
+
+.tg-defs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: var(--space-3);
+}
+
+.tg-defs-head h4 {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.tg-new {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tg-new button,
+.tg-add-clause,
+.tg-edit,
+.tg-editor-actions button {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.tg-new button:hover,
+.tg-add-clause:hover,
+.tg-edit:hover,
+.tg-editor-actions button:hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+.tg-save {
+  color: var(--live) !important;
+  border-color: color-mix(in srgb, var(--live) 40%, transparent) !important;
+}
+
+.tg-editor {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-block-end: var(--space-4);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  background: var(--bg-sunk);
+}
+
+.tg-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.tg-editor input,
+.tg-editor textarea,
+.tg-clause select,
+.tg-clause input[type='text'] {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-3);
+  min-block-size: 34px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+
+.tg-editor textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.tg-editor-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---- rule builder ------------------------------------------------------- */
+
+.tg-rule {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tg-clause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tg-clause select {
+  min-inline-size: 9rem;
+}
+
+.tg-negate {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.tg-help {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.tg-drop {
+  font: inherit;
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.tg-drop:hover {
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 40%, transparent);
+}
+
+/* ---- the list ----------------------------------------------------------- */
+
+.tg-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tg-list li {
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+.tg-list li.llm {
+  border-inline-start: 2px solid color-mix(in srgb, var(--live) 45%, transparent);
+}
+
+.tg-list-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.tg-list-head b {
+  color: var(--text-strong);
+  margin-inline-end: auto;
+}
+
+.tg-summary {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin: var(--space-2) 0 0;
+  line-height: 1.5;
+}
+
+.tg-def {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin: var(--space-2) 0 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .tg-editor-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tg-run-head {
+    flex-direction: column;
+  }
+}
+
+/* The words the verdict is actually about. Without it a reader has to hunt the reply for
+   what the grader meant, and a verdict nobody can check is one nobody should act on. */
+.tg-quote {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--text);
+  font-style: italic;
+}

@@ -4,6 +4,7 @@ import AgentConsole from './AgentConsole.jsx'
 import Home from './Home.jsx'
 import AgentWorkspace from './AgentWorkspace.jsx'
 import ScenarioCapture from './ScenarioCapture.jsx'
+import TagsPane from './TagsPane.jsx'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
@@ -397,7 +398,13 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
               { id: 'vocabulary', label: 'Vocabulary', icon: 'vocabulary' },
             ],
           },
-          { label: 'Quality', items: [{ id: 'evals', label: 'Evals', icon: 'evals' }] },
+          {
+            label: 'Quality',
+            items: [
+              { id: 'evals', label: 'Evals', icon: 'evals' },
+              { id: 'tags', label: 'Tags', icon: 'evals' },
+            ],
+          },
         ]}
         activePane={wsPane}
         onPane={setWsPane}
@@ -425,6 +432,10 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
                 </p>
               )}
             </div>
+          ) : wsPane === 'tags' ? (
+            /* The one pane that reads the conversation rather than the agent's
+               configuration: tagging is a question asked of what was just said. */
+            <TagsPane messages={messages} />
           ) : wsPane ? (
             <AgentConsole bare pane={wsPane} onPaneChange={setWsPane} />
           ) : null

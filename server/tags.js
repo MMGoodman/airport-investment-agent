@@ -194,18 +194,41 @@ export const predicateNames = () => Object.keys(PREDICATES)
  * says "yes" and cannot say why is an assertion, and this project does not trade in those.
  */
 async function askModel({ tag, turn, apiKey, model }) {
+  /**
+   * How much of a tool result the grader gets to see.
+   *
+   * This was 1,200 characters, and it made the grader confidently wrong on exactly the turns
+   * that matter most. A rank_airports result is 4.7 KB; cut to 1,200 the model saw a fraction
+   * of it, found none of the figures the answer quoted, and reported "specific figures for
+   * passenger growth rates, load factors and departure counts that are not present in the
+   * provided tool results" — about an answer whose every number came from the call above it.
+   *
+   * A grader that accuses on missing evidence has to be given the evidence. Generous, because
+   * being wrong here costs more than the tokens: a tag nobody trusts is worse than no tag.
+   */
+  const PER_CALL = Number(process.env.TAG_EVIDENCE_CHARS) || 12000
+
   const evidence = (turn.toolCalls ?? []).length
     ? (turn.toolCalls ?? [])
-        .map(
-          (t) =>
-            `- ${t.tool}(${JSON.stringify(t.args ?? {})}) -> ${JSON.stringify(t.result ?? null).slice(0, 1200)}`,
-        )
+        .map((t) => {
+          const full = JSON.stringify(t.result ?? null)
+          const shown = full.slice(0, PER_CALL)
+          // And when it still does not fit, say so — the model cannot tell a truncated result
+          // from a complete one unless it is told, and would read the cut as an absence.
+          const cut = full.length > shown.length ? ` ...[truncated, ${full.length} chars]` : ''
+          return `- ${t.tool}(${JSON.stringify(t.args ?? {})}) -> ${shown}${cut}`
+        })
         .join('\n')
     : '- none: no tool ran on this turn'
 
   const prompt = [
     'You are grading one turn of a conversation against a single question.',
-    'Answer with JSON only: {"hit": true|false, "why": "<one short sentence>"}.',
+    'Answer with JSON only: {"hit": true|false, "why": "<one short sentence>", "quote": "<the exact words from the reply this is about, or empty>"}.',
+    '',
+    'Search the tool results carefully before answering yes. They are long and the value you',
+    'are looking for is often nested; not finding it at a glance is not the same as it being',
+    'absent. If you answer yes, "quote" must contain the exact words from the reply that you',
+    'believe are unsupported — if you cannot quote them, answer no.',
     '',
     `QUESTION: ${tag.prompt}`,
     '',
@@ -214,6 +237,8 @@ async function askModel({ tag, turn, apiKey, model }) {
     '',
     'TOOL RESULTS AVAILABLE TO THE AGENT:',
     evidence,
+    '',
+    'If a result is marked truncated, a value you cannot find may still be in it: say no.',
   ].join('\n')
 
   const res = await fetch(
@@ -230,7 +255,7 @@ async function askModel({ tag, turn, apiKey, model }) {
   const json = await res.json()
   if (!res.ok) throw new Error(json.error?.message ?? `grading failed (${res.status})`)
   const parsed = JSON.parse(json.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}')
-  return { hit: Boolean(parsed.hit), why: parsed.why ?? '' }
+  return { hit: Boolean(parsed.hit), why: parsed.why ?? '', quote: parsed.quote ?? '' }
 }
 
 /**
@@ -240,12 +265,56 @@ async function askModel({ tag, turn, apiKey, model }) {
  * tags run after, and a failure on one turn is reported on that turn rather than failing the
  * batch — a grader that cannot reach the model still leaves every rule tag useful.
  */
-export async function tagConversation({
-  turns = [],
-  apiKey,
-  model = 'gemini-3.1-flash-lite',
-  useLlm = true,
-}) {
+/**
+ * The models that grade, which are not the model that talks.
+ *
+ * gemini-3.1-flash-lite is chosen for the conversation because latency is everything there.
+ * Grading happens after the fact and can afford better — and it needs to, measurably: asked
+ * whether an answer's figures appeared in a 15 KB rank_airports result, flash-lite said no
+ * about eight figures that were all present in the first 12,000 characters it was given. A
+ * confident false accusation is the one failure mode a grader must not have.
+ *
+ * WHY A LIST AND NOT A NAME
+ *
+ * Three attempts were spent on this. 'gemini-3.1-flash' does not exist. 'gemini-3.8-flash'
+ * answers 503 under load, and so did the next choice minutes later — "spikes in demand are
+ * usually temporary" is the API telling you to retry, not to pick differently. A grader that
+ * gives up because one model is busy is a grader nobody can run, so it walks the list.
+ *
+ * Ordered by measured behaviour on this key rather than by version number: 3.7 answered in
+ * 2.7s, 3.5 in 2.6s, 3.6 took 37 seconds. TAG_MODEL puts a choice at the front of the list
+ * without removing the fallbacks.
+ */
+const GRADERS = [
+  process.env.TAG_MODEL,
+  'gemini-3.7-flash',
+  'gemini-3.5-flash',
+  'gemini-3.1-flash-lite',
+].filter(Boolean)
+
+/**
+ * Try each grader until one answers.
+ *
+ * Only availability failures move to the next one. A 400 means the request is wrong and
+ * asking a different model produces the same wrong request more slowly.
+ */
+async function gradeWithFallback({ tag, turn, apiKey }) {
+  let firstError = null
+  for (const model of GRADERS) {
+    try {
+      return await askModel({ tag, turn, apiKey, model })
+    } catch (err) {
+      firstError = firstError ?? err
+      const temporary = /high demand|overload|503|429|unavailable|not found|not supported/i.test(
+        err.message ?? '',
+      )
+      if (!temporary) throw err
+    }
+  }
+  throw firstError ?? new Error('no grader answered')
+}
+
+export async function tagConversation({ turns = [], apiKey, useLlm = true }) {
   const active = listTags()
   const ruleTags = active.filter((t) => t.kind === 'rule')
 
@@ -260,8 +329,8 @@ export async function tagConversation({
     for (const tag of active.filter((t) => t.kind === 'llm')) {
       for (const entry of tagged) {
         try {
-          const { hit, why } = await askModel({ tag, turn: entry.turn, apiKey, model })
-          if (hit) entry.hits.push({ id: tag.id, name: tag.name, kind: 'llm', why })
+          const { hit, why, quote } = await gradeWithFallback({ tag, turn: entry.turn, apiKey })
+          if (hit) entry.hits.push({ id: tag.id, name: tag.name, kind: 'llm', why, quote })
         } catch (err) {
           entry.hits.push({
             id: tag.id,
@@ -321,7 +390,9 @@ export function mountTagRoutes(app) {
           turns,
           useLlm: useLlm !== false,
           apiKey: process.env.GEMINI_API_KEY,
-          model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
+          // Not GEMINI_MODEL: that is the model that talks, chosen for latency. Grading is
+          // offline and wants the better one. TAG_MODEL overrides.
+
         }),
       )
     } catch (err) {

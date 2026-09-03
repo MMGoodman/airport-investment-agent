@@ -5,6 +5,7 @@ import Home from './Home.jsx'
 import AgentWorkspace from './AgentWorkspace.jsx'
 import ScenarioCapture from './ScenarioCapture.jsx'
 import TagsPane from './TagsPane.jsx'
+import Dashboard from './Dashboard.jsx'
 import { turnsFrom } from './turns.js'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
@@ -457,6 +458,7 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
             items: [
               { id: 'evals', label: 'Evals', icon: 'evals' },
               { id: 'tags', label: 'Tags', icon: 'evals' },
+              { id: 'dashboard', label: 'Dashboard', icon: 'evals' },
             ],
           },
         ]}
@@ -486,6 +488,10 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
                 </p>
               )}
             </div>
+          ) : wsPane === 'dashboard' ? (
+            /* Across every stored conversation rather than this one — the only pane here
+               that is about the corpus instead of the agent's configuration. */
+            <Dashboard />
           ) : wsPane === 'tags' ? (
             /* The one pane that reads the conversation rather than the agent's
                configuration: tagging is a question asked of what was just said. */

@@ -1,0 +1,309 @@
+/**
+ * The dashboard.
+ *
+ * Two colours carry meaning here and nothing else does. Amber marks a gap on a path that
+ * should not have had one; the neutral treatment marks a gap that is the design working. That
+ * pairing is the only thing on this screen a reader has to learn, so nothing else competes
+ * for it — no colour on counts, no colour on latency, no severity palette.
+ */
+
+.db {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* ---- header ------------------------------------------------------------- */
+
+.db-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.db-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.db-stat {
+  display: grid;
+  gap: 2px;
+}
+
+.db-stat-value {
+  font-size: var(--fs-xl);
+  color: var(--text-strong);
+  line-height: 1.1;
+}
+
+.db-stat-label {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.db-stat-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  opacity: 0.75;
+}
+
+.db-refresh {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.db-refresh:hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+/* ---- sections ----------------------------------------------------------- */
+
+.db-section h4 {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.db-section .ac-hint {
+  margin-block-end: var(--space-3);
+}
+
+/* ---- the per-path table -------------------------------------------------- */
+
+.db-table {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.db-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+  background: var(--bg-panel);
+}
+
+.db-header {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  background: var(--bg-sunk);
+}
+
+.db-path {
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The one fact that explains most of what is below it, so it is marked wherever it appears. */
+.db-tools {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.db-tools.narrowed {
+  color: var(--signal);
+}
+
+/* ---- tags --------------------------------------------------------------- */
+
+.db-tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.db-tags li {
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+/* Amber only where a gap should not have been there. A correct refusal gets no colour at
+   all — it is not a lesser problem, it is not a problem. */
+.db-tags li.fault {
+  border-inline-start: 3px solid var(--signal);
+  background: color-mix(in srgb, var(--signal) 7%, transparent);
+}
+
+.db-tag-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.db-hits {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-strong);
+  min-inline-size: 1.5rem;
+}
+
+.db-tag-head b {
+  color: var(--text-strong);
+}
+
+.db-kind {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  padding: 1px var(--space-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+}
+
+.db-tag-path {
+  margin-inline-start: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* The verdict is a sentence, not a colour: a colour needs a legend, and this has to read
+   correctly to somebody seeing the screen for the first time. */
+.db-verdict {
+  font-size: var(--fs-xs);
+  margin: var(--space-2) 0 0;
+  line-height: 1.5;
+}
+
+.db-verdict.fault {
+  color: var(--signal);
+}
+
+.db-verdict.expected {
+  color: var(--text-dim);
+}
+
+.db-tag-meta {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin: var(--space-1) 0 0;
+  opacity: 0.8;
+}
+
+/* ---- tool usage ---------------------------------------------------------- */
+
+.db-usage {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.db-usage-path {
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+
+.db-usage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-end: var(--space-2);
+}
+
+.db-usage-path ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.db-usage-path li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-size: var(--fs-sm);
+}
+
+.db-tool-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.db-tool-calls {
+  color: var(--text-strong);
+}
+
+.db-tool-server {
+  font-size: var(--fs-xs);
+  color: var(--live);
+}
+
+/* ---- recent calls -------------------------------------------------------- */
+
+.db-calls {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.db-calls li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+  background: var(--bg-panel);
+}
+
+.db-call-meta {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.db-call-when {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ---- narrow -------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  /* The table stops being a table: five columns in a pane this narrow is five slivers. Each
+     row becomes its own block with the path first, which is the only column that identifies
+     what the rest of the numbers belong to. */
+  .db-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .db-header {
+    display: none;
+  }
+
+  .db-path {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+}

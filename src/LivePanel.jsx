@@ -387,10 +387,30 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEr
           // The whole session's claims, not this answer's: the server log is per session,
           // and comparing one answer against it flagged every EARLIER answer's calls as
           // hidden — a red audit line on a session doing everything right.
-          if (attached.length) {
-            claimedTools.current = [...claimedTools.current, ...attached]
+          if (attached.length) claimedTools.current = [...claimedTools.current, ...attached]
+
+          /**
+           * Every turn, not only the turns this browser ran something on.
+           *
+           * This used to be guarded by `if (attached.length)`, which is the right condition
+           * for updating the claims and the wrong one for asking about them. A turn where
+           * the caller asked "and what is the weather there?" runs NO browser tool, so no
+           * reconcile happened, so the placed call stayed unclaimed — and was then attached
+           * to the next answer that did run one.
+           *
+           * In one session that put the JFK weather call under an answer thirty-two seconds
+           * later about how many airports are covered. A row in the wrong place is worse
+           * than a row missing: it says that call produced this sentence, and it did not.
+           *
+           * It costs one localhost POST per answer.
+           */
+          {
             reconcileTools(claimedTools.current).then((audit) => {
               if (!audit) return
+              // Nothing has run yet — the greeting, or a turn the caller asked nothing of.
+              // Reconciling was still worth doing, because that is how a placed call is
+              // discovered; saying "0 tool calls match the server log" is not.
+              if (audit.serverCalls === 0) return
 
               /**
                * Show the calls this browser never made.

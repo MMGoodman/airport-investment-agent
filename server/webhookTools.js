@@ -267,6 +267,30 @@ export function mountWebhookToolRoute(app) {
     }
 
     if (!secretMatches(req.get(HEADER))) {
+      /**
+       * Say it, because silence here cost an afternoon.
+       *
+       * The address check above logs loudly and the rate limit logs; this one refused and
+       * said nothing. So a mismatched secret produced exactly no evidence: ElevenLabs
+       * reported `is_error: true` with no detail, the server log showed not a single line,
+       * and the only honest reading of that pair was "the request never arrived" — which
+       * sent the search to DNS, to cold starts, to the agent's configuration, and to the
+       * one place it was not.
+       *
+       * The cause is ordinary and will happen again: `npm run sync:agent` writes the secret
+       * from the LOCAL .env into the agent at ElevenLabs, while the deployment has its own
+       * copy typed into a dashboard. Two places, one value, no warning when they drift.
+       *
+       * The header is never printed, and neither is the expected value. Whether one was
+       * sent at all is the entire diagnosis — a missing header means the tool was declared
+       * without it, a present one means the two copies have drifted — and neither question
+       * needs the secret itself to answer.
+       */
+      console.warn(
+        `\n  webhook: REFUSED ${name} — ${req.get(HEADER) ? 'the tool secret does not match' : 'no tool secret was sent'}.` +
+          `\n  ELEVENLABS_WEBHOOK_SECRET here must equal the one npm run sync:agent wrote into the agent.` +
+          `\n  Set both to the same value and sync again.\n`,
+      )
       return res.status(401).json({ error: 'Bad or missing tool secret.' })
     }
 

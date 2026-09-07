@@ -21,7 +21,29 @@ services:
   - type: web
     name: airport-investment-agent
     runtime: node
-    plan: starter # free instances sleep, and a sleeping agent is not a test environment
+    # Free, and the two things it costs are worth knowing before the first surprise:
+    #
+    #   1. The instance SLEEPS after about fifteen minutes with no traffic, and the request
+    #      that wakes it waits roughly fifty seconds. Fine for showing someone a link. Not
+    #      fine for measuring latency, which is the number this project exists to compare —
+    #      a cold start would land in the trace as the model being slow.
+    #
+    #   2. There is NO DISK on the free plan, and that is the sharper one. Everything the
+    #      server writes at runtime lives in data/ and none of it is in the repo:
+    #
+    #        data/sessions/   the stored conversations — the whole point of a test
+    #                         deployment, gone on every deploy and every wake
+    #        data/agents.json agents created through the UI
+    #        data/knowledge/  the uploaded documents, so search_knowledge finds NOTHING
+    #                         and the RAG path answers from an empty index
+    #
+    #      What does ship: airports.json, airport_annual.json and eval-presets.json. So the
+    #      scoring engine, the six data tools and the eval batches all work. The knowledge
+    #      base and everything you record do not.
+    #
+    # To make it permanent later: plan: starter, and put the disk block back — it is at the
+    # bottom of this file, commented, with the mount path already correct.
+    plan: free
     region: frankfurt # nearest to Israel of Render's regions; latency is the product here
     branch: live-voice-agents
 
@@ -32,14 +54,13 @@ services:
 
     healthCheckPath: /api/health
 
-    # Without this, every deploy starts with an empty data/ — the agents you created, the
-    # conversations you recorded to study, the eval presets. All of it is written at runtime
-    # by the server, none of it is in the repo, and losing it on each push would make a test
-    # deployment useless for the thing it exists for.
-    disk:
-      name: data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
+    # A disk needs a paid plan. Uncomment this and set `plan: starter` above, together —
+    # either one alone is a deploy that fails validation rather than a cheaper one.
+    #
+    # disk:
+    #   name: data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
 
     envVars:
       # THE ONE THAT MUST NOT BE SKIPPED.

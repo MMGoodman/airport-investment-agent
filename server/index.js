@@ -8,6 +8,7 @@ import { getStore } from '../src/data/store.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 import { mountWebhookToolRoute } from './webhookTools.js'
 import { apiGate, announce } from './auth.js'
+import { seedIfEmpty } from './knowledge.js'
 import { mountTagRoutes, tagConversation } from './tags.js'
 import { mountSessionRoutes, saveTags, turnsOf } from './sessions.js'
 import { mountVoiceRoutes } from './voice.js'
@@ -315,4 +316,16 @@ attachRelay(server)
 server.listen(PORT, () => {
   console.log(`API server listening on http://localhost:${PORT}  (model: ${MODEL})`)
   announce()
+
+  /**
+   * After listening, never before.
+   *
+   * Seeding embeds two documents, which is a network round trip to OpenAI. Doing it before
+   * `listen` would hold the port closed for its duration — and on a host that health-checks
+   * a new deploy on a timer, a slow embed would read as a service that failed to start.
+   */
+  void seedIfEmpty().then(({ seeded, why }) => {
+    if (seeded) console.log(`  knowledge: seeded ${seeded} demo document(s) into an empty index`)
+    else if (why && !why.includes('already there')) console.log(`  knowledge: not seeded — ${why}`)
+  })
 })

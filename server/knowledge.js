@@ -25,6 +25,7 @@
  * something that does not say what it appears to say.
  */
 import { createHash } from 'node:crypto'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -224,6 +225,59 @@ export async function search({ query, topK = 4, apiKey }) {
       ...h,
       score: Number(h.score.toFixed(3)),
     })),
+  }
+}
+
+/**
+ * The demo corpus, planted on a host that starts with an empty disk.
+ *
+ * WHY THIS EXISTS
+ *
+ * `data/knowledge/` is gitignored, and rightly — it holds documents somebody uploaded, and
+ * a public repository is the wrong place for those by default. On a laptop that is the end
+ * of it: you upload once and the index stays.
+ *
+ * On a free host there is no disk. Every deploy, and every wake from sleep, starts from the
+ * repository — so `search_knowledge` searched an empty index and answered "the knowledge
+ * base has nothing on this" to every question. That reads as an agent that does not know
+ * things, not as a corpus that was never shipped, and it is the RAG path's whole
+ * demonstration failing silently in front of whoever was sent the link.
+ *
+ * So the two invented policy documents live in `data/knowledge-seed/` as plain Markdown —
+ * eight kilobytes, readable in a diff — and are ingested here when the store is empty.
+ * Source text rather than the embedded JSON on purpose: the vectors are 264KB of numbers
+ * tied to whichever model produced them, and committing those would freeze the index to
+ * `text-embedding-3-small` forever.
+ *
+ * ONLY WHEN EMPTY, AND NEVER OVER ANYTHING
+ *
+ * A store with documents in it is a store somebody filled, and re-planting a demo corpus
+ * over it — or beside it, duplicated — is the kind of helpfulness nobody asked for. This
+ * runs once, on an empty index, and does nothing otherwise.
+ *
+ * Failure is quiet by design. No key, no network, a malformed file: the index stays empty,
+ * which is exactly where it was. A seeder that could stop the server from booting would be
+ * a worse problem than the one it solves.
+ */
+const SEED_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'knowledge-seed')
+
+export async function seedIfEmpty(apiKey = process.env.OPENAI_API_KEY) {
+  try {
+    if (!apiKey) return { seeded: 0, why: 'no OpenAI key — embeddings need one' }
+    if (!existsSync(SEED_DIR)) return { seeded: 0, why: 'no seed folder' }
+
+    const existing = await listDocs()
+    if (existing.length > 0) return { seeded: 0, why: `${existing.length} already there` }
+
+    let seeded = 0
+    for (const name of readdirSync(SEED_DIR)) {
+      if (!ACCEPTED.includes(name.slice(name.lastIndexOf('.')).toLowerCase())) continue
+      await ingest({ name, text: readFileSync(join(SEED_DIR, name), 'utf8'), apiKey })
+      seeded += 1
+    }
+    return { seeded }
+  } catch (err) {
+    return { seeded: 0, why: err.message }
   }
 }
 

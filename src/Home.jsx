@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CreateAgent from './CreateAgent.jsx'
 import { applyTheme, readTheme } from './theme.js'
 import './Home.css'
 
@@ -13,9 +14,11 @@ import './Home.css'
  * One card today. It is deliberately not styled as a placeholder grid waiting to be filled
  * — an empty slot promising more is a worse thing to look at than one real entry.
  */
-export default function Home({ agents, health, lang, onLang, onOpenAgent, error }) {
+export default function Home({ agents, health, lang, onLang, onOpenAgent, onAgentsChanged, error }) {
   const [theme, setTheme] = useState(readTheme)
   const [note, setNote] = useState(null)
+  /** The create flow takes over the page rather than opening beside it: it is five steps. */
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     if (!agents) return
@@ -23,6 +26,23 @@ export default function Home({ agents, health, lang, onLang, onOpenAgent, error 
   }, [agents])
 
   const list = agents?.agents ?? []
+
+  if (creating) {
+    return (
+      <div className="home">
+        <CreateAgent
+          onCancel={() => setCreating(false)}
+          onCreated={(agent) => {
+            setCreating(false)
+            // Straight into it. The reason to make an agent is to talk to it, and a list
+            // that just grew by one is not the answer to "what now".
+            onAgentsChanged?.()
+            onOpenAgent(agent.id)
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="home">
@@ -79,20 +99,56 @@ export default function Home({ agents, health, lang, onLang, onOpenAgent, error 
       </section>
 
       <section className="home-section">
-        <h2>הסוכנים</h2>
+        <div className="home-agents-head">
+          <h2>הסוכנים</h2>
+          <button type="button" className="home-create" onClick={() => setCreating(true)}>
+            + סוכן חדש
+          </button>
+        </div>
         {note && <p className="home-hint">{note}</p>}
 
         <ul className="home-agents">
           {list.map((agent) => (
             <li key={agent.id}>
               <button type="button" className="home-agent" onClick={() => onOpenAgent(agent.id)}>
-                <span className="home-agent-name">{agent.name}</span>
+                <span className="home-agent-name">
+                  {agent.name}
+                  {/* Which agent is code and which is a record you made. The built-in one
+                      cannot be deleted and its tools are its own; saying so on the card is
+                      cheaper than a surprise later. */}
+                  {agent.builtIn === false && <span className="home-agent-mine">שלך</span>}
+                </span>
                 <span className="home-agent-tagline">{agent.tagline}</span>
                 <span className="home-agent-desc">{agent.description}</span>
                 <span className="home-agent-stats mono">
-                  <span>{agent.summary.tools} כלים</span>
-                  <span>{agent.summary.airports} שדות</span>
-                  <span>{agent.summary.evalCases} מקרי בחינה</span>
+                  {agent.summary ? (
+                    <>
+                      <span>
+                        <bdi>{agent.summary.tools} כלים</bdi>
+                      </span>
+                      <span>
+                        <bdi>{agent.summary.airports} שדות</bdi>
+                      </span>
+                      <span>
+                        <bdi>{agent.summary.evalCases} מקרי בחינה</bdi>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="mono">{agent.defaultTransport}</span>
+                      {/* Borrowed and declared are both tools this agent has, and a card
+                          that counted only the borrowed ones read "0 כלים" for an agent
+                          whose whole point was the one its maker had just written. */}
+                      <span>
+                        <bdi>
+                          {(agent.toolNames ?? []).length + (agent.customTools ?? []).length} כלים
+                        </bdi>
+                      </span>
+                      <span>
+                        <bdi>{(agent.skills ?? []).length} סקילים</bdi>
+                      </span>
+                    </>
+                  )}
                 </span>
                 <span className="home-agent-go" aria-hidden="true">
                   ←

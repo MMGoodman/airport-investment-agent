@@ -39,17 +39,38 @@ describe('turnsFrom', () => {
     expect(turns[0].ask).toBe('שלום')
   })
 
-  it('skips an answer the agent volunteered after its own', () => {
-    // ElevenLabs re-engages after a silence, which puts two assistant messages in a row. The
-    // second was not a reply to anything.
+  it('keeps a second assistant message as part of the answer above it', () => {
+    // This used to assert the opposite — that a volunteered follow-up was dropped, because
+    // nobody asked for it. A live session showed the cost: the model said it would rank the
+    // top three, called rank_airports, and delivered the ranking as a SECOND message. The
+    // record kept the announcement and threw away both the answer and the call.
     const turns = turnsFrom([
-      { role: 'user', content: 'תודה' },
-      { role: 'assistant', content: 'בבקשה.' },
-      { role: 'assistant', content: 'האם תרצה שאפרט על שדה תעופה נוסף?' },
+      { role: 'user', content: 'אילו שדות מועמדים חזקים להרחבה?' },
+      { role: 'assistant', content: 'אני אדרג את שלושת המובילים.', toolCalls: [], ms: 251 },
+      {
+        role: 'assistant',
+        content: 'המובילים הם JFK, SJU ו-LGA.',
+        toolCalls: [{ tool: 'rank_airports' }],
+        ms: 4300,
+      },
     ])
 
     expect(turns).toHaveLength(1)
-    expect(turns[0].reply).toBe('בבקשה.')
+    expect(turns[0].reply).toBe('אני אדרג את שלושת המובילים.\n\nהמובילים הם JFK, SJU ו-LGA.')
+    // The call that produced the ranking belongs to the turn that asked for it.
+    expect(turns[0].toolCalls).toHaveLength(1)
+    // And the timing stays the moment the caller first heard something back.
+    expect(turns[0].ms).toBe(251)
+  })
+
+  it('still skips the greeting, which has no question anywhere above it', () => {
+    const turns = turnsFrom([
+      { role: 'assistant', content: 'סוכן השקעות בשדות תעופה, בשידור חי.' },
+      { role: 'assistant', content: 'במה אפשר לעזור?' },
+    ])
+
+    // Nothing to merge into and nothing to grade against: no question was ever asked.
+    expect(turns).toEqual([])
   })
 
   it('defaults an answer with no recorded calls to an empty list, not undefined', () => {

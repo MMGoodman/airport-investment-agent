@@ -30,7 +30,8 @@ import { toolSchemas, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { transcriptionPrompt, PHANTOM_TERM_THRESHOLD } from '../src/agent/vocabulary.js'
 import { cases } from '../eval/cases.js'
-import { skillsSummary, skillForTool } from '../src/agent/skills.js'
+import { skillsSummary, skillForTool, eagerSkills } from '../src/agent/skills.js'
+import { configFor, updateAgent, toolAsSchema } from './agentStore.js'
 
 /**
  * In-memory only, and gone on restart.
@@ -43,6 +44,83 @@ const overrides = {
   voiceAddendum: null,
   /** Tool names switched off for experiments. Never used to switch one ON that placement withheld. */
   disabledTools: new Set(),
+}
+
+/**
+ * Everything the runtime needs to serve one conversation, for one agent.
+ *
+ * IT LIVES HERE AND NOT IN agentStore FOR A REASON
+ *
+ * The built-in agent resolves through the overrides above — the Instructions pane edits it,
+ * the tool switches take tools away from it. So resolution needs both the record and the
+ * overrides, and putting it in the store meant the store importing this file while this file
+ * imported the store. That cycle worked, until it would not: two modules that need each
+ * other at import time fail in a way that looks like a value being undefined for no reason.
+ *
+ * The overrides are the thing that has to be layered on, so resolution belongs beside them.
+ *
+ * ONE FUNCTION, TWO KINDS OF AGENT — callers never branch on which they were handed. The
+ * moment one has to ask "is this the real one", they all do, and one of them forgets.
+ *
+ * WHY SKILLS CARRY THEIR FLAGS
+ *
+ * `eager` is not decoration. A skill that decides WHETHER to call its tool cannot be
+ * delivered by calling it — call-control is what stops the agent hanging up on "thank you",
+ * and four premature hangups were the cost of learning that.
+ */
+export function runtimeFor(agentId) {
+  const cfg = configFor(agentId)
+
+  if (cfg.builtIn) {
+    return {
+      id: cfg.id,
+      builtIn: true,
+      systemPrompt: effectivePrompt(),
+      voiceAddendum: effectiveVoiceAddendum(),
+      allows: (name) => toolIsEnabled(name),
+      skills: skillsSummary(),
+      eager: eagerSkills(),
+      model: null,
+      voice: null,
+      transport: cfg.transport,
+    }
+  }
+
+  const chosen = new Set(cfg.toolNames)
+  const skills = (cfg.skills ?? []).map((sk) => ({
+    id: sk.id,
+    name: sk.name ?? sk.id,
+    tools: sk.tools ?? [],
+    instructions: sk.instructions ?? '',
+    always: Boolean(sk.always),
+    eager: Boolean(sk.eager),
+    chars: (sk.instructions ?? '').length,
+  }))
+
+  return {
+    id: cfg.id,
+    builtIn: false,
+    systemPrompt: cfg.systemPrompt,
+    voiceAddendum: cfg.voiceAddendum,
+    // A created agent narrows the CATALOGUE. It cannot widen it — placement still decides
+    // where an implemented tool may run, and this only takes away.
+    allows: (name) => chosen.has(name),
+    /**
+     * Tools this agent declared, which are a different kind of thing.
+     *
+     * They are not in `toolSchemas` and never will be until somebody writes the code, so
+     * they cannot go through `allows` — that answers "may this agent use one of the
+     * deployment's tools", and the answer for a name with no implementation is not "no",
+     * it is "that is not the question". Kept separate so the difference survives to the
+     * screen instead of being flattened into a disabled checkbox.
+     */
+    declaredTools: cfg.customTools ?? [],
+    skills,
+    eager: skills.filter((sk) => sk.eager),
+    model: cfg.model,
+    voice: cfg.voice,
+    transport: cfg.transport,
+  }
 }
 
 /** What the model will actually be given, override or file. */
@@ -130,22 +208,44 @@ async function vocabulary() {
 }
 
 /** The regression net, so the console can say what is covered without running it. */
+/**
+ * The cases themselves, not a list of their names.
+ *
+ * This used to reduce every case to `c.id` and send that. Which put nineteen chips on a
+ * screen, each naming a claim the reader had no way to see: `lax-vs-sna` tells you a case
+ * exists and nothing about what it asserts, what it asks, or why. The information was one
+ * property away the whole time.
+ *
+ * The count in the note was a literal `19` beside a computed `total`, so the two would have
+ * disagreed the first time anyone added a case.
+ */
 function evals() {
   const groups = {}
   for (const c of cases) (groups[c.group] ??= []).push(c.id)
   return {
     total: cases.length,
+    cases,
     groups: Object.entries(groups).map(([group, ids]) => ({ group, ids })),
-    note: 'npm run eval — 19 cases across both model paths. Costs API quota, so it is not run from here.',
+    note: `npm run eval — ${cases.length} cases across both model paths. Costs API quota, so it is not run from here.`,
   }
 }
 
 /** Everything the console needs to show the agent's surface, with the file alongside. */
-export async function workbenchState() {
+export async function workbenchState(agentId) {
+  const agent = runtimeFor(agentId)
   return {
+    /**
+     * Which agent this describes, and whether editing it sticks.
+     *
+     * The built-in's edits are in-memory experiments and vanish on restart, by design. A
+     * created agent's prompt and tools ARE its definition, so the same controls write to
+     * disk. The screen has to be able to say which, or someone loses work they thought was
+     * saved — or keeps a change they thought was temporary.
+     */
+    agent: { id: agent.id, builtIn: agent.builtIn, persists: !agent.builtIn },
     prompt: {
-      system: effectivePrompt(),
-      voiceAddendum: effectiveVoiceAddendum(),
+      system: agent.systemPrompt,
+      voiceAddendum: agent.voiceAddendum,
       // So the panel can show what changed and offer to put it back.
       systemIsOverridden: overrides.systemPrompt !== null,
       voiceAddendumIsOverridden: overrides.voiceAddendum !== null,
@@ -157,17 +257,45 @@ export async function workbenchState() {
     // Every skill with its instructions and the tools that trigger it, so the console can
     // show the link from either side — open a skill and see its tools, open a tool and see
     // which skill it brings with it.
-    skills: skillsSummary(),
-    tools: toolSchemas.map((t) => ({
-      name: t.name,
-      description: t.description,
-      placement: placementOf(t.name),
-      skill: skillForTool(t.name)?.id ?? null,
-      skillName: skillForTool(t.name)?.name ?? null,
-      enabled: toolIsEnabled(t.name),
-      parameters: t.parameters ?? { type: 'object', properties: {} },
-      required: t.parameters?.required ?? [],
-    })),
+    skills: agent.skills,
+    tools: [
+      ...toolSchemas.map((t) => ({
+        name: t.name,
+        description: t.description,
+        placement: placementOf(t.name),
+        skill: skillForTool(t.name)?.id ?? null,
+        skillName: skillForTool(t.name)?.name ?? null,
+        // For a created agent this is "did you give it this tool", not "is it switched off
+        // for an experiment" — the same column answering a different question per agent.
+        enabled: agent.allows(t.name),
+        parameters: t.parameters ?? { type: 'object', properties: {} },
+        required: t.parameters?.required ?? [],
+        declared: false,
+      })),
+      /**
+       * Tools this agent declared but nobody has implemented.
+       *
+       * They belong in this list or they disappear the moment the create flow closes,
+       * which would make declaring one feel like it did nothing. They are marked, because
+       * showing them identically to the eight that actually run would be the more
+       * expensive lie: `enabled: true` on a name with no code behind it.
+       */
+      ...(agent.declaredTools ?? []).map((t) => {
+        const schema = toolAsSchema(t)
+        return {
+          name: schema.name,
+          description: schema.description,
+          placement: schema.placement,
+          skill: null,
+          skillName: null,
+          enabled: false,
+          parameters: schema.parameters,
+          required: schema.parameters.required,
+          declared: true,
+          handler: t.handler ?? '',
+        }
+      }),
+    ],
     knowledge: await knowledge(),
     vocabulary: await vocabulary(),
     evals: evals(),
@@ -213,10 +341,62 @@ export function applyOverrides(patch = {}) {
   return { changed }
 }
 
+/**
+ * The same edits, written to a created agent's record instead of the session overrides.
+ *
+ * `disableTool` and `enableTool` mean something different here and the difference is the
+ * point: on the built-in they take a tool away for an experiment, on a created agent they
+ * change which tools it HAS. Same control, same words on screen, and the pane says which by
+ * showing whether the change persists.
+ */
+function applyToAgent(agent, patch) {
+  const changed = []
+  const next = {}
+
+  if (typeof patch.systemPrompt === 'string') {
+    next.systemPrompt = patch.systemPrompt
+    changed.push('systemPrompt')
+  }
+  if (typeof patch.voiceAddendum === 'string') {
+    next.voiceAddendum = patch.voiceAddendum
+    changed.push('voiceAddendum')
+  }
+
+  /**
+   * The same `disabledTools` array the pane already sends, read the other way round.
+   *
+   * It invented its own `enableTool`/`disableTool` keys first, which the pane does not send
+   * and never did — so every tool toggle on a created agent silently did nothing. The pane
+   * posts the full set of switched-off tools; for a created agent, the ones NOT in it are
+   * the tools it has.
+   */
+  if (Array.isArray(patch.disabledTools)) {
+    const off = new Set(patch.disabledTools)
+    const kept = toolSchemas.map((t) => t.name).filter((n) => !off.has(n))
+    const before = toolSchemas
+      .map((t) => t.name)
+      .filter((n) => agent.allows(n))
+      .sort()
+      .join(',')
+    if (before !== [...kept].sort().join(',')) {
+      next.toolNames = kept
+      changed.push(kept.length ? `tools: ${kept.join(', ')}` : 'no tools')
+    }
+  }
+
+  if (Array.isArray(patch.skills)) {
+    next.skills = patch.skills
+    changed.push('skills')
+  }
+
+  if (changed.length) updateAgent(agent.id, next)
+  return { changed }
+}
+
 export function mountWorkbenchRoutes(app) {
-  app.get('/api/workbench', async (_req, res) => {
+  app.get('/api/workbench', async (req, res) => {
     try {
-      res.json(await workbenchState())
+      res.json(await workbenchState(req.query?.agent))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
@@ -224,8 +404,13 @@ export function mountWorkbenchRoutes(app) {
 
   app.post('/api/workbench', async (req, res) => {
     try {
-      const { changed } = applyOverrides(req.body ?? {})
-      res.json({ changed, state: await workbenchState() })
+      const agentId = req.body?.agent
+      const agent = runtimeFor(agentId)
+      // A created agent's settings are saved; the built-in's are session overrides.
+      const { changed } = agent.builtIn
+        ? applyOverrides(req.body ?? {})
+        : applyToAgent(agent, req.body ?? {})
+      res.json({ changed, state: await workbenchState(agentId) })
     } catch (err) {
       res.status(400).json({ error: err.message })
     }

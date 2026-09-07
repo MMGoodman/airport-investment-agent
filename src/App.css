@@ -1230,3 +1230,136 @@ kbd {
     display: none;
   }
 }
+
+/* ---- the one action for a noisy room ---------------------------------------- */
+
+/* Above the radios rather than beside them: it SETS them, so it reads as the thing you
+   press first and the controls below as what it did. */
+.pipe-room {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0 0 0.8rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-panel);
+}
+
+.pipe-room-set {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.pipe-room-set:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.pipe-room > span {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+/* ---- the near-field gate ---------------------------------------------------- */
+
+.live-gate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The meter is the instrument: your voice and the room land in different places on it, and
+   the line is set between them by eye. A number alone means nothing to anybody. */
+.live-gate-meter {
+  position: relative;
+  inline-size: 6rem;
+  block-size: 8px;
+  border-radius: 999px;
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.live-gate-level {
+  display: block;
+  block-size: 100%;
+  background: var(--text-dim);
+  transition: inline-size 60ms linear;
+}
+
+/* Open is the only state worth colouring — it is the one that costs you a turn. */
+.live-gate-level.open {
+  background: var(--accent);
+}
+
+.live-gate-line {
+  position: absolute;
+  inset-block: -2px;
+  inline-size: 2px;
+  background: var(--text);
+  opacity: 0.7;
+}
+
+.live-gate input[type='range'] {
+  inline-size: 5rem;
+}
+
+.live-gate-num {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* ---- what the OpenAI session is minted with --------------------------------- */
+
+.pipe-oa {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-panel);
+}
+
+.pipe-oa-title {
+  font-size: 0.82rem;
+  color: var(--text-strong);
+}
+
+.pipe-oa label {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.pipe-oa select {
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--bg-sunk);
+  color: var(--text);
+  inline-size: 100%;
+}
+
+.pipe-oa-note {
+  margin: 0.2rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.pipe-oa-note.dim {
+  opacity: 0.75;
+}

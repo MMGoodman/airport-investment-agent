@@ -195,3 +195,35 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- creating one ---------------------------------------------------------- */
+
+.home-agents-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.home-create {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.home-create:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* An agent you made, told apart from the one that is code. */
+.home-agent-mine {
+  margin-inline-start: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 400;
+}

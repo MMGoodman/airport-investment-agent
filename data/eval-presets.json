@@ -1,0 +1,37 @@
+[
+  {
+    "id": "מה-שדורש-שרת-8-8-מול-6-8",
+    "name": "מה שדורש שרת — 8/8 מול 6/8",
+    "ids": [
+      "weather-san-juan",
+      "cargo-funding-rule"
+    ],
+    "lastPath": "elevenlabs-hybrid",
+    "savedAt": "2026-09-07T07:41:36.195Z"
+  },
+  {
+    "id": "מהיר-הכלי-הנכון",
+    "name": "מהיר — הכלי הנכון",
+    "ids": [
+      "new-england-ranking",
+      "lax-vs-sna",
+      "anchorage-long-haul",
+      "sfo-unmet-demand"
+    ],
+    "lastPath": "gemini",
+    "savedAt": "2026-09-06T10:07:03.518Z"
+  },
+  {
+    "id": "רוחב-ציר-לכל-מקרה",
+    "name": "רוחב — ציר לכל מקרה",
+    "ids": [
+      "new-england-ranking",
+      "ambiguous-portland",
+      "construction-cost",
+      "he-lax-vs-sna",
+      "weights-are-policy"
+    ],
+    "lastPath": "gemini",
+    "savedAt": "2026-09-06T10:07:03.501Z"
+  }
+]

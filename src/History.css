@@ -45,6 +45,73 @@
   border-color: var(--rule-strong);
 }
 
+/* ---- sort and group ------------------------------------------------------
+ *
+ * In the header rather than above the list, because they describe the list and a control
+ * that floats above one reads as a control over the whole pane. Two selects and the refresh
+ * button share a row; on a narrow pane they wrap together instead of pushing the count off
+ * the edge.
+ */
+
+.hs-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.hs-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.hs-controls select {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-2);
+  min-block-size: 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.hs-controls select:hover {
+  border-color: var(--rule-strong);
+}
+
+.hs-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* One column fewer when the pipeline heading already says what it said. */
+.hs-list.no-path button {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.hs-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+/* The count is dim so the heading reads as the pipeline, not as an arithmetic result. */
+.hs-group-count {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
 /* ---- the list ----------------------------------------------------------- */
 
 .hs-list {

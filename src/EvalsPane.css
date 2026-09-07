@@ -1,0 +1,432 @@
+/**
+ * The evaluation set.
+ *
+ * A list you scan and one you read, in the same component. Closed, a case is one line and
+ * the question is on it — that alone is the fix for a pane that used to show only ids.
+ * Open, it becomes a form, and the field names are kept beside the labels because the file
+ * is where these end up and `mustMentionOneOf` is what you will be typing there.
+ */
+
+.ev {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.ev-top {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ev-filter {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg-sunk);
+  color: var(--text);
+  inline-size: min(100%, 32rem);
+}
+
+.ev section h4 {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-1);
+}
+
+.ev section .ac-hint {
+  margin-block-end: var(--space-3);
+}
+
+/* ---- the list ------------------------------------------------------------ */
+
+.ev-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.ev-case {
+  background: var(--bg-panel);
+}
+
+/* A draft is editable and temporary; both facts matter enough to mark the row. */
+.ev-case.draft {
+  border-inline-start: 3px solid var(--live);
+}
+
+.ev-head {
+  inline-size: 100%;
+  display: grid;
+  grid-template-columns: 1rem minmax(6rem, auto) auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ev-head:hover {
+  background: var(--bg-sunk);
+}
+
+.ev-caret {
+  color: var(--text-dim);
+  font-size: 0.7em;
+}
+
+.ev-id {
+  color: var(--text-strong);
+}
+
+.ev-group {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  padding: 1px var(--space-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+}
+
+/* The question, which is the case. Truncated on the row and complete once open. */
+.ev-ask {
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-badge {
+  font-size: var(--fs-xs);
+  color: var(--live);
+}
+
+/* ---- one case, open ------------------------------------------------------ */
+
+.ev-body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-block-start: 1px solid var(--rule);
+  background: var(--bg-sunk);
+}
+
+.ev-field {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.ev-key {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+
+/* The name it has in the file, because that is where you will type it next. */
+.ev-keyname {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.ev-val {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ev-hint {
+  grid-column: 2;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ev-field input[type='text'],
+.ev-field input[type='search'],
+.ev-field textarea,
+.ev-field select {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  color: var(--text);
+  inline-size: 100%;
+  resize: vertical;
+}
+
+.ev-field textarea.mono {
+  font-family: var(--mono, monospace);
+  font-size: var(--fs-xs);
+}
+
+.ev-field input:focus,
+.ev-field textarea:focus,
+.ev-field select:focus {
+  outline: 1px solid var(--live);
+  outline-offset: -1px;
+}
+
+.ev-bool {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ev-source {
+  font-size: var(--fs-sm);
+}
+
+.ev-source summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.ev-source p {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.ev-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--rule);
+}
+
+.ev-actions button {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ev-actions button:hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+.ev-actions .ev-danger:hover {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+@media (max-width: 720px) {
+  .ev-head {
+    grid-template-columns: 1rem minmax(0, 1fr) auto;
+  }
+
+  /* The question takes the full width rather than becoming four ellipsised words. */
+  .ev-ask {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+
+  .ev-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .ev-hint {
+    grid-column: 1;
+  }
+}
+
+/* ---- toolbar --------------------------------------------------------------- */
+
+.ev-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ev-toolbar .ev-filter {
+  flex: 1;
+  min-inline-size: 14rem;
+}
+
+.ev-path {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.ev-path select {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+
+/* ---- running one from its own row ------------------------------------------- */
+
+.ev-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  padding-inline-end: var(--space-3);
+}
+
+.ev-row .ev-head {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.ev-run {
+  align-self: center;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 1px var(--space-3);
+  min-block-size: 24px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ev-run:not(:disabled):hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+.ev-run:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The verdict sits beside the button that produced it, so the row answers its own
+   question without being opened. */
+.ev-verdict {
+  align-self: center;
+  font-weight: 600;
+}
+
+.ev-verdict.ok {
+  color: var(--live);
+}
+
+.ev-verdict.bad {
+  color: var(--signal);
+}
+
+.ev-verdict.err {
+  color: var(--text-dim);
+}
+
+.ev-runout {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-block-start: 1px solid var(--rule);
+  background: var(--bg-sunk);
+}
+
+.ev-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ev-checks li {
+  display: grid;
+  grid-template-columns: 1rem auto minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: var(--fs-xs);
+}
+
+.ev-checks li.ok > span:first-child {
+  color: var(--live);
+}
+
+.ev-checks li.bad > span:first-child {
+  color: var(--signal);
+}
+
+.ev-detail {
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.ev-runout .ev-reply {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--text);
+  max-inline-size: 62rem;
+}
+
+.ev-transport {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+/* ---- a per-row run that never reached the model ------------------------------ */
+
+.ev-failure {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ev-why {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+
+.ev-fix {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ev-raw summary {
+  cursor: pointer;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ev-raw p {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}

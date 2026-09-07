@@ -286,6 +286,35 @@ const buildConfig = (webhookTools) => {
      * ELEVENLABS_RETRANSCRIBE=off if a deployment would rather pay less than hear more.
      */
     retranscribe_on_turn_timeout: process.env.ELEVENLABS_RETRANSCRIBE !== 'off',
+
+    /**
+     * Words that do NOT count as someone taking the turn.
+     *
+     * This path has no volume threshold anywhere in its configuration — nothing in it can
+     * be told "ignore anything quieter than this". So the only lever against a room is
+     * WHICH WORDS are allowed to cut the agent off, and both fields that control it were
+     * sitting at their defaults: an empty list, and the platform's own list switched off.
+     *
+     * Merging theirs back on is free. The additions are the sounds a person makes while
+     * NOT talking to you — a neighbour agreeing with someone else, a hum, a "yeah" across
+     * the desk. They are also, unavoidably, things a caller might say and mean, and that is
+     * the trade: an ignored "okay" costs one repeated word, a heeded one costs the answer
+     * that was mid-sentence.
+     *
+     * It governs INTERRUPTION only. A neighbour who speaks a whole sentence still takes the
+     * turn — for that, see push-to-talk, which is the only guaranteed answer on any path.
+     */
+    merge_with_default_ignore_terms: process.env.ELEVENLABS_MERGE_IGNORE !== 'off',
+    interruption_ignore_terms: (process.env.ELEVENLABS_IGNORE_TERMS ??
+      [
+        // Hebrew backchannels
+        'כן', 'אוקיי', 'אוקי', 'אה', 'אמ', 'אהה', 'נכון', 'בסדר', 'מממ',
+        // English, for a call switched mid-session
+        'yeah', 'yep', 'okay', 'ok', 'uh', 'um', 'mm', 'mhm', 'right', 'sure',
+      ].join(','))
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
   },
   // The same vocabulary bias the OpenAI path gets as a transcription prompt. Without it a
   // transcriber has no reason to expect three-letter airport codes and guesses at them.

@@ -15,7 +15,14 @@ import { toolSchemasFor } from '../src/agent/tools.js'
 import { skillsSummary, eagerSkills } from '../src/agent/skills.js'
 import { attachSideband, detachSideband } from './sideband.js'
 import { mountAgentRoutes } from './agents.js'
+import { mountAgentStoreRoutes } from './agentStore.js'
+import { mountAgentSpecRoutes } from './agentSpec.js'
+import { runtimeFor } from './workbench.js'
 import { mountScenarioRoutes } from './scenarios.js'
+import { mountEvalRunRoutes } from './evalRuns.js'
+import { mountEvalPresetRoutes } from './evalPresets.js'
+import { mountElevenLabsConfigRoutes } from './elevenlabsConfig.js'
+import { mountOpenAIConfigRoutes } from './openaiConfig.js'
 import { mountKnowledgeRoutes } from './knowledge.js'
 import {
   effectivePrompt,
@@ -46,6 +53,20 @@ function rememberSecret(session, secret, query) {
 import { transcriptionPrompt } from '../src/agent/vocabulary.js'
 
 const OPENAI_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime'
+
+/**
+ * Chosen per session where the query says so, from env otherwise.
+ *
+ * These were module constants, which made them env-only: to hear a different voice you
+ * edited a file and restarted. The turn-detection settings beside them have been per-call
+ * since the pipeline board was built, and there was never a reason for these three to be
+ * different — a session is minted fresh on every connect either way.
+ *
+ * Validated against nothing here on purpose. OpenAI rejects a value it does not know and
+ * says which ones it does, which is a better error than any list this file could keep.
+ */
+const pick = (asked, fallback) =>
+  typeof asked === 'string' && asked.trim() ? asked.trim() : fallback
 // Ten voices exist: alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar.
 // marin and cedar are the current pair and the only ones worth starting from. A voice
 // carries an accent, so the one that reads English best is not automatically the one that
@@ -188,17 +209,45 @@ const asRealtimeTool = (t) => ({
  */
 export async function buildRealtimeSession(query = {}, transport = 'browser') {
   const lang = query.lang === 'he' ? 'he' : 'en'
+  /**
+   * Which agent this session is for.
+   *
+   * Absent means the built-in one, which is every request that existed before agents were
+   * data — so nothing about the airport agent changes by this line being here.
+   */
+  const agent = runtimeFor(query.agent)
   // Which tools this connection may offer. A 'server' tool is withheld from the browser
   // path rather than hidden there: on WebRTC the function call lands on the browser's data
   // channel, so a tool it cannot see is a tool that transport cannot carry.
   const { tools: placed, withheld } = toolSchemasFor(transport)
   // The workbench can take a tool away for an experiment. It can never add one back that
   // placement withheld — that boundary is set before the conversation starts.
-  const tools = placed.filter((t) => toolIsEnabled(t.name))
+  const tools = placed.filter((t) => agent.allows(t.name))
   const vad = turnDetectionFor(query)
   const useVocabulary = query.vocabulary !== 'off'
 
   const hint = useVocabulary ? await transcriptionPrompt(lang) : ''
+
+  /**
+   * Assembled ONCE, because the two copies drifted.
+   *
+   * The browser was handed this text and the session was minted with a shorter one that left
+   * out the eager skills — so call-control, the rule that stops the agent hanging up on
+   * "okay, thanks", only reached a live call if some unrelated skill loaded first and the
+   * browser re-sent the base. Which needs a tool call. Which is precisely the lateness the
+   * eager flag was added to remove.
+   *
+   * Eager skills ride with the base. See skills.js: a skill that decides WHETHER to call its
+   * tool cannot be delivered by calling it, and end_call happens once.
+   */
+  const baseInstructions =
+    agent.systemPrompt +
+    agent.voiceAddendum +
+    languageInstruction(lang, true) +
+    withheldNote(withheld) +
+    agent.eager.map((skill) => `
+
+${skill.instructions}`).join('')
 
   return {
     lang,
@@ -218,19 +267,8 @@ export async function buildRealtimeSession(query = {}, transport = 'browser') {
      * has to send base + everything loaded so far. Handing both over here means that
      * composition happens where the tool call is seen, without a round trip on a live call.
      */
-    baseInstructions:
-      effectivePrompt() +
-      effectiveVoiceAddendum() +
-      languageInstruction(lang, true) +
-      withheldNote(withheld) +
-      // Eager skills ride with the base. See skills.js: one that decides WHETHER to call its
-      // tool cannot be delivered by calling it, and end_call happens once.
-      eagerSkills()
-        .map((skill) => `
-
-${skill.instructions}`)
-        .join(''),
-    skills: skillsSummary()
+    baseInstructions,
+    skills: agent.skills
       .filter((skill) => !skill.always && !skill.eager)
       .map(({ id, name, tools: skillTools, instructions }) => ({
         id,
@@ -240,21 +278,26 @@ ${skill.instructions}`)
       })),
     // The hint's own terms, so the browser can recognise it being read back at it.
     hintTerms: hint.split(',').map((t) => t.trim()).filter((t) => t.length > 2),
-    model: OPENAI_MODEL,
+    // The browser reports which model the call is running under, so this has to be the one
+    // that was actually asked for and not the default it was compared against.
+    // The query wins over the agent's own choice, so the pipeline board can still try one
+    // without editing the agent it belongs to.
+    model: pick(query.model, agent.model ?? OPENAI_MODEL),
     session: {
       type: 'realtime',
-      model: OPENAI_MODEL,
-      instructions:
-        effectivePrompt() +
-        effectiveVoiceAddendum() +
-        languageInstruction(lang, true) +
-        withheldNote(withheld),
+      model: pick(query.model, agent.model ?? OPENAI_MODEL),
+      // The SAME text the browser is handed. These were assembled separately and drifted: the
+      // session was minted without the eager skills while baseInstructions carried them, so
+      // call-control — the rule against hanging up — only reached a live call once some other
+      // skill loaded and the browser re-sent the base. Which needs a tool call. Which is
+      // exactly the lateness the eager flag exists to prevent.
+      instructions: baseInstructions,
       tools: tools.map(asRealtimeTool),
       tool_choice: 'auto',
       audio: {
         input: {
           transcription: {
-            model: TRANSCRIBE_MODEL,
+            model: pick(query.transcribeModel, TRANSCRIBE_MODEL),
             /**
              * Say which language is being spoken. Never used to be set at all — the
              * language was pinned only as a side effect of the vocabulary hint, whose
@@ -268,7 +311,9 @@ ${skill.instructions}`)
           },
           turn_detection: vad.config,
         },
-        output: { voice: lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE },
+        output: {
+          voice: pick(query.voice, agent.voice ?? (lang === 'he' ? OPENAI_VOICE_HE : OPENAI_VOICE)),
+        },
       },
     },
   }
@@ -277,7 +322,13 @@ ${skill.instructions}`)
 export function mountVoiceRoutes(app) {
   mountWorkbenchRoutes(app)
   mountAgentRoutes(app)
+  mountAgentStoreRoutes(app)
+  mountAgentSpecRoutes(app)
   mountScenarioRoutes(app)
+  mountEvalRunRoutes(app)
+  mountEvalPresetRoutes(app)
+  mountElevenLabsConfigRoutes(app)
+  mountOpenAIConfigRoutes(app)
   mountKnowledgeRoutes(app)
 
   /** Which live providers this deployment can actually offer. Drives the UI switcher. */
@@ -493,7 +544,10 @@ const toolReach = (reach) =>
         ephemeralKey: held.secret,
         instructions: relayed.session.instructions,
       })
-      res.json(out)
+      // Handed back so the browser composes its LATER skill loads from the same note-free
+      // text. Without this the sideband's update is correct and short-lived: the next skill
+      // load rebuilds from the base the session opened with and reinstates the note.
+      res.json({ ...out, instructions: relayed.session.instructions })
     } catch (err) {
       res.status(502).json({ error: err.message })
     }

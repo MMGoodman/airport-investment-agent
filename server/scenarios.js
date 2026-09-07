@@ -110,8 +110,19 @@ export function draftFromTurn({ ask, reply, toolCalls = [], lang = 'he' }) {
   }
 }
 
-/** The shape the eval runner reads, with the review-only field stripped. */
-const asCase = ({ _capturedReply, ...rest }) => rest
+/** The shape the eval runner reads, with the review-only fields stripped. */
+const asCase = ({ _capturedReply, _draftedAt, ...rest }) => rest
+
+/**
+ * Drafts as runnable cases.
+ *
+ * The point of drafting one is to find out whether it holds, and that needs the run to see
+ * it. Exported rather than reached through the HTTP route so the runner does not call its
+ * own server to read memory it is already sharing.
+ */
+export function capturedCases() {
+  return captured.map(asCase)
+}
 
 /** Source you can paste into eval/cases.js, which is where a case becomes real. */
 export function exportCases(list = captured) {
@@ -141,10 +152,56 @@ export function mountScenarioRoutes(app) {
     }
   })
 
+  /**
+   * A draft from an existing case, or from nothing.
+   *
+   * The only way in used to be capturing a live turn, which meant the fifteen fields a case
+   * can carry were reachable only if a conversation happened to produce them. A case you
+   * want to write deliberately — or a file case you want to vary without editing the file —
+   * had no route at all.
+   *
+   * The file stays hand-maintained either way: this clones INTO the in-memory list, and
+   * getting from there into eval/cases.js is still a deliberate paste.
+   */
+  app.post('/api/scenarios/draft', (req, res) => {
+    const from = req.body ?? {}
+    const base = String(from.id || 'draft').replace(/[^a-z0-9-]/gi, '-')
+    // A clone cannot take the id it was cloned from, or the two are one row.
+    let id = from.cloneOf ? `${base}-copy` : base
+    let n = 1
+    while (captured.some((c) => c.id === id)) id = `${base}-copy-${++n}`
+    const draft = { ...from, id, _draftedAt: new Date().toISOString() }
+    delete draft.cloneOf
+    captured.unshift(draft)
+    res.json({ draft, captured })
+  })
+
+  /**
+   * Save an edited draft — creating it if the server has forgotten it.
+   *
+   * `captured` is in memory on purpose, and that is still right: a captured turn is what
+   * the agent DID, and promoting it to a case is meant to be a deliberate paste into
+   * eval/cases.js rather than something that accumulates on disk.
+   *
+   * What was NOT right was 404-ing the save. Restart the server — for a new env, for an
+   * edited case file, for any of the reasons this project restarts it constantly — and the
+   * dialog someone had open became a form that could no longer be submitted, reporting
+   * `no captured scenario he-capture-1` over a screen still showing every field of it. The
+   * browser was holding the whole draft. The only thing missing was the server's copy, and
+   * the request carried it.
+   *
+   * So an unknown id is an insert, not an error. Nothing is lost that the client can still
+   * see, which is the property a form should have.
+   */
   app.put('/api/scenarios/:id', (req, res) => {
     const index = captured.findIndex((c) => c.id === req.params.id)
-    if (index === -1) return res.status(404).json({ error: `no captured scenario ${req.params.id}` })
-    captured[index] = { ...captured[index], ...(req.body ?? {}), id: captured[index].id }
+    const body = req.body ?? {}
+    if (index === -1) {
+      const draft = { ...body, id: req.params.id, _restoredAt: new Date().toISOString() }
+      captured.unshift(draft)
+      return res.json({ draft, captured, restored: true })
+    }
+    captured[index] = { ...captured[index], ...body, id: captured[index].id }
     res.json({ draft: captured[index], captured })
   })
 

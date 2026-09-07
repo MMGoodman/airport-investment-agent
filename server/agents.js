@@ -28,6 +28,7 @@
  */
 import { toolSchemas } from '../src/agent/tools.js'
 import { cases as evalCases } from '../eval/cases.js'
+import { allAgents, getAgent } from './agentStore.js'
 
 export const AGENTS = [
   {
@@ -63,21 +64,51 @@ export const AGENTS = [
       airports: 158,
       evalCases: evalCases.length,
     },
+    /**
+     * The empty conversation, as data rather than as a constant in App.jsx.
+     *
+     * It was three literals in the chat component — a heading about US airport expansion, a
+     * paragraph about BTS T-100, and four sample questions — which meant every agent opened
+     * as this one. A travel-insurance agent created five minutes earlier greeted its first
+     * caller by offering to compare LAX and SNA congestion.
+     *
+     * The text is unchanged, only moved. An empty screen is the first thing anyone sees of
+     * an agent, so it belongs to the agent.
+     */
+    welcome: {
+      title: 'Ask about US airport expansion candidates',
+      blurb:
+        'Every figure comes from a deterministic scoring engine over BTS T-100 data — open the tool trace under any answer to see exactly which call produced it. Follow-up questions work; try “why is the second one ahead of the third?”.',
+      questions: [
+        'Which airports in New England are strong candidates for terminal expansion?',
+        'Compare LAX and SNA congestion levels.',
+        'What is the percentage of long-haul flights out of Anchorage (ANC)?',
+        'What is the unmet flight demand at SFO, and why?',
+      ],
+    },
   },
 ]
 
 export const findAgent = (id) => AGENTS.find((a) => a.id === id) ?? null
 
 export function mountAgentRoutes(app) {
+  /**
+   * Built-in and created together, from agentStore.
+   *
+   * The note that used to sit here said a second agent needed a runtime refactor before a
+   * row would mean anything. That is what agentStore.js is — so the list now comes from
+   * there, and this file keeps only the definition of the one agent that is code rather
+   * than data.
+   */
   app.get('/api/agents', (_req, res) =>
     res.json({
-      agents: AGENTS,
-      note: 'One agent today. A second needs prompt.js, tools.js and the store to become per-agent rather than module-level — a runtime refactor, not a row here.',
+      agents: allAgents(),
+      note: 'סוכן שנוצר כאן מקבל זהות, פייפליין, פרומפט, סקילים ובחירת כלים משלו. הכלים עצמם משותפים — הם מגיעים למנוע הניקוד.',
     }),
   )
 
   app.get('/api/agents/:id', (req, res) => {
-    const agent = findAgent(req.params.id)
+    const agent = getAgent(req.params.id)
     if (!agent) return res.status(404).json({ error: `no agent called ${req.params.id}` })
     res.json(agent)
   })

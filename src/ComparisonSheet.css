@@ -1,0 +1,130 @@
+/**
+ * The comparison sheet.
+ *
+ * It sits between the conversation and the composer, which is the most expensive real estate
+ * on the screen — so collapsed it costs one line, and open it stays under a third of the
+ * pane. The questions are the content; the reason each one is there is set quieter, because
+ * you read it once when deciding and never again while running.
+ */
+
+.cs {
+  flex-shrink: 0;
+  border-block-start: 1px solid var(--rule);
+  padding: var(--space-2) var(--gutter);
+  inline-size: min(100%, 68rem);
+  margin-inline: auto;
+}
+
+.cs > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  list-style: none;
+  padding-block: var(--space-1);
+}
+
+/* The default marker is a black triangle in the content flow; this puts the affordance where
+   the eye already is and lets it turn with the state. */
+.cs > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cs > summary::before {
+  content: '▾';
+  font-size: 0.7em;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.cs:not([open]) > summary::before {
+  transform: rotate(90deg);
+}
+
+.cs-title {
+  color: var(--text-strong);
+}
+
+.cs-note {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.cs-why {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin: 0 0 var(--space-2);
+  line-height: 1.5;
+}
+
+.cs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  /* The panel does not shrink, so on a short window it would take the space the conversation
+     needs. This caps it instead: four rows fit well inside 40vh on anything normal, and only
+     a genuinely cramped window ever sees the scrollbar. */
+  max-block-size: 40vh;
+  overflow-y: auto;
+}
+
+.cs-list button {
+  inline-size: 100%;
+  display: grid;
+  /* The number is a fixed column so the questions align on one edge and can be read down
+     without the eye re-finding the start of each line. */
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cs-list button:disabled {
+  cursor: default;
+}
+
+.cs-list button:not(:disabled):hover .cs-ask {
+  color: var(--text-strong);
+}
+
+.cs-n {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* Big enough to read from a normal sitting distance while speaking, which is the whole
+   point of the panel. */
+.cs-ask {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.cs-isolates {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  text-align: end;
+}
+
+@media (max-width: 720px) {
+  .cs-list button {
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+  }
+
+  /* Under the question rather than beside it — at this width the two columns were four
+     words each and neither could be read. */
+  .cs-isolates {
+    grid-column: 2;
+    text-align: start;
+  }
+}

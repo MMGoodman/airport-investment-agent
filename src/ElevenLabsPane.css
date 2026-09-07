@@ -1,0 +1,191 @@
+/**
+ * The ElevenLabs settings.
+ *
+ * Three columns: what the setting is, what you are sending, and what the platform has. The
+ * third exists because this is the only pane whose subject is not in this process — between
+ * typing and applying the two disagree, and a pane that showed only your side would hide
+ * exactly the mistake worth catching.
+ */
+
+.el {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.el-live-note {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--bg-panel);
+}
+
+.el-fields {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.el-field {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr) 12rem;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-panel);
+}
+
+/* Marked, not coloured red: a field that differs from the platform is usually just one you
+   have not applied yet, which is a state and not a fault. */
+.el-field.differs {
+  border-inline-start: 3px solid var(--signal);
+}
+
+.el-key {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+
+.el-keyname {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.el-input {
+  display: grid;
+  gap: 2px;
+}
+
+.el-input select,
+.el-input input {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg-sunk);
+  color: var(--text);
+  inline-size: 100%;
+}
+
+.el-input select:focus,
+.el-input input:focus {
+  outline: 1px solid var(--live);
+  outline-offset: -1px;
+}
+
+.el-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.el-live {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  text-align: end;
+  padding-block-start: 6px;
+  overflow-wrap: anywhere;
+}
+
+.el-field.differs .el-live {
+  color: var(--signal);
+}
+
+.el-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.el-actions button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 30px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.el-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.el-dirty {
+  font-size: var(--fs-xs);
+  color: var(--signal);
+}
+
+.el-output {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--space-3);
+  background: var(--bg-sunk);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.el-output.bad {
+  border-color: var(--signal);
+}
+
+.el-output-head {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+
+.el-output pre {
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .el-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .el-live {
+    text-align: start;
+    padding-block-start: 0;
+  }
+}
+
+/* A default in effect is information, not a warning — it must not read like the amber. */
+.el-live.default {
+  opacity: 0.7;
+}
+
+/* Where a list came from, said quietly beside it. */
+.el-discovered {
+  color: var(--live);
+  opacity: 0.8;
+}
+
+/* A constraint that is not visible in the field's own list of values. */
+.el-note {
+  color: var(--signal);
+}
+
+.el-untouched {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text);
+}

@@ -676,6 +676,87 @@
   color: var(--live);
 }
 
+/* ---- the exported brief --------------------------------------------------- */
+
+.ac-spec {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-md);
+}
+
+.ac-spec-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.ac-spec-row p {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+
+.ac-spec-row button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule-strong);
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ac-spec-row button:hover:not(:disabled) {
+  border-color: var(--live);
+  color: var(--live);
+}
+
+/* The fallback when the clipboard is refused: readable, and pre-selected by the ref. */
+.ac-spec-text {
+  inline-size: 100%;
+  padding: var(--space-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  resize: vertical;
+}
+
+/**
+ * A tool that is a contract and not yet a capability.
+ *
+ * Warn-coloured rather than dim: dim reads as "less important", and this is not less
+ * important — it is the difference between a function the agent can call and a name that
+ * will fail if anything ever tries.
+ */
+.ac-declared {
+  padding: 2px var(--space-2);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  color: var(--warn);
+}
+
+.ac-handler > summary {
+  cursor: pointer;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.ac-handler pre {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  font-size: var(--fs-xs);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
 /* A skill's instructions are the thing you came to read. */
 .ac-skill-text {
   margin: 0;

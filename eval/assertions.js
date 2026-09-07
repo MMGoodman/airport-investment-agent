@@ -129,6 +129,28 @@ export function checkCase(testCase, run, aliases = null) {
     )
   }
 
+  /**
+   * A tool that must NOT have run — and `expectTools: []` is not this.
+   *
+   * That was the obvious way to write it and it asserts nothing: `[].every(…)` is `true`,
+   * so an empty expectation passes against a run that called every tool in the catalogue.
+   * A check that cannot fail is worse than a missing one, because it appears in the results
+   * as a tick.
+   *
+   * The case this exists for: a caller said "תקשיב." — the start of a sentence, cut off by
+   * the turn detector — and the agent called end_call, recording "המשתמש ביקש לסיים את
+   * השיחה", which had not happened. The browser gate refused to hang up, so the call
+   * survived; nothing in the suite could see it. This is how it becomes visible.
+   */
+  if (testCase.mustNotCallTools) {
+    const ran = testCase.mustNotCallTools.filter((t) => called.includes(t))
+    add(
+      `never calls ${testCase.mustNotCallTools.join(', ')}`,
+      ran.length === 0,
+      ran.length ? `called ${ran.join(', ')}` : undefined,
+    )
+  }
+
   if (testCase.expectToolsOnLastTurn) {
     const ok = (run.lastTurnToolCalls ?? run.toolCalls).length > 0
     add('re-queries', ok, ok ? undefined : 'answered from its own previous reply, without calling a tool')

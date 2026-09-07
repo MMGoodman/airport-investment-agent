@@ -569,7 +569,7 @@ export const toolSchemas = [
   {
     name: 'rank_airports',
     description:
-      'Rank airports as candidates for terminal expansion using the deterministic scoring engine. Use for "which airports are strong candidates" style questions. Returns scores, ranks, per-driver contributions and caveats.',
+      'Rank airports as candidates for terminal expansion using the deterministic scoring engine. Use for "which airports are strong candidates" style questions. Returns scores, ranks, per-driver contributions and caveats. EVERY FILTER IS OPTIONAL: called with no arguments at all it ranks the whole covered set nationally, so a question that names no region is a national ranking and not a question missing an answer. Never supply a top three from memory instead of calling this — asked without a region on the voice path, that produced two different fabricated podiums on two runs of the same question.',
     parameters: {
       type: 'object',
       properties: {

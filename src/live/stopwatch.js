@@ -62,11 +62,22 @@ export function firstTokenStages(marks, final) {
     })
   }
 
-  // The number that actually matters either way: silence to first word.
+  /**
+   * The number that actually matters either way: silence to first word.
+   *
+   * `beforeTranscript` travels with it because the two are not the same measurement. When
+   * generation began before the transcript existed, the model was not answering the question
+   * — it had not been given one in text yet. Measured live: a turn where the model said
+   * "let me rank the top three for you" 251 ms after the caller stopped, called a tool, and
+   * delivered the actual answer seven seconds later. Both are true; only one belongs in a
+   * mean next to answers that WERE answers, and it pulled a five-turn session from 1,337 to
+   * 1,120 ms on its own.
+   */
   stages.push({
     label: 'answer',
     from: marks.speechEnd != null ? 'speechEnd' : 'transcript',
     to: 'firstToken',
+    beforeTranscript: startedBeforeTranscript,
   })
 
   return stages

@@ -19,3 +19,12 @@ data/knowledge/
 
 # Stored conversations: transcripts, not recordings. Local to a deployment.
 data/sessions/
+
+# The previous contents of data/agents.json, kept before every write. Local history of one
+# deployment's agents — useful on the machine that made them, meaningless in the repo.
+data/.agents-backups/
+
+# Agents created in this deployment. Runtime state, like the sessions and the backups
+# beside it — the file is written by the server and restored from data/.agents-backups/,
+# not from the repo.
+data/agents.json

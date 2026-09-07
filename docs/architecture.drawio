@@ -948,596 +948,247 @@
   <diagram id="project-today" name="9 - The project today">
     <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="940" math="0" shadow="0">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="x1" value="Airport Investment Agent — the project today" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="24" width="1600" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x2" value="Five providers, two live transports, one scoring engine. Every figure the model states comes from a tool result, and the server decides which tools exist." style="text;html=1;fontSize=13;align=left;verticalAlign=top;fontColor=#6b6b6b;" vertex="1" parent="1">
-          <mxGeometry x="40" y="68" width="1600" height="22" as="geometry" />
-        </mxCell>
-        <mxCell id="x3" value="BROWSER" style="swimlane;html=1;startSize=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#eef4fc;" vertex="1" parent="1">
-          <mxGeometry x="40" y="120" width="470" height="640" as="geometry" />
-        </mxCell>
-        <mxCell id="x4" value="CHAT + CONTROL" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="48" width="430" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x5" value="App.jsx — chat, provider switcher, EN/HE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="68" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x6" value="LivePanel.jsx — pipeline board, audit, timings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="96" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x7" value="LiveTrace.jsx — trace + session-wide totals" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="124" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x8" value="live/stopwatch.js — which timing an answer can report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="152" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x9" value="agent/phantom.js — hint-echo guard, imports nothing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="180" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x10" value="LIVE TRANSPORTS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="216" width="430" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x11" value="live/openaiRealtime.js — WebRTC the browser holds the session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="236" width="430" height="38" as="geometry" />
-        </mxCell>
-        <mxCell id="x12" value="live/openaiRelay.js — mic and speaker only PCM16 both ways over a WebSocket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="280" width="430" height="38" as="geometry" />
-        </mxCell>
-        <mxCell id="x13" value="live/soniox.js · live/elevenlabs.js — cascades" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="324" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x14" value="THE ONLY DOOR TO THE ENGINE" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="360" width="430" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x15" value="live/tools.js → POST /api/tool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="380" width="430" height="26" as="geometry" />
-        </mxCell>
-        <mxCell id="x16" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;מחזיק:&lt;/b&gt; מיקרופון, אודיו, חיבור ישיר, מדידת זמן.&lt;br&gt;&lt;b&gt;לא מחזיק:&lt;/b&gt; ניקוד, נתונים, פרומפט, מפתחות חשבון.&lt;br&gt;&lt;b&gt;כן מחזיק:&lt;/b&gt; מפתח זמני בלבד — נטבע בשרת, חי דקות.&lt;br&gt;&lt;b&gt;לא מגיע אליו:&lt;/b&gt; get_airport_weather — ראה טאב 10.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x3">
-          <mxGeometry x="18" y="420" width="430" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="x17" value="YOUR SERVER — Node · Express" style="swimlane;html=1;startSize=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#f0f7ee;" vertex="1" parent="1">
-          <mxGeometry x="560" y="120" width="470" height="640" as="geometry" />
-        </mxCell>
-        <mxCell id="x18" value="SESSION AUTHORITY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="48" width="430" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x19" value="voice.js — buildRealtimeSession(query, transport) prompt · tools · turn detection · language · voice" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="68" width="430" height="38" as="geometry" />
-        </mxCell>
-        <mxCell id="x20" value="GET /api/realtime/session — mints the ephemeral key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="112" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x21" value="relay.js — holds the OpenAI socket, tools in-process" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="140" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x22" value="THE ENGINE" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="176" width="430" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x23" value="agent/tools.js — 7 tools · runTool() scoring/ — pure functions, 44 verify checks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="196" width="430" height="38" as="geometry" />
-        </mxCell>
-        <mxCell id="x24" value="POST /api/tool — refuses placement:server, always" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="240" width="430" height="26" as="geometry" />
-        </mxCell>
-        <mxCell id="x25" value="toolLog.js — callId + SHA-256 · JSONL · survives restart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="272" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x26" value="POST /api/tool-log/reconcile — claim vs record" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="300" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x27" value="TEXT PATH" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="336" width="430" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x28" value="POST /api/chat → agent/agent.js → Gemini same process, so nothing can get between the two" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="356" width="430" height="38" as="geometry" />
-        </mxCell>
-        <mxCell id="x29" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;השרת הוא הסמכות בשני הנתיבים.&lt;/b&gt;&lt;br&gt;אותו buildRealtimeSession בונה את הפרומט, רשימת הכלים, ה-VAD והשפה — גם ל-WebRTC וגם לרילוי.&lt;br&gt;ההבדל היחיד: איפה עוברים בייטים של אודיו.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x17">
-          <mxGeometry x="18" y="408" width="430" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="x30" value="VENDORS" style="swimlane;html=1;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#fdf1f0;" vertex="1" parent="1">
-          <mxGeometry x="1080" y="120" width="470" height="640" as="geometry" />
-        </mxCell>
-        <mxCell id="x31" value="OpenAI · /v1/realtime/client_secrets — mint · /v1/realtime/calls — WebRTC · wss realtime — the relayed socket · gpt-4o-transcribe — parallel listener" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30">
-          <mxGeometry x="18" y="48" width="430" height="86" as="geometry" />
-        </mxCell>
-        <mxCell id="x32" value="Google Gemini — generateContent, the text path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30">
-          <mxGeometry x="18" y="146" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x33" value="Soniox — wss stt-rt-v5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30">
-          <mxGeometry x="18" y="174" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x34" value="ElevenLabs Agents — their LLM runs on their side" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30">
-          <mxGeometry x="18" y="202" width="430" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="x35" value="Open-Meteo — no key, no account reached ONLY from the server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30">
-          <mxGeometry x="18" y="238" width="430" height="38" as="geometry" />
-        </mxCell>
-        <mxCell id="x36" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;מה מוגן ואיפה:&lt;/b&gt; מפתחות החשבון לעולם לא עוזבים את השרת. הדפדפן מקבל מפתח זמני שחי דקות.&lt;br&gt;כל קריאת כלי נרשמת עם callId וחתימת SHA-256, והפאנל מיישב מולה — כי בנתיבי הקול הדפדפן הוא שמוסר את התוצאה למודל.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x30">
-          <mxGeometry x="18" y="296" width="430" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="x37" value="audio + data channel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="x11" target="x31">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x38" value="PCM16" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="x12" target="x21">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x39" value="WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="x21" target="x31">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#d79b00;strokeWidth=2;" edge="1" parent="1" source="x15" target="x24">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#82b366;" edge="1" parent="1" source="x24" target="x23">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x42" value="get_airport_weather only" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="x23" target="x35">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x43" value="session config" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#82b366;dashed=1;" edge="1" parent="1" source="x19" target="x31">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="x44" value="WHAT IS CHECKED" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="800" width="1500" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x45" value="npm test — 52 tests   ·   npm run verify — 44 engine checks   ·   npm run eval — 19 cases across two model paths, provenance 19/19 src/live/__tests__/browser-safe.test.js walks the real client module graph and fails on any node: import — the build cannot catch that, it compiles such code clean and blanks the page on load." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="822" width="1510" height="56" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="x1" value="Airport Investment Agent — the project today" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="40" y="24" width="1600" height="40" as="geometry"/></mxCell>
+        <mxCell id="x2" value="Five providers, two live transports, one scoring engine. Every figure the model states comes from a tool result, and the server decides which tools exist." style="text;html=1;fontSize=13;align=left;verticalAlign=top;fontColor=#6b6b6b;" vertex="1" parent="1"><mxGeometry x="40" y="68" width="1600" height="22" as="geometry"/></mxCell>
+        <mxCell id="x3" value="BROWSER" style="swimlane;html=1;startSize=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#eef4fc;" vertex="1" parent="1"><mxGeometry x="40" y="120" width="470" height="640" as="geometry"/></mxCell>
+        <mxCell id="x4" value="CHAT + CONTROL" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x3"><mxGeometry x="18" y="48" width="430" height="16" as="geometry"/></mxCell>
+        <mxCell id="x5" value="App.jsx — chat, provider switcher, EN/HE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="68" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x6" value="LivePanel.jsx — pipeline board, audit, timings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="96" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x7" value="LiveTrace.jsx — trace + session-wide totals" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="124" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x8" value="live/stopwatch.js — which timing an answer can report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="152" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x9" value="agent/phantom.js — hint-echo guard, imports nothing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="180" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x10" value="LIVE TRANSPORTS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x3"><mxGeometry x="18" y="216" width="430" height="16" as="geometry"/></mxCell>
+        <mxCell id="x11" value="live/openaiRealtime.js — WebRTC
+the browser holds the session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="236" width="430" height="38" as="geometry"/></mxCell>
+        <mxCell id="x12" value="live/openaiRelay.js — mic and speaker only
+PCM16 both ways over a WebSocket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="280" width="430" height="38" as="geometry"/></mxCell>
+        <mxCell id="x13" value="live/soniox.js · live/elevenlabs.js — cascades" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="324" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x14" value="THE ONLY DOOR TO THE ENGINE" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x3"><mxGeometry x="18" y="360" width="430" height="16" as="geometry"/></mxCell>
+        <mxCell id="x15" value="live/tools.js → POST /api/tool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x3"><mxGeometry x="18" y="380" width="430" height="26" as="geometry"/></mxCell>
+        <mxCell id="x16" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;מחזיק:&lt;/b&gt; מיקרופון, אודיו, חיבור ישיר, מדידת זמן.&lt;br&gt;&lt;b&gt;לא מחזיק:&lt;/b&gt; ניקוד, נתונים, פרומפט, מפתחות חשבון.&lt;br&gt;&lt;b&gt;כן מחזיק:&lt;/b&gt; מפתח זמני בלבד — נטבע בשרת, חי דקות.&lt;br&gt;&lt;b&gt;לא מגיע אליו:&lt;/b&gt; get_airport_weather — ראה טאב 10.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x3"><mxGeometry x="18" y="420" width="430" height="110" as="geometry"/></mxCell>
+        <mxCell id="x17" value="YOUR SERVER — Node · Express" style="swimlane;html=1;startSize=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#f0f7ee;" vertex="1" parent="1"><mxGeometry x="560" y="120" width="470" height="640" as="geometry"/></mxCell>
+        <mxCell id="x18" value="SESSION AUTHORITY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x17"><mxGeometry x="18" y="48" width="430" height="16" as="geometry"/></mxCell>
+        <mxCell id="x19" value="voice.js — buildRealtimeSession(query, transport)
+prompt · tools · turn detection · language · voice" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="68" width="430" height="38" as="geometry"/></mxCell>
+        <mxCell id="x20" value="GET /api/realtime/session — mints the ephemeral key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="112" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x21" value="relay.js — holds the OpenAI socket, tools in-process" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="140" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x22" value="THE ENGINE" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x17"><mxGeometry x="18" y="176" width="430" height="16" as="geometry"/></mxCell>
+        <mxCell id="x23" value="agent/tools.js — 7 tools · runTool()
+scoring/ — pure functions, 44 verify checks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="196" width="430" height="38" as="geometry"/></mxCell>
+        <mxCell id="x24" value="POST /api/tool — refuses placement:server, always" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="240" width="430" height="26" as="geometry"/></mxCell>
+        <mxCell id="x25" value="toolLog.js — callId + SHA-256 · JSONL · survives restart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="272" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x26" value="POST /api/tool-log/reconcile — claim vs record" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="300" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x27" value="TEXT PATH" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x17"><mxGeometry x="18" y="336" width="430" height="16" as="geometry"/></mxCell>
+        <mxCell id="x28" value="POST /api/chat → agent/agent.js → Gemini
+same process, so nothing can get between the two" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x17"><mxGeometry x="18" y="356" width="430" height="38" as="geometry"/></mxCell>
+        <mxCell id="x29" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;השרת הוא הסמכות בשני הנתיבים.&lt;/b&gt;&lt;br&gt;אותו buildRealtimeSession בונה את הפרומט, רשימת הכלים, ה-VAD והשפה — גם ל-WebRTC וגם לרילוי.&lt;br&gt;ההבדל היחיד: איפה עוברים בייטים של אודיו.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x17"><mxGeometry x="18" y="408" width="430" height="110" as="geometry"/></mxCell>
+        <mxCell id="x30" value="VENDORS" style="swimlane;html=1;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#fdf1f0;" vertex="1" parent="1"><mxGeometry x="1080" y="120" width="470" height="640" as="geometry"/></mxCell>
+        <mxCell id="x31" value="OpenAI
+· /v1/realtime/client_secrets — mint
+· /v1/realtime/calls — WebRTC
+· wss realtime — the relayed socket
+· gpt-4o-transcribe — parallel listener" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30"><mxGeometry x="18" y="48" width="430" height="86" as="geometry"/></mxCell>
+        <mxCell id="x32" value="Google Gemini — generateContent, the text path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30"><mxGeometry x="18" y="146" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x33" value="Soniox — wss stt-rt-v5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30"><mxGeometry x="18" y="174" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x34" value="ElevenLabs Agents — their LLM runs on their side" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30"><mxGeometry x="18" y="202" width="430" height="24" as="geometry"/></mxCell>
+        <mxCell id="x35" value="Open-Meteo — no key, no account
+reached ONLY from the server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x30"><mxGeometry x="18" y="238" width="430" height="38" as="geometry"/></mxCell>
+        <mxCell id="x36" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;מה מוגן ואיפה:&lt;/b&gt; מפתחות החשבון לעולם לא עוזבים את השרת. הדפדפן מקבל מפתח זמני שחי דקות.&lt;br&gt;כל קריאת כלי נרשמת עם callId וחתימת SHA-256, והפאנל מיישב מולה — כי בנתיבי הקול הדפדפן הוא שמוסר את התוצאה למודל.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x30"><mxGeometry x="18" y="296" width="430" height="120" as="geometry"/></mxCell>
+        <mxCell id="x37" value="audio + data channel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="x11" target="x31"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x38" value="PCM16" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="x12" target="x21"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x39" value="WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="x21" target="x31"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#d79b00;strokeWidth=2;" edge="1" parent="1" source="x15" target="x24"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#82b366;" edge="1" parent="1" source="x24" target="x23"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x42" value="get_airport_weather only" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="x23" target="x35"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x43" value="session config" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#82b366;dashed=1;" edge="1" parent="1" source="x19" target="x31"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="x44" value="WHAT IS CHECKED" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="40" y="800" width="1500" height="16" as="geometry"/></mxCell>
+        <mxCell id="x45" value="npm test — 52 tests   ·   npm run verify — 44 engine checks   ·   npm run eval — 19 cases across two model paths, provenance 19/19
+src/live/__tests__/browser-safe.test.js walks the real client module graph and fails on any node: import — the build cannot catch that, it compiles such code clean and blanks the page on load." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="40" y="822" width="1510" height="56" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="hybrid-placement" name="10 - Where the hybrid sits">
     <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="980" math="0" shadow="0">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="x1" value="Where the hybrid sits — three places a tool can run" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="24" width="1600" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x2" value="A Realtime session takes two connections: the browser holds the audio, and this server can hold a second one addressed by call id. Placement is not &quot;which transport&quot; — it is who answers the function call, on the same session." style="text;html=1;fontSize=13;align=left;verticalAlign=top;fontColor=#6b6b6b;" vertex="1" parent="1">
-          <mxGeometry x="40" y="68" width="1600" height="22" as="geometry" />
-        </mxCell>
-        <mxCell id="x3" value="CORRECTING WHAT THIS TAB USED TO SAY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="110" width="1500" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x4" value="It said a tool the browser must not invoke could only be withheld from the WebRTC line, because the function call lands on the browser data channel and the server is never in that loop. That is wrong. OpenAI calls the second connection a sideband control channel: either side can answer a tool call, and the side that does not simply ignores it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="132" width="1510" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="x5" value="1 · BROWSER-RUN   placement: anywhere" style="swimlane;html=1;startSize=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#eef4fc;" vertex="1" parent="1">
-          <mxGeometry x="40" y="200" width="480" height="400" as="geometry" />
-        </mxCell>
-        <mxCell id="x6" value="WHO ANSWERS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="48" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x7" value="The browser. live/tools.js → POST /api/tool → engine → result injected back into the data channel." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="68" width="440" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x8" value="WHAT THE BROWSER SEES" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="120" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x9" value="The call, the arguments and the result. It runs the tool." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="140" width="440" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="x10" value="LATENCY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="182" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x11" value="Full speed. Audio never leaves the direct peer connection." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="202" width="440" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="x12" value="WHICH TOOLS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="244" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x13" value="list_supported_regions · rank_airports · compare_airports get_airport_profile · get_flight_mix · end_call" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="264" width="440" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x14" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;כולם קריאה טהורה ממאגר מקומי. אין שום מחיר בכך שהדפדפן רואה את התוצאה.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x5">
-          <mxGeometry x="18" y="316" width="440" height="56" as="geometry" />
-        </mxCell>
-        <mxCell id="x15" value="2 · SIDEBAND   placement: server" style="swimlane;html=1;startSize=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#f0f7ee;" vertex="1" parent="1">
-          <mxGeometry x="545" y="200" width="480" height="400" as="geometry" />
-        </mxCell>
-        <mxCell id="x16" value="WHO ANSWERS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="48" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x17" value="This server, on its own WebSocket to the SAME session. runTool() in-process, against this process credentials." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="68" width="440" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x18" value="WHAT THE BROWSER SEES" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="120" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x19" value="That the call happened, and the result the model was given. It does not run it, and POST /api/tool refuses it 403." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="140" width="440" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x20" value="LATENCY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="192" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x21" value="Full speed — the audio path is untouched. Attach measured at 559 ms, the tool at 302 ms." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="212" width="440" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x22" value="WHICH TOOLS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="264" width="440" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x23" value="get_airport_weather — the one call that leaves the building" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="284" width="440" height="28" as="geometry" />
-        </mxCell>
-        <mxCell id="x24" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;נקודת קצה שהדפדפן קורא לה לשירות חיצוני היא פרוקסי פתוח דרך כתובת השרת שלך. זה הקו.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x15">
-          <mxGeometry x="18" y="324" width="440" height="56" as="geometry" />
-        </mxCell>
-        <mxCell id="x25" value="3 · RELAYED   the session itself is here" style="undefined" vertex="1" parent="1">
-          <mxGeometry x="1050" y="200" width="500" height="400" as="geometry" />
-        </mxCell>
-        <mxCell id="x26" value="WHO ANSWERS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="48" width="460" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x27" value="This server, which also holds the model connection. Nothing crosses to the browser but audio." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="68" width="460" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x28" value="WHAT THE BROWSER SEES" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="120" width="460" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x29" value="Audio. Not the transcript, not the answers, not the calls." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="140" width="460" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="x30" value="LATENCY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="182" width="460" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x31" value="Four to five times the direct line — 1,611 ms against ~340 ms. Echo cancellation and jitter buffering are lost." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="202" width="460" height="42" as="geometry" />
-        </mxCell>
-        <mxCell id="x32" value="WHEN IT IS THE ONLY ANSWER" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="256" width="460" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x33" value="When a result must not reach the client AT ALL. The sideband hides who runs a tool, not what it returned." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="276" width="460" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="x34" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;זה המחיר האמיתי של סודיות מלאה, ולכן זו לא ברירת המחדל.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x25">
-          <mxGeometry x="18" y="328" width="460" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="x35" value="ENFORCED IN THREE PLACES — any one alone is theatre" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="630" width="1500" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x36" value="1.  THE SESSION Minted with six tools, so nothing can hand the browser the seventh before the sideband has taken responsibility for it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="652" width="480" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="x37" value="2.  THE DOOR POST /api/tool returns 403 for placement:&quot;server&quot; — every caller, always. That endpoint IS how a browser would reach it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="550" y="652" width="490" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="x38" value="3.  THE HANDLER The browser skips a function call for a tool it does not own. Both sides answering puts two outputs under one call_id." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="1070" y="652" width="480" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="x39" value="WHAT MOVES A TOOL" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="748" width="1500" height="16" as="geometry" />
-        </mxCell>
-        <mxCell id="x40" value="One line in src/agent/tools.js:   placement: &#39;server&#39;   — all three enforcement points follow from it, along with what the model is told while the sideband is still attaching. Where a tool runs is deliberately NOT a model decision. It is set before the conversation starts and lives in the tool list rather than the instructions, because anything the model can be persuaded to do can also be injected into it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="770" width="1510" height="56" as="geometry" />
-        </mxCell>
-        <mxCell id="x41" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;עדיין פתוח:&lt;/b&gt; ל-POST /api/tool אין אימות. הוא מסרב למזג אוויר לכל קורא, אבל את ששת כלי הקריאה הוא מריץ לכל מי שמגיע לפורט, וה-session id שנרשם ביומן נוצר בדפדפן ולכן אינו ראיה. התיקון: טוקן קצר-חיים שנטבע יחד עם המפתח הזמני ומשמש כמזהה הסשן האמיתי.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="40" y="846" width="1510" height="74" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="x1" value="Where the hybrid sits — three places a tool can run" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="40" y="24" width="1600" height="40" as="geometry"/></mxCell>
+        <mxCell id="x2" value="A Realtime session takes two connections: the browser holds the audio, and this server can hold a second one addressed by call id. Placement is not &quot;which transport&quot; — it is who answers the function call, on the same session." style="text;html=1;fontSize=13;align=left;verticalAlign=top;fontColor=#6b6b6b;" vertex="1" parent="1"><mxGeometry x="40" y="68" width="1600" height="22" as="geometry"/></mxCell>
+        <mxCell id="x3" value="CORRECTING WHAT THIS TAB USED TO SAY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="40" y="110" width="1500" height="16" as="geometry"/></mxCell>
+        <mxCell id="x4" value="It said a tool the browser must not invoke could only be withheld from the WebRTC line, because the function call lands on the browser data channel and the server is never in that loop. That is wrong. OpenAI calls the second connection a sideband control channel: either side can answer a tool call, and the side that does not simply ignores it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="40" y="132" width="1510" height="46" as="geometry"/></mxCell>
+        <mxCell id="x5" value="1 · BROWSER-RUN   placement: anywhere" style="swimlane;html=1;startSize=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#eef4fc;" vertex="1" parent="1"><mxGeometry x="40" y="200" width="480" height="400" as="geometry"/></mxCell>
+        <mxCell id="x6" value="WHO ANSWERS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5"><mxGeometry x="18" y="48" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x7" value="The browser. live/tools.js → POST /api/tool → engine →
+result injected back into the data channel." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5"><mxGeometry x="18" y="68" width="440" height="40" as="geometry"/></mxCell>
+        <mxCell id="x8" value="WHAT THE BROWSER SEES" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5"><mxGeometry x="18" y="120" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x9" value="The call, the arguments and the result. It runs the tool." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5"><mxGeometry x="18" y="140" width="440" height="30" as="geometry"/></mxCell>
+        <mxCell id="x10" value="LATENCY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5"><mxGeometry x="18" y="182" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x11" value="Full speed. Audio never leaves the direct peer connection." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5"><mxGeometry x="18" y="202" width="440" height="30" as="geometry"/></mxCell>
+        <mxCell id="x12" value="WHICH TOOLS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x5"><mxGeometry x="18" y="244" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x13" value="list_supported_regions · rank_airports · compare_airports
+get_airport_profile · get_flight_mix · end_call" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x5"><mxGeometry x="18" y="264" width="440" height="40" as="geometry"/></mxCell>
+        <mxCell id="x14" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;כולם קריאה טהורה ממאגר מקומי. אין שום מחיר בכך שהדפדפן רואה את התוצאה.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x5"><mxGeometry x="18" y="316" width="440" height="56" as="geometry"/></mxCell>
+        <mxCell id="x15" value="2 · SIDEBAND   placement: server" style="swimlane;html=1;startSize=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;rounded=0;swimlaneFillColor=#f0f7ee;" vertex="1" parent="1"><mxGeometry x="545" y="200" width="480" height="400" as="geometry"/></mxCell>
+        <mxCell id="x16" value="WHO ANSWERS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15"><mxGeometry x="18" y="48" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x17" value="This server, on its own WebSocket to the SAME session.
+runTool() in-process, against this process credentials." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15"><mxGeometry x="18" y="68" width="440" height="40" as="geometry"/></mxCell>
+        <mxCell id="x18" value="WHAT THE BROWSER SEES" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15"><mxGeometry x="18" y="120" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x19" value="That the call happened, and the result the model was given.
+It does not run it, and POST /api/tool refuses it 403." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15"><mxGeometry x="18" y="140" width="440" height="40" as="geometry"/></mxCell>
+        <mxCell id="x20" value="LATENCY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15"><mxGeometry x="18" y="192" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x21" value="Full speed — the audio path is untouched.
+Attach measured at 559 ms, the tool at 302 ms." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15"><mxGeometry x="18" y="212" width="440" height="40" as="geometry"/></mxCell>
+        <mxCell id="x22" value="WHICH TOOLS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x15"><mxGeometry x="18" y="264" width="440" height="16" as="geometry"/></mxCell>
+        <mxCell id="x23" value="get_airport_weather — the one call that leaves the building" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x15"><mxGeometry x="18" y="284" width="440" height="28" as="geometry"/></mxCell>
+        <mxCell id="x24" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;נקודת קצה שהדפדפן קורא לה לשירות חיצוני היא פרוקסי פתוח דרך כתובת השרת שלך. זה הקו.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x15"><mxGeometry x="18" y="324" width="440" height="56" as="geometry"/></mxCell>
+        <mxCell id="x25" value="3 · RELAYED   the session itself is here" style="undefined" vertex="1" parent="1"><mxGeometry x="1050" y="200" width="500" height="400" as="geometry"/></mxCell>
+        <mxCell id="x26" value="WHO ANSWERS" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25"><mxGeometry x="18" y="48" width="460" height="16" as="geometry"/></mxCell>
+        <mxCell id="x27" value="This server, which also holds the model connection.
+Nothing crosses to the browser but audio." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25"><mxGeometry x="18" y="68" width="460" height="40" as="geometry"/></mxCell>
+        <mxCell id="x28" value="WHAT THE BROWSER SEES" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25"><mxGeometry x="18" y="120" width="460" height="16" as="geometry"/></mxCell>
+        <mxCell id="x29" value="Audio. Not the transcript, not the answers, not the calls." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25"><mxGeometry x="18" y="140" width="460" height="30" as="geometry"/></mxCell>
+        <mxCell id="x30" value="LATENCY" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25"><mxGeometry x="18" y="182" width="460" height="16" as="geometry"/></mxCell>
+        <mxCell id="x31" value="Four to five times the direct line — 1,611 ms against ~340 ms.
+Echo cancellation and jitter buffering are lost." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25"><mxGeometry x="18" y="202" width="460" height="42" as="geometry"/></mxCell>
+        <mxCell id="x32" value="WHEN IT IS THE ONLY ANSWER" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="x25"><mxGeometry x="18" y="256" width="460" height="16" as="geometry"/></mxCell>
+        <mxCell id="x33" value="When a result must not reach the client AT ALL. The sideband
+hides who runs a tool, not what it returned." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="x25"><mxGeometry x="18" y="276" width="460" height="40" as="geometry"/></mxCell>
+        <mxCell id="x34" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;זה המחיר האמיתי של סודיות מלאה, ולכן זו לא ברירת המחדל.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="x25"><mxGeometry x="18" y="328" width="460" height="46" as="geometry"/></mxCell>
+        <mxCell id="x35" value="ENFORCED IN THREE PLACES — any one alone is theatre" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="40" y="630" width="1500" height="16" as="geometry"/></mxCell>
+        <mxCell id="x36" value="1.  THE SESSION
+Minted with six tools, so nothing can hand the browser the
+seventh before the sideband has taken responsibility for it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="40" y="652" width="480" height="70" as="geometry"/></mxCell>
+        <mxCell id="x37" value="2.  THE DOOR
+POST /api/tool returns 403 for placement:&quot;server&quot; — every
+caller, always. That endpoint IS how a browser would reach it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="550" y="652" width="490" height="70" as="geometry"/></mxCell>
+        <mxCell id="x38" value="3.  THE HANDLER
+The browser skips a function call for a tool it does not own.
+Both sides answering puts two outputs under one call_id." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="1070" y="652" width="480" height="70" as="geometry"/></mxCell>
+        <mxCell id="x39" value="WHAT MOVES A TOOL" style="text;html=1;fontSize=11;fontStyle=1;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="40" y="748" width="1500" height="16" as="geometry"/></mxCell>
+        <mxCell id="x40" value="One line in src/agent/tools.js:   placement: 'server'   — all three enforcement points follow from it, along with what the model is told while the sideband is still attaching.
+Where a tool runs is deliberately NOT a model decision. It is set before the conversation starts and lives in the tool list rather than the instructions, because anything the model can be persuaded to do can also be injected into it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#909090;fontSize=11;align=left;spacingLeft=8;arcSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="40" y="770" width="1510" height="56" as="geometry"/></mxCell>
+        <mxCell id="x41" value="&lt;div dir=&quot;rtl&quot; style=&quot;text-align:right&quot;&gt;&lt;b&gt;עדיין פתוח:&lt;/b&gt; ל-POST /api/tool אין אימות. הוא מסרב למזג אוויר לכל קורא, אבל את ששת כלי הקריאה הוא מריץ לכל מי שמגיע לפורט, וה-session id שנרשם ביומן נוצר בדפדפן ולכן אינו ראיה. התיקון: טוקן קצר-חיים שנטבע יחד עם המפתח הזמני ומשמש כמזהה הסשן האמיתי.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1"><mxGeometry x="40" y="846" width="1510" height="74" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="seq-hybrid" name="11 - Sequence: the hybrid">
-    <mxGraphModel dx="1653" dy="819" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1700" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1700" math="0" shadow="0">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="h1" parent="1" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" value="gpt-realtime — one session, two connections" vertex="1">
-          <mxGeometry height="40" width="1600" x="40" y="24" as="geometry" />
-        </mxCell>
-        <mxCell id="h2" parent="1" style="text;html=1;fontSize=13;align=left;verticalAlign=middle;fontColor=#6b6b6b;" value="The browser holds the audio. The server holds a second connection to the same session and answers the tools the browser must not invoke. Observed end to end — the step numbers below are the run, not a design." vertex="1">
-          <mxGeometry height="24" width="1600" x="40" y="66" as="geometry" />
-        </mxCell>
-        <mxCell id="h3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;הדפדפן&lt;/div&gt;" vertex="1">
-          <mxGeometry height="42" width="220" x="190" y="108" as="geometry" />
-        </mxCell>
-        <mxCell id="h4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;השרת שלך&lt;/div&gt;" vertex="1">
-          <mxGeometry height="42" width="220" x="650" y="108" as="geometry" />
-        </mxCell>
-        <mxCell id="h5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" value="openai" vertex="1">
-          <mxGeometry height="42" width="220" x="1100" y="108" as="geometry" />
-        </mxCell>
-        <mxCell id="h6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" value="open-meteo" vertex="1">
-          <mxGeometry height="42" width="200" x="1480" y="108" as="geometry" />
-        </mxCell>
-        <mxCell id="h7" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="152" as="sourcePoint" />
-            <mxPoint x="300" y="1495" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h8" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="760" y="152" as="sourcePoint" />
-            <mxPoint x="760" y="1495" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h9" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1210" y="152" as="sourcePoint" />
-            <mxPoint x="1210" y="1495" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h10" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1580" y="152" as="sourcePoint" />
-            <mxPoint x="1580" y="1495" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h11" parent="1" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;התחברות — הרשימה נקבעת פעמיים, וזה בכוונה&lt;/div&gt;" vertex="1">
-          <mxGeometry height="230" width="1560" x="100" y="180" as="geometry" />
-        </mxCell>
-        <mxCell id="h12" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="1 · GET /api/realtime/session?session=…">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="222" as="sourcePoint" />
-            <mxPoint x="760" y="222" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;2 · buildRealtimeSession(query, &quot;browser&quot;)&lt;/b&gt;&lt;br&gt;6 כלים · והפרומט אומר שמזג האוויר לא זמין בקו הזה&lt;br&gt;המפתח הזמני נשמר לשתי דקות&lt;/div&gt;" vertex="1">
-          <mxGeometry height="62" width="420" x="550" y="242" as="geometry" />
-        </mxCell>
-        <mxCell id="h14" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="3 · mint client_secret">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="760" y="328" as="sourcePoint" />
-            <mxPoint x="1210" y="328" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h15" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="4 · ephemeral key">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1210" y="360" as="sourcePoint" />
-            <mxPoint x="300" y="360" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h16" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="5 · POST /v1/realtime/calls — SDP offer">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="392" as="sourcePoint" />
-            <mxPoint x="1210" y="392" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h17" parent="1" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;ההצמדה — אחרי שהשיחה קיימת, לא לפני&lt;/div&gt;" vertex="1">
-          <mxGeometry height="275" width="1560" x="100" y="425" as="geometry" />
-        </mxCell>
-        <mxCell id="h18" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="6 · SDP answer  +  Location: /v1/realtime/calls/rtc_…">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1210" y="467" as="sourcePoint" />
-            <mxPoint x="300" y="467" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;7 · הדפדפן קורא את ה-call_id מהכותרת&lt;/b&gt;&lt;br&gt;אפשרי רק כי Location מופיע ב-Access-Control-Expose-Headers&lt;/div&gt;" vertex="1">
-          <mxGeometry height="50" width="440" x="80" y="487" as="geometry" />
-        </mxCell>
-        <mxCell id="h20" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="8 · POST /api/realtime/sideband { callId }">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="561" as="sourcePoint" />
-            <mxPoint x="760" y="561" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h21" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="9 · wss ?call_id=rtc_…  —  Bearer THE EPHEMERAL KEY">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="760" y="593" as="sourcePoint" />
-            <mxPoint x="1210" y="593" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;10 · session.update&lt;/b&gt; — כל 7 הכלים, ופרומט בלי הפסקה על מה שחסר&lt;br&gt;כלים והוראות זזים יחד, אחרת המודל מסרב לכלי שכבר יש לו&lt;/div&gt;" vertex="1">
-          <mxGeometry height="50" width="500" x="510" y="613" as="geometry" />
-        </mxCell>
-        <mxCell id="h23" parent="1" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;כלי של הדפדפן — הדפדפן בלולאה&lt;/div&gt;" vertex="1">
-          <mxGeometry height="235" width="1560" x="100" y="715" as="geometry" />
-        </mxCell>
-        <mxCell id="h24" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="11 · audio, ישירות">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="757" as="sourcePoint" />
-            <mxPoint x="1210" y="757" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h25" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="12 · function_call — rank_airports">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1210" y="789" as="sourcePoint" />
-            <mxPoint x="300" y="789" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h26" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="13 · POST /api/tool">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="821" as="sourcePoint" />
-            <mxPoint x="760" y="821" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;14 · placement = anywhere&lt;/b&gt; → runTool · callId + חתימה&lt;/div&gt;" vertex="1">
-          <mxGeometry height="36" width="420" x="550" y="841" as="geometry" />
-        </mxCell>
-        <mxCell id="h28" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="15 · result">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="760" y="895" as="sourcePoint" />
-            <mxPoint x="300" y="895" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h29" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="16 · function_call_output">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="927" as="sourcePoint" />
-            <mxPoint x="1210" y="927" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h30" parent="1" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;כלי של השרת — אותו סשן, הדפדפן מחוץ ללולאה&lt;/div&gt;" vertex="1">
-          <mxGeometry height="330" width="1560" x="100" y="965" as="geometry" />
-        </mxCell>
-        <mxCell id="h31" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="17 · audio — &quot;מה מזג האוויר בבוסטון?&quot;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="300" y="1007" as="sourcePoint" />
-            <mxPoint x="1210" y="1007" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h32" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;18 · הקריאה משודרת לשני החיבורים.&lt;/b&gt; הדפדפן רואה אותה ו&lt;b&gt;לא&lt;/b&gt; עונה —&lt;br&gt;שני צדדים שעונים ייצרו שני outputs לאותו call_id&lt;/div&gt;" vertex="1">
-          <mxGeometry height="50" width="500" x="60" y="1027" as="geometry" />
-        </mxCell>
-        <mxCell id="h33" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="19 · function_call — get_airport_weather">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1210" y="1101" as="sourcePoint" />
-            <mxPoint x="760" y="1101" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h34" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;20 · runTool בתהליך של השרת&lt;/b&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="36" width="320" x="600" y="1121" as="geometry" />
-        </mxCell>
-        <mxCell id="h35" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="21 · GET /v1/forecast">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="760" y="1183" as="sourcePoint" />
-            <mxPoint x="1580" y="1183" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h36" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="22 · current conditions">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1580" y="1215" as="sourcePoint" />
-            <mxPoint x="760" y="1215" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h37" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" value="23 · function_call_output + response.create">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="760" y="1247" as="sourcePoint" />
-            <mxPoint x="1210" y="1247" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h38" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" value="24 · audio — התשובה, בקו הישיר">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1210" y="1279" as="sourcePoint" />
-            <mxPoint x="300" y="1279" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="h39" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;25 · ומי שינסה לעקוף:&lt;/b&gt;  POST /api/tool  get_airport_weather  →  &lt;b&gt;403&lt;/b&gt;, לכל קורא, תמיד&lt;/div&gt;" vertex="1">
-          <mxGeometry height="38" width="600" x="460" y="1320" as="geometry" />
-        </mxCell>
-        <mxCell id="h40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;מה שנמדד בפועל&lt;/b&gt;&lt;br&gt;sideband נפתח אחרי &lt;b&gt;559ms&lt;/b&gt; · הכריז 7 כלים · הריץ get_airport_weather ב-&lt;b&gt;302ms&lt;/b&gt; → t1 ביומן הביקורת.&lt;br&gt;הדפדפן ראה את הקריאה: &lt;b&gt;כן&lt;/b&gt;. הדפדפן ענה על קריאת כלי: &lt;b&gt;לא&lt;/b&gt;.&lt;br&gt;התשובה: &quot;בבוסטון לוגן כרגע מעונן לגמרי, הטמפרטורה בערך 19.4 מעלות…&quot;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="90" width="1560" x="100" y="1380" as="geometry" />
-        </mxCell>
-        <mxCell id="h41" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;מה זה קונה, ומה זה עדיין לא&lt;/b&gt;&lt;br&gt;&lt;b&gt;1. אין החלפת ערוץ.&lt;/b&gt; אותו סשן, אותה שיחה. המהירות של החיבור הישיר, והכלי הרגיש רץ בשרת. הבחירה של המשתמש בין שני קווים הייתה fallback, לא עיצוב.&lt;br&gt;&lt;b&gt;2. ניתוב הוא לא החלטה של המודל.&lt;/b&gt; הגבול נקבע לפני שהשיחה מתחילה ויושב ברשימת הכלים, לא בהוראות — מה שאפשר לשכנע את המודל לעשות, אפשר גם להזריק לו.&lt;br&gt;&lt;b&gt;3. זה לא מסתיר את החילוף.&lt;/b&gt; שני החיבורים על סשן אחד: הדפדפן רואה שהקריאה קרתה ומה המודל קיבל. תוצאה שאסור שתגיע ללקוח בכלל דורשת שה-session עצמו יהיה בשרת — זה טאב 8, ופי 4-5 בלטנסי.&lt;br&gt;&lt;b&gt;4. עדיין פתוח:&lt;/b&gt; ל-POST /api/tool אין אימות. שלב 25 חוסם את מזג האוויר לכל קורא, אבל שלב 13 ירוץ לכל מי שמגיע לפורט.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="150" width="1560" x="100" y="1490" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="h1" value="gpt-realtime — one session, two connections" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="40" y="24" width="1600" height="40" as="geometry"/></mxCell>
+        <mxCell id="h2" value="The browser holds the audio. The server holds a second connection to the same session and answers the tools the browser must not invoke. Observed end to end — the step numbers below are the run, not a design." style="text;html=1;fontSize=13;align=left;verticalAlign=middle;fontColor=#6b6b6b;" vertex="1" parent="1"><mxGeometry x="40" y="66" width="1600" height="24" as="geometry"/></mxCell>
+        <mxCell id="h3" value="&lt;div dir='rtl' style='text-align:right'&gt;הדפדפן&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="190" y="108" width="220" height="42" as="geometry"/></mxCell>
+        <mxCell id="h4" value="&lt;div dir='rtl' style='text-align:right'&gt;השרת שלך&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="650" y="108" width="220" height="42" as="geometry"/></mxCell>
+        <mxCell id="h5" value="openai" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="1100" y="108" width="220" height="42" as="geometry"/></mxCell>
+        <mxCell id="h6" value="open-meteo" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="1480" y="108" width="200" height="42" as="geometry"/></mxCell>
+        <mxCell id="h7" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="152" as="sourcePoint"/><mxPoint x="300" y="1495" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h8" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="760" y="152" as="sourcePoint"/><mxPoint x="760" y="1495" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h9" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1210" y="152" as="sourcePoint"/><mxPoint x="1210" y="1495" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h10" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=1;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1580" y="152" as="sourcePoint"/><mxPoint x="1580" y="1495" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h11" value="&lt;div dir='rtl' style='text-align:right'&gt;התחברות — הרשימה נקבעת פעמיים, וזה בכוונה&lt;/div&gt;" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" vertex="1" parent="1"><mxGeometry x="100" y="180" width="1560" height="230" as="geometry"/></mxCell>
+        <mxCell id="h12" value="1 · GET /api/realtime/session?session=…" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="222" as="sourcePoint"/><mxPoint x="760" y="222" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h13" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;2 · buildRealtimeSession(query, &quot;browser&quot;)&lt;/b&gt;&lt;br&gt;6 כלים · והפרומט אומר שמזג האוויר לא זמין בקו הזה&lt;br&gt;המפתח הזמני נשמר לשתי דקות&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="550" y="242" width="420" height="62" as="geometry"/></mxCell>
+        <mxCell id="h14" value="3 · mint client_secret" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="760" y="328" as="sourcePoint"/><mxPoint x="1210" y="328" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h15" value="4 · ephemeral key" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1210" y="360" as="sourcePoint"/><mxPoint x="300" y="360" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h16" value="5 · POST /v1/realtime/calls — SDP offer" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="392" as="sourcePoint"/><mxPoint x="1210" y="392" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h17" value="&lt;div dir='rtl' style='text-align:right'&gt;ההצמדה — אחרי שהשיחה קיימת, לא לפני&lt;/div&gt;" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" vertex="1" parent="1"><mxGeometry x="100" y="425" width="1560" height="275" as="geometry"/></mxCell>
+        <mxCell id="h18" value="6 · SDP answer  +  Location: /v1/realtime/calls/rtc_…" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1210" y="467" as="sourcePoint"/><mxPoint x="300" y="467" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h19" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;7 · הדפדפן קורא את ה-call_id מהכותרת&lt;/b&gt;&lt;br&gt;אפשרי רק כי Location מופיע ב-Access-Control-Expose-Headers&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="80" y="487" width="440" height="50" as="geometry"/></mxCell>
+        <mxCell id="h20" value="8 · POST /api/realtime/sideband { callId }" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="561" as="sourcePoint"/><mxPoint x="760" y="561" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h21" value="9 · wss ?call_id=rtc_…  —  Bearer THE EPHEMERAL KEY" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="760" y="593" as="sourcePoint"/><mxPoint x="1210" y="593" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h22" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;10 · session.update&lt;/b&gt; — כל 7 הכלים, ופרומט בלי הפסקה על מה שחסר&lt;br&gt;כלים והוראות זזים יחד, אחרת המודל מסרב לכלי שכבר יש לו&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="510" y="613" width="500" height="50" as="geometry"/></mxCell>
+        <mxCell id="h23" value="&lt;div dir='rtl' style='text-align:right'&gt;כלי של הדפדפן — הדפדפן בלולאה&lt;/div&gt;" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" vertex="1" parent="1"><mxGeometry x="100" y="715" width="1560" height="235" as="geometry"/></mxCell>
+        <mxCell id="h24" value="11 · audio, ישירות" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="757" as="sourcePoint"/><mxPoint x="1210" y="757" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h25" value="12 · function_call — rank_airports" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1210" y="789" as="sourcePoint"/><mxPoint x="300" y="789" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h26" value="13 · POST /api/tool" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="821" as="sourcePoint"/><mxPoint x="760" y="821" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h27" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;14 · placement = anywhere&lt;/b&gt; → runTool · callId + חתימה&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="550" y="841" width="420" height="36" as="geometry"/></mxCell>
+        <mxCell id="h28" value="15 · result" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="760" y="895" as="sourcePoint"/><mxPoint x="300" y="895" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h29" value="16 · function_call_output" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="927" as="sourcePoint"/><mxPoint x="1210" y="927" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h30" value="&lt;div dir='rtl' style='text-align:right'&gt;כלי של השרת — אותו סשן, הדפדפן מחוץ ללולאה&lt;/div&gt;" style="rounded=1;html=1;fillColor=none;strokeColor=#9a9a9a;dashed=1;dashPattern=6 6;arcSize=6;verticalAlign=top;align=left;spacingLeft=10;spacingTop=4;fontSize=12;fontColor=#7a7a7a;" vertex="1" parent="1"><mxGeometry x="100" y="965" width="1560" height="330" as="geometry"/></mxCell>
+        <mxCell id="h31" value="17 · audio — &quot;מה מזג האוויר בבוסטון?&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="1007" as="sourcePoint"/><mxPoint x="1210" y="1007" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h32" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;18 · הקריאה משודרת לשני החיבורים.&lt;/b&gt; הדפדפן רואה אותה ו&lt;b&gt;לא&lt;/b&gt; עונה —&lt;br&gt;שני צדדים שעונים ייצרו שני outputs לאותו call_id&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="50" y="1027" width="500" height="50" as="geometry"/></mxCell>
+        <mxCell id="h33" value="19 · function_call — get_airport_weather" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1210" y="1101" as="sourcePoint"/><mxPoint x="760" y="1101" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h34" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;20 · runTool בתהליך של השרת&lt;/b&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="600" y="1121" width="320" height="36" as="geometry"/></mxCell>
+        <mxCell id="h35" value="21 · GET /v1/forecast" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="760" y="1183" as="sourcePoint"/><mxPoint x="1580" y="1183" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h36" value="22 · current conditions" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1580" y="1215" as="sourcePoint"/><mxPoint x="760" y="1215" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h37" value="23 · function_call_output + response.create" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="760" y="1247" as="sourcePoint"/><mxPoint x="1210" y="1247" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h38" value="24 · audio — התשובה, בקו הישיר" style="endArrow=block;endFill=1;html=1;strokeWidth=2;strokeColor=#4a4a4a;fontSize=13;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1210" y="1279" as="sourcePoint"/><mxPoint x="300" y="1279" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="h39" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;25 · ומי שינסה לעקוף:&lt;/b&gt;  POST /api/tool  get_airport_weather  →  &lt;b&gt;403&lt;/b&gt;, לכל קורא, תמיד&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="460" y="1320" width="600" height="38" as="geometry"/></mxCell>
+        <mxCell id="h40" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;מה שנמדד בפועל&lt;/b&gt;&lt;br&gt;sideband נפתח אחרי &lt;b&gt;559ms&lt;/b&gt; · הכריז 7 כלים · הריץ get_airport_weather ב-&lt;b&gt;302ms&lt;/b&gt; → t1 ביומן הביקורת.&lt;br&gt;הדפדפן ראה את הקריאה: &lt;b&gt;כן&lt;/b&gt;. הדפדפן ענה על קריאת כלי: &lt;b&gt;לא&lt;/b&gt;.&lt;br&gt;התשובה: &quot;בבוסטון לוגן כרגע מעונן לגמרי, הטמפרטורה בערך 19.4 מעלות…&quot;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=right;spacingRight=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1"><mxGeometry x="100" y="1380" width="1560" height="90" as="geometry"/></mxCell>
+        <mxCell id="h41" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;מה זה קונה, ומה זה עדיין לא&lt;/b&gt;&lt;br&gt;&lt;b&gt;1. אין החלפת ערוץ.&lt;/b&gt; אותו סשן, אותה שיחה. המהירות של החיבור הישיר, והכלי הרגיש רץ בשרת. הבחירה של המשתמש בין שני קווים הייתה fallback, לא עיצוב.&lt;br&gt;&lt;b&gt;2. ניתוב הוא לא החלטה של המודל.&lt;/b&gt; הגבול נקבע לפני שהשיחה מתחילה ויושב ברשימת הכלים, לא בהוראות — מה שאפשר לשכנע את המודל לעשות, אפשר גם להזריק לו.&lt;br&gt;&lt;b&gt;3. זה לא מסתיר את החילוף.&lt;/b&gt; שני החיבורים על סשן אחד: הדפדפן רואה שהקריאה קרתה ומה המודל קיבל. תוצאה שאסור שתגיע ללקוח בכלל דורשת שה-session עצמו יהיה בשרת — זה טאב 8, ופי 4-5 בלטנסי.&lt;br&gt;&lt;b&gt;4. עדיין פתוח:&lt;/b&gt; ל-POST /api/tool אין אימות. שלב 25 חוסם את מזג האוויר לכל קורא, אבל שלב 13 ירוץ לכל מי שמגיע לפורט.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" vertex="1" parent="1"><mxGeometry x="100" y="1490" width="1560" height="150" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="hybrid-simple" name="12 - The hybrid, simply">
-    <mxGraphModel dx="2000" dy="805" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1220" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1220" math="0" shadow="0">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="s1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" value="המודל ההיברידי — שאלה אחת על מזג אוויר, מהתחלה עד הסוף" vertex="1">
-          <mxGeometry height="40" width="1500" x="60" y="26" as="geometry" />
-        </mxCell>
-        <mxCell id="s2" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontColor=#6b6b6b;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;סשן אחד אצל OpenAI, ושני חיבורים אליו. עקוב אחרי המספרים — אחרי שבעה צעדים חוזרים לאותו מקום.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="24" width="1500" x="60" y="70" as="geometry" />
-        </mxCell>
-        <mxCell id="s3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#e8e8e8;strokeColor=#9a9a9a;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;אתה&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;מיקרופון ורמקול&lt;/span&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="66" width="210" x="155" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="s4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;הדפדפן&lt;/div&gt;" vertex="1">
-          <mxGeometry height="66" width="210" x="515" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="s5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;OpenAI&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;gpt-realtime&lt;/span&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="66" width="210" x="905" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="s6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;השרת שלך&lt;/div&gt;" vertex="1">
-          <mxGeometry height="66" width="210" x="1295" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="s7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:center&#39;&gt;Open-Meteo&lt;/div&gt;" vertex="1">
-          <mxGeometry height="66" width="190" x="1645" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="s8" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#9a9a9a;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="260" y="190" as="sourcePoint" />
-            <mxPoint x="260" y="830" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s9" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#6c8ebf;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="620" y="190" as="sourcePoint" />
-            <mxPoint x="620" y="830" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s10" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#b85450;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1010" y="190" as="sourcePoint" />
-            <mxPoint x="1010" y="830" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s11" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#82b366;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1400" y="190" as="sourcePoint" />
-            <mxPoint x="1400" y="830" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s12" edge="1" parent="1" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#d79b00;html=1;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1740" y="190" as="sourcePoint" />
-            <mxPoint x="1740" y="830" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fff4e6;strokeColor=#d79b00;verticalAlign=top;spacingTop=10;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;מה זה Open-Meteo?&lt;/b&gt;&lt;br&gt;אתר מזג אוויר חינמי באינטרנט. &lt;b&gt;לא&lt;/b&gt; חלק מהפרויקט ולא קשור ל-OpenAI — רק דמיון בשם.&lt;br&gt;שולחים לו קו רוחב וקו אורך, הוא מחזיר מספרים: טמפרטורה, רוח, ראות. בלי מפתח ובלי חשבון.&lt;br&gt;הוא נבחר כי הוא &lt;b&gt;הדבר היחיד בכל הפרויקט שדורש לצאת לאינטרנט&lt;/b&gt; — וזו כל הסיבה שהכלי שלו יושב בשרת.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="110" width="740" x="1130" y="870" as="geometry" />
-        </mxCell>
-        <mxCell id="s14" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" value="1 · &quot;מה מזג האוויר בבוסטון?&quot;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="260" y="245" as="sourcePoint" />
-            <mxPoint x="620" y="245" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s15" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" value="2 · האודיו, ישירות">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="620" y="300" as="sourcePoint" />
-            <mxPoint x="1010" y="300" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;3 · המודל מכריז לחדר:&lt;/b&gt; &quot;אני צריך get_airport_weather · BOS&quot;&lt;br&gt;ההכרזה נשמעת ב&lt;b&gt;שני&lt;/b&gt; החיבורים, עם השם והארגומנטים. הדפדפן שומע ושותק — השם לא ברשימה שלו.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="62" width="660" x="680" y="330" as="geometry" />
-        </mxCell>
-        <mxCell id="s17" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" value="4 · הקריאה מגיעה גם לכאן">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1010" y="440" as="sourcePoint" />
-            <mxPoint x="1400" y="440" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s18" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" value="5 · lat/lon של בוסטון">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1400" y="490" as="sourcePoint" />
-            <mxPoint x="1740" y="490" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s19" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" value="6 · 15.3°C, בהיר, רוח 4 קשרים">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1740" y="540" as="sourcePoint" />
-            <mxPoint x="1400" y="540" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s20" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" value="7 · המספרים חוזרים כ-JSON">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1400" y="590" as="sourcePoint" />
-            <mxPoint x="1010" y="590" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;המודל מנסח משפט מהמספרים.&lt;/b&gt; הוא לא יודע מי ענה, ואין לו דרך לשאול.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="46" width="560" x="730" y="630" as="geometry" />
-        </mxCell>
-        <mxCell id="s22" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" value="הקול חוזר">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1010" y="720" as="sourcePoint" />
-            <mxPoint x="620" y="720" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s23" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" value="&quot;בבוסטון לוגן 15.3 מעלות, בהיר&quot;">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="620" y="770" as="sourcePoint" />
-            <mxPoint x="260" y="770" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0e4;strokeColor=#82b366;fontSize=15;align=right;verticalAlign=middle;spacingRight=14;arcSize=6;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;הדלת של השרת נכנסת בלבד.&lt;/b&gt; JSON נכנס בה. &lt;b&gt;אף פעם לא יוצא ממנה קול.&lt;/b&gt;&lt;br&gt;כל הקול — בלי יוצא מן הכלל — עובר בדלת של הדפדפן. לכן זה מהיר: 974ms · 796ms, נמדד.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="110" width="1030" x="60" y="870" as="geometry" />
-        </mxCell>
-        <mxCell id="s25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;ומה עם ששת הכלים האחרים?&lt;/b&gt; דירוגים, השוואות ופרופילים — הדפדפן מריץ אותם בעצמו: שומע את ההכרזה, רץ לשרת דרך POST /api/tool, ומקריא את התוצאה בחזרה. הם קוראים ממאגר מקומי שממילא שלך, אז אין נזק בכך שהוא רואה אותם. &lt;b&gt;רק מזג האוויר יוצא החוצה, ורק הוא יושב בשרת.&lt;/b&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="70" width="1810" x="60" y="1000" as="geometry" />
-        </mxCell>
-        <mxCell id="s26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" value="&lt;div dir=&#39;rtl&#39; style=&#39;text-align:right&#39;&gt;&lt;b&gt;ומה זה לא עושה&lt;/b&gt; — שני החיבורים על סשן אחד, אז הדפדפן שומע שהקריאה קרתה. וכשהשרת מזריק את התוצאה, OpenAI משדר את הפריט ל&lt;b&gt;כל&lt;/b&gt; החיבורים — אז הדפדפן &lt;b&gt;כן מקבל את ה-JSON&lt;/b&gt;. 15.3 מעלות מגיעות אליו גם בלי שביקש. מה שנשלט הוא &lt;b&gt;מי מבצע&lt;/b&gt; — מי מחזיק את הקרדנציאלס, מי יוצא לאינטרנט, ומי יכול לקרוא לכלי עם ארגומנטים משלו. &lt;b&gt;לא&lt;/b&gt; מי רואה. לסודיות מלאה כל השיחה צריכה לעבור בשרת — וזה פי 4-5 בלטנסי.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="70" width="1810" x="60" y="1090" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="s1" value="המודל ההיברידי — שאלה אחת על מזג אוויר, מהתחלה עד הסוף" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="60" y="26" width="1500" height="40" as="geometry"/></mxCell>
+        <mxCell id="s2" value="&lt;div dir='rtl' style='text-align:right'&gt;סשן אחד אצל OpenAI, ושני חיבורים אליו. עקוב אחרי המספרים — אחרי שבעה צעדים חוזרים לאותו מקום.&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontColor=#6b6b6b;" vertex="1" parent="1"><mxGeometry x="60" y="70" width="1500" height="24" as="geometry"/></mxCell>
+        <mxCell id="s3" value="&lt;div dir='rtl' style='text-align:center'&gt;אתה&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;מיקרופון ורמקול&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#e8e8e8;strokeColor=#9a9a9a;" vertex="1" parent="1"><mxGeometry x="155" y="120" width="210" height="66" as="geometry"/></mxCell>
+        <mxCell id="s4" value="&lt;div dir='rtl' style='text-align:center'&gt;הדפדפן&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="515" y="120" width="210" height="66" as="geometry"/></mxCell>
+        <mxCell id="s5" value="&lt;div dir='rtl' style='text-align:center'&gt;OpenAI&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;gpt-realtime&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="905" y="120" width="210" height="66" as="geometry"/></mxCell>
+        <mxCell id="s6" value="&lt;div dir='rtl' style='text-align:center'&gt;השרת שלך&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="1295" y="120" width="210" height="66" as="geometry"/></mxCell>
+        <mxCell id="s7" value="&lt;div dir='rtl' style='text-align:center'&gt;Open-Meteo&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1645" y="120" width="190" height="66" as="geometry"/></mxCell>
+        <mxCell id="s8" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="260" y="190" as="sourcePoint"/><mxPoint x="260" y="830" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s9" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#6c8ebf;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="190" as="sourcePoint"/><mxPoint x="620" y="830" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s10" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#b85450;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="190" as="sourcePoint"/><mxPoint x="1010" y="830" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s11" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#82b366;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="190" as="sourcePoint"/><mxPoint x="1400" y="830" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s12" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#d79b00;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1740" y="190" as="sourcePoint"/><mxPoint x="1740" y="830" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s13" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;מה זה Open-Meteo?&lt;/b&gt;&lt;br&gt;אתר מזג אוויר חינמי באינטרנט. &lt;b&gt;לא&lt;/b&gt; חלק מהפרויקט ולא קשור ל-OpenAI — רק דמיון בשם.&lt;br&gt;שולחים לו קו רוחב וקו אורך, הוא מחזיר מספרים: טמפרטורה, רוח, ראות. בלי מפתח ובלי חשבון.&lt;br&gt;הוא נבחר כי הוא &lt;b&gt;הדבר היחיד בכל הפרויקט שדורש לצאת לאינטרנט&lt;/b&gt; — וזו כל הסיבה שהכלי שלו יושב בשרת.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fff4e6;strokeColor=#d79b00;verticalAlign=top;spacingTop=10;" vertex="1" parent="1"><mxGeometry x="1130" y="870" width="740" height="110" as="geometry"/></mxCell>
+        <mxCell id="s14" value="1 · &quot;מה מזג האוויר בבוסטון?&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="260" y="245" as="sourcePoint"/><mxPoint x="620" y="245" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s15" value="2 · האודיו, ישירות" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="300" as="sourcePoint"/><mxPoint x="1010" y="300" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s16" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;3 · המודל מכריז לחדר:&lt;/b&gt; &quot;אני צריך get_airport_weather · BOS&quot;&lt;br&gt;ההכרזה נשמעת ב&lt;b&gt;שני&lt;/b&gt; החיבורים, עם השם והארגומנטים. הדפדפן שומע ושותק — השם לא ברשימה שלו.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="680" y="340" width="660" height="62" as="geometry"/></mxCell>
+        <mxCell id="s17" value="4 · הקריאה מגיעה גם לכאן" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="440" as="sourcePoint"/><mxPoint x="1400" y="440" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s18" value="5 · lat/lon של בוסטון" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="490" as="sourcePoint"/><mxPoint x="1740" y="490" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s19" value="6 · 15.3°C, בהיר, רוח 4 קשרים" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1740" y="540" as="sourcePoint"/><mxPoint x="1400" y="540" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s20" value="7 · המספרים חוזרים כ-JSON" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="590" as="sourcePoint"/><mxPoint x="1010" y="590" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s21" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;המודל מנסח משפט מהמספרים.&lt;/b&gt; הוא לא יודע מי ענה, ואין לו דרך לשאול.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#fde8e6;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="730" y="630" width="560" height="46" as="geometry"/></mxCell>
+        <mxCell id="s22" value="הקול חוזר" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="720" as="sourcePoint"/><mxPoint x="620" y="720" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s23" value="&quot;בבוסטון לוגן 15.3 מעלות, בהיר&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="770" as="sourcePoint"/><mxPoint x="260" y="770" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s24" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;הדלת של השרת נכנסת בלבד.&lt;/b&gt; JSON נכנס בה. &lt;b&gt;אף פעם לא יוצא ממנה קול.&lt;/b&gt;&lt;br&gt;כל הקול — בלי יוצא מן הכלל — עובר בדלת של הדפדפן. לכן זה מהיר: 974ms · 796ms, נמדד.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0e4;strokeColor=#82b366;fontSize=15;align=right;verticalAlign=middle;spacingRight=14;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="870" width="1030" height="110" as="geometry"/></mxCell>
+        <mxCell id="s25" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ומה עם ששת הכלים האחרים?&lt;/b&gt; דירוגים, השוואות ופרופילים — הדפדפן מריץ אותם בעצמו: שומע את ההכרזה, רץ לשרת דרך POST /api/tool, ומקריא את התוצאה בחזרה. הם קוראים ממאגר מקומי שממילא שלך, אז אין נזק בכך שהוא רואה אותם. &lt;b&gt;רק מזג האוויר יוצא החוצה, ורק הוא יושב בשרת.&lt;/b&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1000" width="1810" height="70" as="geometry"/></mxCell>
+        <mxCell id="s26" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ומה זה לא עושה&lt;/b&gt; — שני החיבורים על סשן אחד, אז הדפדפן שומע שהקריאה קרתה. וכשהשרת מזריק את התוצאה, OpenAI משדר את הפריט ל&lt;b&gt;כל&lt;/b&gt; החיבורים — אז הדפדפן &lt;b&gt;כן מקבל את ה-JSON&lt;/b&gt;. 15.3 מעלות מגיעות אליו גם בלי שביקש. מה שנשלט הוא &lt;b&gt;מי מבצע&lt;/b&gt; — מי מחזיק את הקרדנציאלס, מי יוצא לאינטרנט, ומי יכול לקרוא לכלי עם ארגומנטים משלו. &lt;b&gt;לא&lt;/b&gt; מי רואה. לסודיות מלאה כל השיחה צריכה לעבור בשרת — וזה פי 4-5 בלטנסי.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=right;verticalAlign=middle;spacingRight=14;spacingLeft=14;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1090" width="1810" height="70" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="elevenlabs-hybrid" name="13 - ElevenLabs hybrid: the opposite arrow">
+    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1650" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="e1" value="ההיברידי של ElevenLabs — אותה שאלה, החץ ההפוך" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="60" y="26" width="1500" height="40" as="geometry"/></mxCell>
+        <mxCell id="e2" value="&lt;div dir='rtl' style='text-align:right'&gt;טאב 12 מראה את אותה שאלה בדיוק אצל OpenAI. שים את שני הדפים זה לצד זה — כל מה שחשוב הוא ההבדל בצעד 4.&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontColor=#6b6b6b;" vertex="1" parent="1"><mxGeometry x="60" y="70" width="1500" height="24" as="geometry"/></mxCell>
+        <mxCell id="e3" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;מי פותח את החיבור — וזה כל ההבדל&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;OpenAI (טאב 12):&lt;/b&gt; &amp;nbsp;השרת שלך &amp;nbsp;&lt;b&gt;◄──&lt;/b&gt;&amp;nbsp; מחייג החוצה אל הסשן החי. חיבור שאתה יזמת. שום דבר במחשב שלך אינו נגיש מבחוץ, ואין נקודת כניסה שצריך להגן עליה.&lt;br&gt;&lt;b&gt;ElevenLabs (הדף הזה):&lt;/b&gt; &amp;nbsp;אין sideband. השיחה יושבת אצלם. אם השרת שלך אמור לענות על כלי — &lt;b&gt;הם&lt;/b&gt; חייבים להתקשר &lt;b&gt;אליך&lt;/b&gt;: HTTP POST לכתובת שפרסמת מראש. זה ה-webhook.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3eefa;strokeColor=#9673a6;fontSize=15;align=right;verticalAlign=top;spacingRight=14;spacingLeft=14;spacingTop=10;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="110" width="1810" height="108" as="geometry"/></mxCell>
+        <mxCell id="e4" value="&lt;div dir='rtl' style='text-align:center'&gt;אתה&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;מיקרופון ורמקול&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#e8e8e8;strokeColor=#9a9a9a;" vertex="1" parent="1"><mxGeometry x="155" y="240" width="210" height="66" as="geometry"/></mxCell>
+        <mxCell id="e5" value="&lt;div dir='rtl' style='text-align:center'&gt;הדפדפן&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="515" y="240" width="210" height="66" as="geometry"/></mxCell>
+        <mxCell id="e6" value="&lt;div dir='rtl' style='text-align:center'&gt;ElevenLabs&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;cascade: תמלול → LLM → קול&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="885" y="240" width="250" height="66" as="geometry"/></mxCell>
+        <mxCell id="e7" value="&lt;div dir='rtl' style='text-align:center'&gt;השרת שלך&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:normal&quot;&gt;פורט 3002, דרך מנהרה&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="1285" y="240" width="230" height="66" as="geometry"/></mxCell>
+        <mxCell id="e8" value="&lt;div dir='rtl' style='text-align:center'&gt;Open-Meteo&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;arcSize=10;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1645" y="240" width="190" height="66" as="geometry"/></mxCell>
+        <mxCell id="e9" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#9a9a9a;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="260" y="310" as="sourcePoint"/><mxPoint x="260" y="960" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e10" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#6c8ebf;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="310" as="sourcePoint"/><mxPoint x="620" y="960" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e11" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#9673a6;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="310" as="sourcePoint"/><mxPoint x="1010" y="960" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e12" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#82b366;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="310" as="sourcePoint"/><mxPoint x="1400" y="960" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e13" style="endArrow=none;dashed=1;dashPattern=4 4;strokeWidth=2;strokeColor=#d79b00;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1740" y="310" as="sourcePoint"/><mxPoint x="1740" y="960" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e14" value="1 · &quot;מה מזג האוויר בבוסטון?&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="260" y="355" as="sourcePoint"/><mxPoint x="620" y="355" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e15" value="2 · האודיו, ב-WebSocket" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="405" as="sourcePoint"/><mxPoint x="1010" y="405" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e16" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;3 · שלושה שלבים אצלם, בזה אחר זה:&lt;/b&gt; התמלול הופך אודיו לטקסט → ה-LLM קורא את הטקסט → ומחליט שהוא צריך get_airport_weather · BOS.&lt;br&gt;&lt;b&gt;הדפדפן לא שומע כלום מזה.&lt;/b&gt; אצל OpenAI ההכרזה נשמעת בשני החיבורים; כאן היא נשארת אצלם.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#f3eefa;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="660" y="440" width="700" height="62" as="geometry"/></mxCell>
+        <mxCell id="e17" value="4 · POST https://…trycloudflare.com/api/tool/hook/get_airport_weather" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#9673a6;fontColor=#9673a6;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="545" as="sourcePoint"/><mxPoint x="1400" y="545" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e18" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;החץ ההפוך.&lt;/b&gt; חיבור HTTPS חדש, שהם פותחים, אל כתובת שפרסמת.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#f3eefa;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1030" y="565" width="360" height="40" as="geometry"/></mxCell>
+        <mxCell id="e19" value="5 · lat/lon של בוסטון" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="645" as="sourcePoint"/><mxPoint x="1740" y="645" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e20" value="6 · 15.5°C, מעונן חלקית" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1740" y="695" as="sourcePoint"/><mxPoint x="1400" y="695" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e21" value="7 · JSON — כתשובת ה-HTTP לאותה בקשה" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1400" y="745" as="sourcePoint"/><mxPoint x="1010" y="745" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e22" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ה-LLM מנסח משפט מהמספרים, ואז הקול מיוצר.&lt;/b&gt; בקסקייד שום דבר לא נאמר עד שהניסוח נגמר — לכן זמן התגובה כאן נמדד בשניות ולא במאיות.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=right;verticalAlign=middle;spacingRight=12;spacingLeft=12;arcSize=8;fillColor=#f3eefa;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="710" y="785" width="600" height="46" as="geometry"/></mxCell>
+        <mxCell id="e23" value="8 · הקול חוזר" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1010" y="875" as="sourcePoint"/><mxPoint x="620" y="875" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e24" value="&quot;בבוסטון לוגן 15.5 מעלות, מעונן חלקית&quot;" style="endArrow=block;endFill=1;html=1;strokeWidth=3;fontSize=15;fontStyle=1;labelBackgroundColor=#ffffff;strokeColor=#4a4a4a;fontColor=#4a4a4a;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="620" y="925" as="sourcePoint"/><mxPoint x="260" y="925" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="e25" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;למה צריך מנהרה בכלל — ולמה דווקא לפורט 3002&lt;/b&gt;&lt;br&gt;&lt;br&gt;הענן שלהם יושב באינטרנט. הוא לא יכול להגיע ל-localhost שלך, אז חייבת להיות כתובת ציבורית. &lt;b&gt;cloudflared&lt;/b&gt; יוצר אחת.&lt;br&gt;&lt;br&gt;&lt;b&gt;אבל לא מול השרת הראשי.&lt;/b&gt; פורט 3001 מנפיק מפתח זמני של OpenAI, כתובת חתומה של ElevenLabs ומפתח Soniox — &lt;b&gt;בלי אימות&lt;/b&gt;, כי כל מה שמגיע אליו בא מהדפדפן במכונה הזו. מנהרה מולו פירושה שמי שמוצא את הכתובת מוציא לך כסף, ויכול גם להעלות מסמכים למאגר בדרך.&lt;br&gt;&lt;br&gt;&lt;b&gt;לכן תהליך שני משלו&lt;/b&gt;, שמרכיב &lt;b&gt;מסלול אחד בדיוק&lt;/b&gt;. מה שפומבי: שתי שליפות לקריאה בלבד. שום דבר אחר לא מאזין — לכן &lt;span style=&quot;font-family:monospace&quot;&gt;curl&lt;/span&gt; על הבסיס מחזיר 404.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0e4;strokeColor=#82b366;fontSize=13;align=right;verticalAlign=top;spacingRight=14;spacingLeft=14;spacingTop=10;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1000" width="900" height="230" as="geometry"/></mxCell>
+        <mxCell id="e26" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ארבע שכבות על המסלול הזה — והסדר מכוון&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;1 · רשימת כתובות&lt;/b&gt; — 12 כתובות egress של ElevenLabs, נקראות מ-&lt;span style=&quot;font-family:monospace&quot;&gt;cf-connecting-ip&lt;/span&gt;. זיוף שלה נחסם על ידי Cloudflare לפני שהגיע לתהליך.&lt;br&gt;&lt;b&gt;2 · מגבלת קצב&lt;/b&gt; — 60 לדקה לכתובת.&lt;br&gt;&lt;b&gt;3 · סוד משותף&lt;/b&gt; — השוואה בזמן קבוע.&lt;br&gt;&lt;b&gt;4 · מיקום&lt;/b&gt; — 403 לכל כלי שאינו &lt;span style=&quot;font-family:monospace&quot;&gt;placement: server&lt;/span&gt;.&lt;br&gt;&lt;br&gt;&lt;b&gt;כתובת לפני סוד&lt;/b&gt;, כדי שמי שלא יכול להיות הם לא יקבל הזדמנות לנחש.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=right;verticalAlign=top;spacingRight=14;spacingLeft=14;spacingTop=10;arcSize=6;" vertex="1" parent="1"><mxGeometry x="990" y="1000" width="880" height="230" as="geometry"/></mxCell>
+        <mxCell id="e27" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;ומכאן &quot;תקרה של 6 כלים בלי מנהרה&quot; — שאיננה מגבלה של הפלטפורמה&lt;/b&gt;&lt;br&gt;&lt;br&gt;יש 8 כלים. &amp;nbsp;&lt;b&gt;6&lt;/b&gt; מהם &lt;span style=&quot;font-family:monospace&quot;&gt;placement: anywhere&lt;/span&gt; ורצים כ-&lt;b&gt;client tools&lt;/b&gt;: ElevenLabs מבקשים מהדפדפן, הדפדפן עושה POST ל-3001 המקומי. הדפדפן הוא זה שמחייג — אז אין צורך בכתובת ציבורית.&lt;br&gt;&lt;b&gt;2&lt;/b&gt; מהם &lt;span style=&quot;font-family:monospace&quot;&gt;placement: server&lt;/span&gt;, ולכן &lt;span style=&quot;font-family:monospace&quot;&gt;/api/tool&lt;/span&gt; מחזיר להם &lt;b&gt;403&lt;/b&gt; לדפדפן בכוונה. הם &lt;b&gt;לא יכולים&lt;/b&gt; להיות client tools, ונשאר להם מנגנון אחד: webhook. שדורש כתובת. &lt;b&gt;8 − 2 = 6.&lt;/b&gt;&lt;br&gt;&lt;br&gt;לכן יש שני סוכנים אצלם, זהים חוץ מזה: &amp;nbsp;&lt;span style=&quot;font-family:monospace&quot;&gt;6 client · 0 webhook · 6/8&lt;/span&gt; &amp;nbsp;מול&amp;nbsp; &lt;span style=&quot;font-family:monospace&quot;&gt;6 client · 2 webhook · 8/8&lt;/span&gt;.&lt;br&gt;אילו היו לך 20 כלים ושניים בשרת, זה היה 18/20. &lt;b&gt;התקרה איננה 6 — היא כל כלי שאתה מסרב לתת לדפדפן להריץ.&lt;/b&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4fc;strokeColor=#6c8ebf;fontSize=13;align=right;verticalAlign=top;spacingRight=14;spacingLeft=14;spacingTop=10;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1260" width="1810" height="150" as="geometry"/></mxCell>
+        <mxCell id="e28" value="&lt;div dir='rtl' style='text-align:right'&gt;&lt;b&gt;מה זה עולה — שני דברים שההיברידי של OpenAI לא משלם&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;נקודת קצה ציבורית.&lt;/b&gt; הקל לבנייה הוא החשוף יותר: ה-webhook פשוט לכתוב, אבל הוא מחייב לפרסם כתובת לאינטרנט — ומכאן ארבע השכבות. ה-sideband של OpenAI הוא יותר קוד ומפרסם &lt;b&gt;כלום&lt;/b&gt;.&lt;br&gt;&lt;br&gt;&lt;b&gt;ושיוך שהוא הסקה, לא ודאות.&lt;/b&gt; הקריאה מגיעה בלי מזהה שיחה אמין — &lt;span style=&quot;font-family:monospace&quot;&gt;{{system__conversation_id}}&lt;/span&gt; מתועד אצלם אבל &lt;b&gt;מגיע מילולית ולא מוחלף&lt;/b&gt; (נמדד). אצל OpenAI זה אותו סשן וההתאמה ודאית. כאן, עם שני מתקשרים במקביל, קריאה יכולה להשתייך לשיחה הלא נכונה.&lt;br&gt;אם ההבטחה שלך היא שכל מספר ניתן למעקב עד לקריאה שייצרה אותו — &lt;b&gt;זה מימד בחירה, לא פרט טכני.&lt;/b&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf1f0;strokeColor=#b85450;fontSize=13;align=right;verticalAlign=top;spacingRight=14;spacingLeft=14;spacingTop=10;arcSize=6;" vertex="1" parent="1"><mxGeometry x="60" y="1440" width="1810" height="150" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

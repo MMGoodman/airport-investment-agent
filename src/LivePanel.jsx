@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { startOpenAIRealtime } from './live/openaiRealtime.js'
 import { startOpenAIRelay } from './live/openaiRelay.js'
 import { firstTokenStages, turnHasQuestion } from './live/stopwatch.js'
+import { isFarewell } from './live/farewell.js'
+import { startNearFieldGate, NEAR_FIELD_DEFAULT } from './live/nearField.js'
 import { startElevenLabs } from './live/elevenlabs.js'
 import { startSoniox } from './live/soniox.js'
 import LiveTrace from './LiveTrace.jsx'
@@ -88,6 +90,10 @@ const PIPELINE_DEFAULTS = {
   // a clipped first syllable — had no control anywhere in the UI.
   prefixMs: 300,
   interrupt: 'on', // whether detected speech cancels the answer already being spoken
+  // Blank = the server's own default. Only a deliberate choice travels.
+  model: '',
+  voice: '',
+  transcribeModel: '',
   vocabulary: 'on',
 }
 
@@ -129,7 +135,7 @@ const formatArgs = (args) =>
     .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : v}`)
     .join(' · ')
 
-export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEnded, onError, slots }) {
+export default function LivePanel({ provider, agentId, lang, onAppend, onAmendTools, onEnded, onError, slots }) {
   const [status, setStatus] = useState('idle')
   const [muted, setMuted] = useState(false)
   const [speaking, setSpeaking] = useState(null)
@@ -141,6 +147,13 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
   const [toolLine, setToolLine] = useState(null)
   /** Microphone closed unless a key is held. Survives across calls — it is how you test. */
   const [pushToTalk, setPushToTalk] = useState(false)
+  /** The near-field gate: on, its threshold, and what it is hearing right now. */
+  const [nearField, setNearField] = useState(false)
+  const [nearFieldAt, setNearFieldAt] = useState(NEAR_FIELD_DEFAULT)
+  const [micLevel, setMicLevel] = useState(0)
+  /** What OpenAI offers for the three settings that are not turn detection. */
+  const [oaConfig, setOaConfig] = useState(null)
+  const gateRef = useRef(null)
   // The pipeline the RUNNING call started under. Settings edited mid-call apply to the
   // next one — the ephemeral key is bound to its config — and the UI has to say so rather
   // than let a dead switch look live.
@@ -170,9 +183,27 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
   // and the two need opposite handling of a transcript that arrives during an answer.
   const reportsSpeech = useRef(false)
   /** What the whole session did, counted as it happens so the 300-event ring cannot lose it. */
-  const sessionTotals = useRef({ events: 0, answers: [], stages: {}, payloads: [] })
+  const sessionTotals = useRef({ events: 0, answers: [], acknowledged: [], stages: {}, payloads: [] })
+
+  /**
+   * This turn's silence-to-first-word, waiting to be attached to the answer it belongs to.
+   *
+   * The stage was being computed, shown in the trace, and then dropped: the stored message
+   * carried its text and its tool calls and no timing at all. Which made the dashboard's
+   * latency column an average of whatever else happened to have an `ms` — tool durations —
+   * so the one path with a full set of stored conversations reported a latency from two of
+   * its sixteen turns, and the hybrid, with fourteen, reported none.
+   *
+   * Per-turn and consumed on use, not read off the end of `answers`: a turn that never
+   * produced the stage would otherwise inherit the previous turn's number, which is worse
+   * than having none.
+   */
+  const answerMs = useRef(null)
+
+  /** The caller's last words, so end_call can be checked against them. See farewell.js. */
+  const lastAsk = useRef('')
   const resetTotals = useCallback(() => {
-    sessionTotals.current = { events: 0, answers: [], stages: {}, payloads: [] }
+    sessionTotals.current = { events: 0, answers: [], acknowledged: [], stages: {}, payloads: [] }
   }, [])
   const endAfterReply = useRef(false)
   const endTimer = useRef(null)
@@ -193,7 +224,15 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
     totals.events += 1
     if (kind === 'timing' && extra.ms != null) {
       ;(totals.stages[text] ??= []).push(extra.ms)
-      if (text === 'answer') totals.answers.push(extra.ms)
+      if (text === 'answer') {
+        // Kept apart, not dropped: an acknowledgement is a real thing the model did and the
+        // header says how many there were. It just is not an answer, so it does not go in
+        // the mean of answers. See stopwatch.js.
+        if (extra.beforeTranscript) totals.acknowledged.push(extra.ms)
+        else totals.answers.push(extra.ms)
+        // Held for the message this answer is about to become.
+        answerMs.current = extra.ms
+      }
     }
     if (extra.bytes != null) totals.payloads.push({ text, bytes: extra.bytes })
 
@@ -211,7 +250,7 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
    * one number. A cascade has three, and one of them is always the culprit.
    */
   const stage = useCallback(
-    (label, from, to) => {
+    (label, from, to, beforeTranscript) => {
       // Every stage is scoped to one answer, and an answer starts with a question. The
       // agent's opening greeting has no question in front of it, so it is not a turn and
       // has nothing to time.
@@ -222,7 +261,7 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
       // A native model emits its first token and its first audio together, so the order
       // between them is arbitrary and the gap is noise. Clamping at zero states that
       // plainly; dropping the row would hide the very thing worth seeing.
-      push('timing', label, { ms: Math.max(0, Math.round(b - a)) })
+      push('timing', label, { ms: Math.max(0, Math.round(b - a)), beforeTranscript })
     },
     [push],
   )
@@ -243,8 +282,8 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
       if (marks.current.firstToken) return
       mark('firstToken')
 
-      for (const { label, from, to } of firstTokenStages(marks.current, final)) {
-        stage(label, from, to)
+      for (const { label, from, to, beforeTranscript } of firstTokenStages(marks.current, final)) {
+        stage(label, from, to, beforeTranscript)
       }
     },
     [mark, stage],
@@ -308,7 +347,26 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
                 silenceMs: pipeline.silenceMs,
                 prefixMs: pipeline.prefixMs,
               }),
+          /**
+           * Whether speech cancels the answer being spoken.
+           *
+           * It was missing from this object, which is the whole of the bug: the checkbox
+           * exists in the board, the server reads `interrupt` off the query, and everything
+           * in this object becomes a query param — but this key was never in it. So the
+           * control had never once done anything, and neither did the noisy-room preset
+           * that sets it. A session started with it off still logged three truncations and
+           * a header that did not say `no interrupt`, which is what gave it away.
+           */
+          interrupt: pipeline.interrupt,
           vocabulary: pipeline.vocabulary,
+          // Which model, which voice, which transcriber. Empty means "whatever .env says",
+          // which is what an untouched control should mean.
+          model: pipeline.model,
+          voice: pipeline.voice,
+          transcribeModel: pipeline.transcribeModel,
+          // Travels with the rest of the pipeline, so the session is minted with this
+          // agent's prompt, skills and tools rather than the built-in one's.
+          agent: agentId,
         },
         onStatus: (s) => {
           // Both transports announce what this connection can reach, once, at the start.
@@ -345,6 +403,7 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
           // just-written transcript: 1 ms of thinking, printed under a real 471 ms one.
           if (!reportsSpeech.current && marks.current.firstToken) marks.current = {}
           mark('transcript')
+          lastAsk.current = text
           push('you', text)
           onAppend({ role: 'user', content: text })
           stage('recognise', 'speechEnd', 'transcript')
@@ -382,7 +441,9 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
           setPartial('')
           push('agent', text)
           const attached = pendingTools.current
-          onAppend({ role: 'assistant', content: text, toolCalls: attached })
+          // With the timing, so a stored conversation can be measured and not only read.
+          onAppend({ role: 'assistant', content: text, toolCalls: attached, ms: answerMs.current })
+          answerMs.current = null
           pendingTools.current = []
 
           // Check the session's trace against the server's own record. The engine ran here
@@ -486,6 +547,41 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
           if (endAfterReply.current) {
             endAfterReply.current = false
             clearTimeout(endTimer.current)
+
+            /**
+             * The goodbye is checked HERE, not when end_call fired.
+             *
+             * It was checked there for one session and read the wrong turn. On OpenAI the
+             * transcriber runs alongside the model rather than in front of it, so the tool
+             * call lands BEFORE the words that prompted it: end_call at 97.1s, the caller's
+             * "תודה רבה" at 97.3s. The gate declined — correctly, by luck — quoting the
+             * previous question back at the trace. A caller who had actually said ביי would
+             * have been refused the same way.
+             *
+             * By the time the closing sentence has finished playing, the transcript is in.
+             */
+            if (!isFarewell(lastAsk.current)) {
+              push(
+                'session',
+                `end_call declined — "${lastAsk.current}" is not a goodbye. Say ביי or אפשר לנתק to end.`,
+              )
+              /**
+               * And tell the model, or it spends the rest of the call refusing to talk.
+               *
+               * end_call's result says the client is about to close the session. When the
+               * client then does not, the model is holding a fact that is no longer true and
+               * acts on it: every later turn came back "sorry, the conversation has already
+               * closed", and the caller could not even ask it to hang up for real.
+               */
+              sessionRef.current?.note?.(
+                'SYSTEM: the call was NOT ended. Your end_call was declined because the ' +
+                  'caller did not say an explicit goodbye. The conversation is still open. ' +
+                  'Continue normally, do not say the call has closed, and do not call ' +
+                  'end_call again until the caller says ביי, להתראות or asks to hang up.',
+              )
+              return
+            }
+
             push('session', 'closing sentence done — hanging up')
             stop()
               .then(() => push('session', 'session closed'))
@@ -493,9 +589,25 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
           }
         },
         onToolCall: (record) => {
-          pendingTools.current = [...pendingTools.current, record]
+          // A result REPLACES the pending call, further down; appending it here as well
+          // recorded every server-answered tool twice. The weather call on one live session
+          // was stored three times against one answer — twice from here, once from the
+          // server-log reconcile below.
+          if (!record.isResult) pendingTools.current = [...pendingTools.current, record]
 
           if (record.tool === 'end_call' && !record.failed) {
+            /**
+             * The model asked to hang up. WHETHER it does is decided once the closing
+             * sentence has played — see the check above, and why it cannot be made here.
+             *
+             * The rule against ending on a bare thank-you is in the prompt, reaches the
+             * model before the decision, and still loses a third of the time: eight samples
+             * put "תודה רבה" at 16/24. A prompt rule is a prior; the gate is not.
+             *
+             * The costs are not symmetric. Missing a goodbye costs one more sentence.
+             * Inventing one ends a conversation somebody was still having, which is what
+             * happened on a live call: "אוקיי, תודה רבה" and the line went dead.
+             */
             endAfterReply.current = true
             push('session', 'end_call seen — waiting for the closing sentence')
             // The closing line usually lands after the tool call, but a model that says it
@@ -504,6 +616,16 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
             endTimer.current = setTimeout(() => {
               if (!endAfterReply.current) return
               endAfterReply.current = false
+              // The same gate. Without it this timer hangs up exactly the calls the check
+              // above refused — six seconds later, and for the same bare thank-you.
+              if (!isFarewell(lastAsk.current)) {
+                push('session', `end_call declined — "${lastAsk.current}" is not a goodbye`)
+                sessionRef.current?.note?.(
+                  'SYSTEM: the call was NOT ended — end_call was declined. The conversation ' +
+                    'is still open; continue normally.',
+                )
+                return
+              }
               push('session', 'no closing sentence arrived — hanging up anyway')
               stop()
                 .then(() => push('session', 'session closed'))
@@ -571,6 +693,65 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
   function toggleMute() {
     applyMute(!muted)
   }
+
+  /**
+   * The near-field gate, running for as long as it is switched on.
+   *
+   * Push-to-talk owns the microphone when it is on, so the two are exclusive: a gate that
+   * unmutes on your voice would fight a key that mutes on release, and the loser would be
+   * whichever ran last.
+   */
+  useEffect(() => {
+    if (!nearField || pushToTalk || status !== 'live') return undefined
+
+    let live = true
+    let gate = null
+    applyMute(true)
+
+    startNearFieldGate({
+      threshold: nearFieldAt,
+      onGate: (open) => live && applyMute(!open),
+      onLevel: setMicLevel,
+    })
+      .then((g) => {
+        if (!live) return g.close()
+        gate = g
+        gateRef.current = g
+      })
+      .catch((err) => push('error', `near-field gate: ${err.message}`))
+
+    return () => {
+      live = false
+      gate?.close()
+      gateRef.current = null
+      setMicLevel(0)
+      // Left open, or a session that had the gate on ends with a muted microphone and no
+      // sign of why.
+      applyMute(false)
+    }
+    // nearFieldAt is applied through setThreshold below, not by restarting the gate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearField, pushToTalk, status, applyMute])
+
+  /**
+   * The model, voice and transcriber lists, asked of OpenAI once.
+   *
+   * Only for the paths that mint an OpenAI session — ElevenLabs takes its own at sync time
+   * and Soniox hard-codes its stages, so a picker over those would be a dead switch.
+   */
+  useEffect(() => {
+    if (!provider.id.startsWith('openai')) return
+    fetch('/api/openai/config')
+      .then((r) => r.json())
+      .then((d) => !d.error && setOaConfig(d))
+      .catch(() => {})
+  }, [provider.id])
+
+  // Dragging the slider retunes the running gate rather than tearing it down and asking
+  // for the microphone again on every pixel.
+  useEffect(() => {
+    gateRef.current?.setThreshold(nearFieldAt)
+  }, [nearFieldAt])
 
   /**
    * Hold to talk — the microphone is closed except while a key is down.
@@ -660,6 +841,53 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
             {muted ? 'Unmute' : 'Mute'}
           </button>
         )}
+        {/**
+         * The gate, beside push-to-talk because they answer the same question differently.
+         *
+         * Disabled while push-to-talk is on: that one already owns the microphone, and two
+         * things deciding when it opens is a race whose winner is whichever ran last.
+         */}
+        <label
+          className="live-ptt"
+          title={
+            pushToTalk
+              ? 'Push-to-talk already owns the microphone'
+              : 'Only your own voice opens the microphone — set the line with the slider'
+          }
+        >
+          <input
+            type="checkbox"
+            checked={nearField}
+            disabled={pushToTalk}
+            onChange={(e) => setNearField(e.target.checked)}
+          />
+          <span>near-field only</span>
+        </label>
+
+        {nearField && !pushToTalk && connected && (
+          <span className="live-gate">
+            {/* The meter is the control. Speak, watch where your voice lands, then set the
+                line under it — and have the room talk, and set it above that. */}
+            <span className="live-gate-meter" aria-hidden="true">
+              <span
+                className={`live-gate-level ${micLevel >= nearFieldAt ? 'open' : ''}`}
+                style={{ inlineSize: `${Math.min(100, micLevel * 400)}%` }}
+              />
+              <span className="live-gate-line" style={{ insetInlineStart: `${Math.min(100, nearFieldAt * 400)}%` }} />
+            </span>
+            <input
+              type="range"
+              min="0.01"
+              max="0.25"
+              step="0.005"
+              value={nearFieldAt}
+              onChange={(e) => setNearFieldAt(Number(e.target.value))}
+              aria-label="near-field threshold"
+            />
+            <span className="mono live-gate-num">{nearFieldAt.toFixed(3)}</span>
+          </span>
+        )}
+
         <label className="live-ptt" title="Microphone stays closed unless you hold Space">
           <input
             type="checkbox"
@@ -721,6 +949,108 @@ export default function LivePanel({ provider, lang, onAppend, onAmendTools, onEn
                 : ' בנתיב הזה האודיו עובר דרך השרת שלך, אבל השיפוט עדיין אצלם; '}
               השאלה היא רק <b>מה שופט</b> שסיימת לדבר.
             </p>
+
+            {oaConfig && (
+              /**
+               * What the session is minted with, above what judges the turn.
+               *
+               * Three settings and no more, because that is all this path has. There is no
+               * LLM to swap and no text-to-speech stage to pick — one model takes the audio
+               * and returns audio, which is the whole difference from the cascade.
+               */
+              <div className="pipe-oa">
+                <span className="pipe-oa-title">מה שהסשן נפתח איתו</span>
+
+                <label>
+                  <span>מודל</span>
+                  <select
+                    value={pipeline.model}
+                    onChange={(e) => setPipeline((p) => ({ ...p, model: e.target.value }))}
+                  >
+                    <option value="">{oaConfig.current.model} (ברירת מחדל)</option>
+                    {oaConfig.models.realtime.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>קול</span>
+                  <select
+                    value={pipeline.voice}
+                    onChange={(e) => setPipeline((p) => ({ ...p, voice: e.target.value }))}
+                  >
+                    <option value="">{oaConfig.current.voice} (ברירת מחדל)</option>
+                    {oaConfig.voices.map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>מודל תמלול</span>
+                  <select
+                    value={pipeline.transcribeModel}
+                    onChange={(e) => setPipeline((p) => ({ ...p, transcribeModel: e.target.value }))}
+                  >
+                    <option value="">{oaConfig.current.transcribeModel} (ברירת מחדל)</option>
+                    {oaConfig.models.transcribe.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* The distinction that a trace made expensive: here the transcript is not
+                    the model's input. Said where somebody would otherwise conclude the
+                    opposite. */}
+                <p className="pipe-oa-note">
+                  <b>התמלול כאן הוא תצוגה, לא הקלט של המודל.</b> המודל שומע את האודיו ישירות —
+                  אז החלפת המתמלל משנה מה <b>אתה קורא</b>, לא מה הסוכן מבין. בקסקייד של
+                  ElevenLabs זה הפוך בדיוק.
+                </p>
+                <p className="pipe-oa-note dim">{oaConfig.note}</p>
+              </div>
+            )}
+
+            {/**
+             * One action for the room, because the correct setting is not guessable.
+             *
+             * Every control below already existed and none of them is named after the
+             * problem. Someone whose neighbour keeps taking the turn has to know that
+             * semantic_vad has NO volume threshold — that it judges meaning, and a sentence
+             * spoken clearly across the room is a finished thought whoever said it — and
+             * that the only setting which can be told "ignore anything quieter than this"
+             * lives under the other radio button.
+             *
+             * That is a lot to know in order to press three controls. This presses them.
+             */}
+            <div className="pipe-room">
+              <button
+                type="button"
+                className="pipe-room-set"
+                onClick={() =>
+                  setPipeline((p) => ({
+                    ...p,
+                    vad: 'server',
+                    // A threshold at all, which semantic_vad cannot offer. 0.65 rejects a
+                    // conversation at desk distance while still hearing a normal voice into
+                    // the microphone; raise it if the room is worse.
+                    threshold: 0.65,
+                    // Longer, so a pause for breath is not a turn end.
+                    silenceMs: 900,
+                    // And nothing cancels an answer mid-sentence. This is the half that
+                    // actually stops "he stopped to listen to them".
+                    interrupt: 'off',
+                  }))
+                }
+              >
+                חדר רועש
+              </button>
+              <span>
+                סף עוצמה 0.65 · שקט 900ms · בלי קטיעה. <b>הבטוח היחיד הוא לחיצה לדיבור</b> —
+                זה מקטין את הבעיה, לא מבטל אותה.
+              </span>
+            </div>
 
             <label className="pipe-opt">
               <input

@@ -12,6 +12,12 @@
 /** Above this many of the hint's own terms, the transcript is the hint talking. */
 export const PHANTOM_TERM_THRESHOLD = 10
 
+/** Below this many, a dense transcript is just a short answer that happens to be a term. */
+export const PHANTOM_MIN_TERMS = 3
+
+/** How much of a transcript must BE hint terms before it is the hint rather than a question. */
+export const PHANTOM_DENSITY = 0.8
+
 /**
  * Is this transcript the vocabulary hint being read back?
  *
@@ -24,11 +30,50 @@ export const PHANTOM_TERM_THRESHOLD = 10
  * short answer that happens to be a term ("מנצ׳סטר") out of it entirely.
  */
 export function isHintEcho(text, terms = []) {
-  if (!text || terms.length === 0 || text.length < 60) return false
+  if (!text || terms.length === 0) return false
   const lower = text.toLowerCase()
-  let hits = 0
+
+  const matched = []
   for (const term of terms) {
-    if (lower.includes(term.toLowerCase()) && ++hits >= PHANTOM_TERM_THRESHOLD) return true
+    if (term && lower.includes(term.toLowerCase())) matched.push(term)
   }
+  if (matched.length === 0) return false
+
+  // The original rule: nobody says ten domain terms in one breath.
+  if (text.length >= 60 && matched.length >= PHANTOM_TERM_THRESHOLD) return true
+
+  /**
+   * And the shorter echo the count rule let through.
+   *
+   * Measured, on a live call: `מנצ׳סטר, ניו הייבן, לוס אנג׳לס, שדה תעופה, שדות תעופה,
+   * טרמינל.` — six terms, so under the threshold of ten, and it entered the conversation as
+   * something the caller had said.
+   *
+   * What separates it from a real question is not how many terms it holds but how little
+   * else. A caller asking about Boston's load factor spends most of their sentence on words
+   * that are not in the hint; an echo is the hint, with commas. So: is nearly all of this
+   * text accounted for by terms?
+   *
+   * Three at minimum, because a one-word answer ("מנצ׳סטר") is entirely a term and entirely
+   * legitimate, and two are an ordinary comparison.
+   */
+  if (matched.length >= PHANTOM_MIN_TERMS) {
+    // Longest first, so "שדות תעופה" is not measured as the shorter "שדה תעופה".
+    const byLength = [...matched].sort((a, b) => b.length - a.length)
+    let rest = lower
+    let covered = 0
+    for (const term of byLength) {
+      const t = term.toLowerCase()
+      while (rest.includes(t)) {
+        covered += t.length
+        rest = rest.replace(t, ' '.repeat(t.length))
+      }
+    }
+    // Punctuation and spacing do not count against the density — an echo is a comma-
+    // separated list and would otherwise be diluted by its own separators.
+    const meaningful = text.replace(/[\s,.;:!?׳״"'()\-]/g, '').length
+    if (meaningful > 0 && covered / meaningful >= PHANTOM_DENSITY) return true
+  }
+
   return false
 }

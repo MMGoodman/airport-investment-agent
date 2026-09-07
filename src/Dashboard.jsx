@@ -103,7 +103,11 @@ function Stat({ label, value, hint }) {
     <div className="db-stat">
       <span className="db-stat-value mono">{value}</span>
       <span className="db-stat-label">{label}</span>
-      {hint && <span className="db-stat-hint">{hint}</span>}
+      {hint && (
+        <span className="db-stat-hint">
+          <bdi>{hint}</bdi>
+        </span>
+      )}
     </div>
   )
 }
@@ -228,8 +232,14 @@ export default function Dashboard({ onOpenPath }) {
                       </span>
                     </button>
                     {verdict && <p className={`db-verdict ${verdict.tone}`}>{verdict.text}</p>}
+                    {/* Isolated for the same reason as the History rows: a count beside a
+                        Hebrew noun inside an LTR box gets reordered, and reads as a
+                        different, equally fluent number. */}
                     <p className="db-tag-meta">
-                      ב-{nf.format(row.conversations)} {row.conversations === 1 ? 'שיחה' : 'שיחות'}
+                      <bdi>
+                        ב-{nf.format(row.conversations)}{' '}
+                        {row.conversations === 1 ? 'שיחה' : 'שיחות'}
+                      </bdi>
                     </p>
                   </li>
                 )

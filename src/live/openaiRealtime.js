@@ -62,6 +62,13 @@ export function createEventHandler({
    *
    * session.update REPLACES instructions, so every load sends base plus everything already
    * loaded. That is why the base is passed in rather than looked up.
+   *
+   * And why it can be REPLACED mid-call. The base the session opened with says the weather
+   * tool is not offered on this line — true until the sideband attaches, false the moment it
+   * does. The sideband lifts that note in its own update, but a skill loading afterwards
+   * rebuilt instructions from this base and put the note back. Measured: the sideband
+   * attached at 5.2s, the ranking skill loaded at 14.3s, and at 32.9s the model answered a
+   * weather question with "not available in this call" while holding the tool.
    */
   baseInstructions = '',
   skills = [],
@@ -108,14 +115,24 @@ export function createEventHandler({
    */
   const serverCalls = new Map()
 
+  /**
+   * The base as it stands NOW, which is not always the one this handler was built with.
+   * See baseInstructions above: the sideband hands over a version without the withheld note,
+   * and every later skill load has to compose from that one instead.
+   */
+  let base = baseInstructions
+  const adoptInstructions = (text) => {
+    if (text) base = text
+  }
+
   /** Loaded already. A second send would be harmless but it is an update on a live call. */
   const loadedSkills = new Set()
 
   const loadSkillFor = (toolName) => {
     const skill = skills.find((s) => !loadedSkills.has(s.id) && s.tools?.includes(toolName))
-    if (!skill || !baseInstructions) return
+    if (!skill || !base) return
     loadedSkills.add(skill.id)
-    const parts = [baseInstructions]
+    const parts = [base]
     for (const s of skills) if (loadedSkills.has(s.id)) parts.push(s.instructions)
     send({
       type: 'session.update',
@@ -127,7 +144,7 @@ export function createEventHandler({
 
   let bargedIn = false
 
-  return async function handle(msg) {
+  async function handle(msg) {
     // Everything the session emits, before we decide what to do with it. This is the
     // raw feed the trace panel shows in verbose mode.
     onRawEvent(msg.type, msg)
@@ -187,7 +204,7 @@ export function createEventHandler({
         } catch {
           result = { raw: item.output }
         }
-        onServerToolResult(pending.name, pending.args, result)
+        onServerToolResult(pending.name, pending.args, result, item.call_id)
         break
       }
 
@@ -257,6 +274,11 @@ export function createEventHandler({
         break
     }
   }
+
+  // The sideband's way in. It is the only thing that can tell this handler the withheld note
+  // stopped being true.
+  handle.adoptInstructions = adoptInstructions
+  return handle
 }
 
 export async function startOpenAIRealtime({
@@ -364,9 +386,21 @@ export async function startOpenAIRealtime({
     serverTools: serverToolNames,
     // The call, so the trace shows it the moment it happens; then the result when the
     // server's answer comes back round, which replaces the row rather than adding one.
-    onServerToolCall: (name, args) => onToolCall({ tool: name, args, ranOn: 'server', ms: null }),
-    onServerToolResult: (name, args, result) =>
-      onToolCall({ tool: name, args, result, ranOn: 'server', ms: null, isResult: true }),
+    /**
+     * OpenAI's call id, under a name of its own — NOT `callId`.
+     *
+     * It was `callId` for one session and broke the audit: the reconcile posts every claimed
+     * `{callId, digest}` to the server, which matches against ITS log, and OpenAI's ids
+     * belong to a different space entirely. Two weather calls that had run correctly came
+     * back as "trace does not match the server log — 2 not run".
+     *
+     * The browser has no way to know the server's id for a call the server made on its own.
+     * So this id is for telling one sideband call from another here, and nothing else.
+     */
+    onServerToolCall: (name, args, sidebandId) =>
+      onToolCall({ tool: name, args, sidebandId, ranOn: 'server', ms: null }),
+    onServerToolResult: (name, args, result, sidebandId) =>
+      onToolCall({ tool: name, args, result, sidebandId, ranOn: 'server', ms: null, isResult: true }),
     onRawEvent,
     onUserTranscript,
     onAssistantTranscript,
@@ -465,6 +499,9 @@ export async function startOpenAIRealtime({
     ])
       .then((body) => {
         adoptServerTools(body.tools ?? [])
+        // Same reason the sideband sends its own: the note saying these tools are unavailable
+        // stops being true here, and a skill loading later must not put it back.
+        handle.adoptInstructions?.(body.instructions)
         onStatus(`tools: ${(body.tools ?? []).join(', ')} now run on your server — same session`)
       })
       .catch((err) => {
@@ -478,6 +515,25 @@ export async function startOpenAIRealtime({
   return {
     /** Which call this is, so the server can be told to let go of it. */
     callId,
+    /**
+     * Put a correction into the conversation WITHOUT asking for an answer.
+     *
+     * There is one situation that needs this and it is bad enough to justify the method: the
+     * model calls end_call, the tool answers "acknowledged, the client will close", and then
+     * the client declines to close because the caller never said goodbye. The model has been
+     * told the call is over and the call is not over. Measured: it said "להתראות, יום טוב",
+     * then answered the next three turns with "sorry, the conversation has already closed" —
+     * including the one where the caller asked it to hang up, which it could no longer do.
+     *
+     * No `response.create`, deliberately. The fact belongs in the context; a spoken sentence
+     * about it would be the agent narrating its own plumbing.
+     */
+    note(text) {
+      send({
+        type: 'conversation.item.create',
+        item: { type: 'message', role: 'system', content: [{ type: 'input_text', text }] },
+      })
+    },
     /** Type instead of talk — same session, same tools. */
     sendText(text) {
       send({

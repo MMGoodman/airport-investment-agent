@@ -48,15 +48,37 @@ describe('phantom transcripts', () => {
     expect(isHintEcho('מנצ׳סטר.', terms)).toBe(false)
   })
 
+  it('catches a SHORT echo, which the count rule alone let through', () => {
+    // Verbatim from a later trace. Six terms — under the threshold of ten — and it entered
+    // the conversation as something the caller had said.
+    const short = 'מנצ׳סטר, ניו הייבן, לוס אנג׳לס, שדה תעופה, שדות תעופה, טרמינל.'
+    expect(isHintEcho(short, terms)).toBe(true)
+  })
+
+  it('keeps a two-term answer, which is an ordinary comparison', () => {
+    // The density rule has to stop somewhere above this, or "compare these two" is dropped.
+    expect(isHintEcho('בוסטון ופורטלנד', terms)).toBe(false)
+  })
+
+  it('keeps a question that is mostly terms but has a question in it', () => {
+    expect(isHintEcho('תשווה לי בין שדה התעופה של בוסטון לשדה התעופה של פורטלנד.', terms)).toBe(false)
+  })
+
   it('does nothing when the vocabulary bias is off', () => {
     // With no hint sent there is no prior to read back, and nothing to drop.
     expect(isHintEcho(PHANTOM, [])).toBe(false)
   })
 
   it('needs the count, not one match short of it', () => {
-    // Padded past the length floor with characters no term can match, so the count is the
-    // only thing under test. One term either side of the threshold, nothing else changed.
-    const pad = ` ${'.'.repeat(60)}`
+    /**
+     * Padded with WORDS, not punctuation.
+     *
+     * It used to pad with sixty dots, which the density rule strips as separators — leaving
+     * nine terms and nothing else, which that rule then correctly called an echo. The old
+     * padding made the case indistinguishable from the thing being caught. Real filler
+     * dilutes the density, so the count is once again the only rule under test.
+     */
+    const pad = ` ${'אולי בבקשה '.repeat(12)}`
     const under = terms.slice(0, PHANTOM_TERM_THRESHOLD - 1).join(' ') + pad
     const over = terms.slice(0, PHANTOM_TERM_THRESHOLD).join(' ') + pad
     expect(under.length).toBeGreaterThan(60)

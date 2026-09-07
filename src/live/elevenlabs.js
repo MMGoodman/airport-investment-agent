@@ -61,7 +61,19 @@ export async function startElevenLabs({
   const toolNames = body.clientTools ?? []
 
   onStatus('opening microphone')
-  await navigator.mediaDevices.getUserMedia({ audio: true })
+  /**
+   * Asked with the same enhancements the other transports request explicitly.
+   *
+   * This was `{ audio: true }` — browser defaults, unstated. The SDK opens its own stream
+   * afterwards and inherits the permission, so what is asked for here is what the platform
+   * gets. Every other path in this build names these; leaving one path on defaults meant a
+   * comparison between them was also a comparison of two capture stages nobody had chosen.
+   *
+   * They do not solve a nearby conversation — see nearField.js for the one thing that does.
+   */
+  await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+  })
 
   const clientTools = Object.fromEntries(
     toolNames.map((name) => [

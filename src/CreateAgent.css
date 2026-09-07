@@ -1,0 +1,363 @@
+/**
+ * The create flow.
+ *
+ * Five steps and a visible spine, because the first choice changes what the later ones
+ * contain — and a form that rewrites itself under you needs to say where you are in it.
+ */
+
+.ca {
+  display: grid;
+  gap: 1.2rem;
+  max-inline-size: 56rem;
+  margin-inline: auto;
+}
+
+.ca-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ca-head h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.ca-cancel {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ca-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ca-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.ca-steps li span {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.ca-steps li.on {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
+/* Done is quieter than current but not invisible: the point of the spine is knowing how
+   much is behind you. */
+.ca-steps li.done {
+  color: var(--accent);
+  opacity: 0.75;
+}
+
+.ca-step {
+  display: grid;
+  gap: 0.7rem;
+}
+
+/* ---- pipeline ------------------------------------------------------------ */
+
+.ca-pipes {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ca-pipes label {
+  display: flex;
+  align-items: start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.ca-pipes label.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.ca-pipes span {
+  display: grid;
+  gap: 2px;
+}
+
+.ca-pipes em {
+  font-style: normal;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+
+/* ---- fields --------------------------------------------------------------- */
+
+.ca-field {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.ca-field input,
+.ca-field select,
+.ca-prompt {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--bg-sunk);
+  color: var(--text);
+  inline-size: 100%;
+}
+
+.ca-prompt {
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.ca-sub {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* ---- prompt templates ------------------------------------------------------
+ *
+ * Cards rather than a select, because the choice is between four things you should read
+ * before picking, and a dropdown hides three of them behind the one already showing.
+ */
+
+.ca-templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.ca-templates button {
+  font: inherit;
+  display: grid;
+  gap: 0.15rem;
+  text-align: start;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ca-templates button:hover {
+  border-color: var(--accent);
+}
+
+.ca-templates button.on {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.ca-templates em {
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+/* ---- declaring your own ----------------------------------------------------- */
+
+.ca-decl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ca-decl > li {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-panel);
+}
+
+.ca-decl-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ca-decl input[type='text'],
+.ca-decl select,
+.ca-decl textarea {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  inline-size: 100%;
+}
+
+.ca-params {
+  display: grid;
+  gap: 0.35rem;
+  padding-inline-start: 0.7rem;
+  border-inline-start: 2px solid var(--border);
+}
+
+.ca-param {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) auto minmax(0, 1.4fr) auto auto;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.ca-param label,
+.ca-always {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.ca-samples {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.ca-samples > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: center;
+  inline-size: 100%;
+}
+
+.ca-samples input {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  inline-size: 100%;
+}
+
+.ca-triggers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ca-triggers label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.76rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ca-handler > summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.ca-handler textarea {
+  margin-block-start: 0.4rem;
+}
+
+.ca-add,
+.ca-add-small,
+.ca-drop {
+  font: inherit;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ca-add {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+  justify-self: start;
+}
+
+.ca-add-small {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.55rem;
+  justify-self: start;
+}
+
+.ca-add:hover,
+.ca-add-small:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.ca-drop {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.ca-drop:hover {
+  color: var(--warn, #d66);
+  border-color: currentColor;
+}
+
+/* ---- step actions --------------------------------------------------------- */
+
+.ca-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.ca-actions button {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ca-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

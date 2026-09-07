@@ -51,6 +51,7 @@ function line(e) {
 function buildReport(events, provider, lang, totals) {
   const mean = (xs) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length)
   const firstWord = totals?.answers ?? []
+  const acknowledged = totals?.acknowledged ?? []
   const byStage = totals?.stages ?? {}
   const payloads = totals?.payloads ?? []
   const seen = totals?.events ?? events.length
@@ -64,10 +65,20 @@ function buildReport(events, provider, lang, totals) {
     `language : ${lang === 'he' ? 'Hebrew' : 'English'}`,
     firstWord.length
       ? `answer latency: ${firstWord.join(" ms, ")} ms` +
-        (firstWord.length > 1
-          ? `  (mean ${Math.round(firstWord.reduce((a, b) => a + b, 0) / firstWord.length)} ms)`
-          : '')
+        (firstWord.length > 1 ? `  (mean ${mean(firstWord)} ms)` : '')
       : 'answer latency: not measured',
+    /**
+     * Counted, and kept out of the mean above.
+     *
+     * These are turns where the model began speaking before a transcript existed — so it was
+     * not answering the question, it was acknowledging that one had been asked. Real, fast,
+     * and not comparable: one 251 ms acknowledgement pulled a five-turn session's mean from
+     * 1,337 to 1,120 ms, which would have made this path look faster than it is.
+     */
+    acknowledged.length
+      ? `acknowledged first: ${acknowledged.join(' ms, ')} ms — spoke before the transcript, ` +
+        'not counted as answers'
+      : null,
     Object.keys(byStage).length
       ? 'stages  : ' + Object.entries(byStage).map(([k, v]) => `${k} ${mean(v)} ms`).join('  |  ')
       : 'stages  : none recorded',
@@ -79,7 +90,11 @@ function buildReport(events, provider, lang, totals) {
       : `events: ${seen}`,
     '',
     ...events.map(line),
-  ].join('\n')
+    // The acknowledged line is null on most sessions and drops out here. The deliberate ''
+    // above stays — it is the blank that separates the header from the body.
+  ]
+    .filter((l) => l !== null)
+    .join('\n')
 }
 
 export default function LiveTrace({ events, verbose, onVerbose, onClear, provider, lang, totals }) {

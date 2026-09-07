@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { runtimeFor } from './workbench.js'
 import express from 'express'
 import cors from 'cors'
 import { runAgent } from '../src/agent/agent.js'
@@ -249,7 +250,14 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const { reply, trace, turns, usage } = await runAgent(messages, { apiKey: API_KEY, lang: lang === 'he' ? 'he' : 'en' })
+    // The agent this conversation belongs to. Absent means the built-in one.
+    const agent = runtimeFor(req.body?.agent ?? req.query?.agent)
+    const { reply, trace, turns, usage } = await runAgent(messages, {
+      apiKey: API_KEY,
+      lang: lang === 'he' ? 'he' : 'en',
+      instructions: agent.builtIn ? undefined : agent.systemPrompt,
+      allows: agent.builtIn ? undefined : agent.allows,
+    })
     res.json({ reply, toolCalls: trace, turns, usage, model: MODEL })
   } catch (err) {
     // Fail loudly: surface the real status and message, never a fake answer.

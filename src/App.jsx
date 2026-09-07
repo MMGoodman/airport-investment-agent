@@ -6,25 +6,43 @@ import AgentWorkspace from './AgentWorkspace.jsx'
 import ScenarioCapture from './ScenarioCapture.jsx'
 import TagsPane from './TagsPane.jsx'
 import Dashboard from './Dashboard.jsx'
+import EvalsPane from './EvalsPane.jsx'
+import EvalRunPane from './EvalRunPane.jsx'
+import ElevenLabsPane from './ElevenLabsPane.jsx'
 import History from './History.jsx'
 import { turnsFrom } from './turns.js'
 import ToolTrace from './ToolTrace.jsx'
 import LivePanel from './LivePanel.jsx'
 import Markdown from './Markdown.jsx'
+import ComparisonSheet from './ComparisonSheet.jsx'
 import { toPlainText } from './markdown.js'
 import { useDictation, useSpeech } from './voice.js'
 import './App.css'
 
 const AGENT_NAME = 'Airport Agent'
 
-// SPEC §1 — the four acceptance questions. They only get real answers once the
-// scoring engine and tools land in M3/M4; until then they document the target.
-const TARGET_QUESTIONS = [
-  'Which airports in New England are strong candidates for terminal expansion?',
-  'Compare LAX and SNA congestion levels.',
-  'What is the percentage of long-haul flights out of Anchorage (ANC)?',
-  'What is the unmet flight demand at SFO, and why?',
-]
+/**
+ * `/agents/<id>` -> the id, in any alphabet.
+ *
+ * One function because the initial read and the popstate handler have to agree, and when
+ * they were two copies of the same regex they agreed on the wrong thing in two places.
+ */
+function agentIdFromPath() {
+  const match = window.location.pathname.match(/^\/agents\/([^/?#]+)/)
+  if (!match) return null
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    // A malformed escape is not an agent id; treat it as no agent rather than throwing on
+    // the very first render.
+    return match[1]
+  }
+}
+
+// The four acceptance questions moved to the airport agent's own record in server/agents.js
+// — see the welcome block there. They were never four questions about this application; they
+// were four questions about that agent, and keeping them here is what made every other agent
+// open by offering them.
 
 function App() {
   const [messages, setMessages] = useState([])
@@ -41,13 +59,22 @@ function App() {
    * problem. The path is the only state — reading it on popstate is what makes back and
    * forward behave without a second source of truth.
    */
-  const [agentId, setAgentId] = useState(() => {
-    const match = window.location.pathname.match(/^\/agents\/([\w-]+)/)
-    return match ? match[1] : null
-  })
+  /**
+   * The id out of the path — and `\w` was the wrong alphabet for it.
+   *
+   * Agent ids are slugged from the name and the slug keeps Hebrew letters, because an agent
+   * called "סוכן ביטוח נסיעות" should not become "agent-2". But `[\w-]` is ASCII, so that
+   * id never matched: opening the agent worked, and RELOADING the page threw you back to
+   * the list with no error and nothing to search for. Every agent named in Hebrew — which
+   * here is all of them — was one refresh away from vanishing.
+   *
+   * Decoded too, because the browser percent-encodes those letters in the address bar and
+   * a raw `%D7%A1...` matches no agent in the list.
+   */
+  const [agentId, setAgentId] = useState(() => agentIdFromPath())
 
   const openAgent = useCallback((id) => {
-    window.history.pushState({ agentId: id }, '', `/agents/${id}`)
+    window.history.pushState({ agentId: id }, '', `/agents/${encodeURIComponent(id)}`)
     setAgentId(id)
   }, [])
 
@@ -57,20 +84,20 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const onPop = () => {
-      const match = window.location.pathname.match(/^\/agents\/([\w-]+)/)
-      setAgentId(match ? match[1] : null)
-    }
+    const onPop = () => setAgentId(agentIdFromPath())
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  useEffect(() => {
+  // Named, because creating an agent has to be able to ask for the list again.
+  const loadAgents = useCallback(() => {
     fetch('/api/agents')
       .then((r) => r.json())
       .then(setAgents)
       .catch(() => setAgents({ agents: [] }))
   }, [])
+
+  useEffect(loadAgents, [loadAgents])
   // Which brain answers, and over which pipe. All three share the same tools.
   const [providers, setProviders] = useState([])
   const [providerId, setProviderId] = useState('gemini')
@@ -166,7 +193,9 @@ function App() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next, lang }),
+        // Which agent is answering. The server resolves its prompt and its tools from
+        // this; without it every conversation would run the built-in one.
+        body: JSON.stringify({ messages: next, lang, agent: agentId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? `Server returned ${res.status}`)
@@ -282,11 +311,31 @@ function App() {
     setMessages((prev) => {
       const at = prev.findLastIndex((m) => m.role === 'assistant')
       if (at === -1) return prev
+      /**
+       * Only the calls this answer is not already carrying.
+       *
+       * The reconcile reads the whole session's server log, so a call the live session had
+       * already delivered came back round and was appended again — one stored answer listed
+       * get_airport_weather three times for a single lookup.
+       *
+       * Matched on tool and arguments rather than on an id, because THERE IS NO SHARED ID.
+       * The sideband knows OpenAI's call id and the log knows the server's own; trying to
+       * match them broke the audit instead. Two server calls to the same tool with identical
+       * arguments inside one answer are indistinguishable to a reader anyway, so collapsing
+       * them loses nothing.
+       */
+      const key = (c) => `${c.tool}::${JSON.stringify(c.args ?? {})}`
+      const held = new Set(
+        (prev[at].toolCalls ?? []).filter((c) => c.ranOn === 'server').map(key),
+      )
+      const fresh = toolCalls.filter((call) => !held.has(key(call)))
+      if (fresh.length === 0) return prev
       const next = [...prev]
-      next[at] = { ...next[at], toolCalls: [...(next[at].toolCalls ?? []), ...toolCalls] }
+      next[at] = { ...next[at], toolCalls: [...(next[at].toolCalls ?? []), ...fresh] }
       return next
     })
   }, [])
+
 
   function onKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -328,6 +377,7 @@ function App() {
         lang={lang}
         onLang={setLang}
         onOpenAgent={openAgent}
+        onAgentsChanged={loadAgents}
         error={error}
       />
     )
@@ -458,17 +508,69 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
       <ScenarioCapture open={capturing} turns={turnsFrom(messages)} onClose={() => setCapturing(null)} />
 
       <AgentWorkspace
+        agent={openAgentRecord}
+        /**
+         * Delete, then leave — in that order, and only if the server agreed.
+         *
+         * Navigating first would show the list with the agent still on it until the reload
+         * landed, and would hide a refusal entirely. The error is thrown so the dialog can
+         * show it in place rather than dropping someone back to a home screen that still
+         * has the agent they just tried to remove.
+         */
+        onDelete={async (id) => {
+          const res = await fetch(`/api/agent-store/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+          })
+          const body = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(body.error ?? 'המחיקה נכשלה')
+          loadAgents()
+          goHome()
+        }}
         nav={[
           {
             label: 'Runtime',
-            items: [{ id: 'model', label: 'Model & pipeline', icon: 'model', badge: activeProvider?.mode === 'live' ? 'חי' : '' }],
+            items: [
+              { id: 'model', label: 'Model & pipeline', icon: 'model', badge: activeProvider?.mode === 'live' ? 'חי' : '' },
+              {
+                id: 'config',
+                label: 'Configuration',
+                icon: 'config',
+                /**
+                 * One heading, one page per provider.
+                 *
+                 * They were in two unrelated places: the OpenAI pipeline sat inside the
+                 * model picker, and ElevenLabs had a pane of its own three groups down. Both
+                 * answer the same question — how is this path configured — and nothing about
+                 * the old arrangement said so.
+                 */
+                children: [
+                  { id: 'config-openai', label: 'OpenAI' },
+                  { id: 'config-elevenlabs', label: 'ElevenLabs' },
+                ],
+              },
+            ],
           },
           {
             label: 'Behaviour',
             items: [
               { id: 'prompt', label: 'Instructions', icon: 'prompt' },
-              { id: 'skills', label: 'Skills', icon: 'skills' },
+              /**
+               * Tools before Skills, matching the create flow — and the create flow is the
+               * one with no choice in the matter.
+               *
+               * A skill is instructions plus THE TOOLS WHOSE FIRST CALL LOADS THEM. It
+               * points at tools; nothing points back. So when you are building an agent the
+               * tools have to exist before a skill can name one, and the authoring step
+               * says so out loud: with no tools declared yet it offers "go back a step, or
+               * mark it always".
+               *
+               * Here in settings nothing depends on anything — it is all already made — so
+               * this order is free. Which is exactly why it should follow the one that is
+               * not: two screens listing the same two things in opposite orders is a cost
+               * paid by every reader, for nothing.
+               */
               { id: 'tools', label: 'Tools', icon: 'tools' },
+              { id: 'skills', label: 'Skills', icon: 'skills' },
             ],
           },
           {
@@ -481,10 +583,20 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
           {
             label: 'Quality',
             items: [
-              { id: 'evals', label: 'Evals', icon: 'evals' },
-              { id: 'tags', label: 'Tags', icon: 'evals' },
-              { id: 'dashboard', label: 'Dashboard', icon: 'evals' },
-              { id: 'history', label: 'History', icon: 'evals' },
+              {
+                id: 'evals',
+                label: 'Evals',
+                icon: 'evals',
+                // Two things you do with the same set: read and edit the claims, or run
+                // them against a model. Separate panes because they are separate sittings.
+                children: [
+                  { id: 'evals', label: 'Scenarios' },
+                  { id: 'evals-run', label: 'Batch' },
+                ],
+              },
+              { id: 'tags', label: 'Tags', icon: 'tags' },
+              { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+              { id: 'history', label: 'History', icon: 'history' },
             ],
           },
         ]}
@@ -504,15 +616,10 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
                   ))}
                 </select>
               </label>
-              {/* LivePanel draws its pipeline board in here. It keeps its own state; only
-                  the drawing moves. */}
-              <div ref={setSettingsSlot} />
-              {!live && (
-                <p className="ac-hint">
-                  צינור העיבוד נפתח לכוונון רק בנתיבי הקול — בנתיב הטקסט אין זיהוי תור ואין
-                  מתמלל, אז אין מה לקנפג.
-                </p>
-              )}
+              <p className="ac-hint">
+                הכוונון עצמו יושב תחת <b>Configuration</b> — כאן בוחרים איזה נתיב רץ, שם
+                מכווננים אותו.
+              </p>
             </div>
           ) : wsPane === 'dashboard' ? (
             /* Across every stored conversation rather than this one — the only panes here
@@ -526,12 +633,33 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
             />
           ) : wsPane === 'history' ? (
             <History focus={historyFocus} onFocusUsed={() => setHistoryFocus(null)} />
+          ) : wsPane === 'config-openai' ? (
+            <div className="ws-model">
+              {/* LivePanel draws its pipeline board in here. It keeps its own state; only
+                  the drawing moves — which is why this is a portal target and not a copy of
+                  the controls. */}
+              <div ref={setSettingsSlot} />
+              {!live && (
+                <p className="ac-hint">
+                  צינור העיבוד נפתח לכוונון רק בנתיבי הקול. בנתיב הטקסט אין זיהוי תור ואין
+                  מתמלל, אז אין מה לקנפג — בחר נתיב קולי ב-<b>Model &amp; pipeline</b>.
+                </p>
+              )}
+            </div>
+          ) : wsPane === 'config-elevenlabs' ? (
+            <ElevenLabsPane />
+          ) : wsPane === 'evals-run' ? (
+            <EvalRunPane />
+          ) : wsPane === 'evals' ? (
+            /* Its own pane at last. It had no branch here at all, so the nav item fell
+               through to the console's chip list — which showed case ids and nothing else. */
+            <EvalsPane />
           ) : wsPane === 'tags' ? (
             /* The one pane that reads the conversation rather than the agent's
                configuration: tagging is a question asked of what was just said. */
             <TagsPane messages={messages} />
           ) : wsPane ? (
-            <AgentConsole bare pane={wsPane} onPaneChange={setWsPane} />
+            <AgentConsole agentId={agentId} bare pane={wsPane} onPaneChange={setWsPane} />
           ) : null
         }
         rail={live ? <div ref={setTraceSlot} /> : null}
@@ -539,26 +667,36 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
         center={
           <>
         <main className="messages">
+        {/**
+         * The empty screen, belonging to the agent rather than to this file.
+         *
+         * It was three literals here — a heading about US airport expansion, a paragraph
+         * about BTS T-100, and four sample questions — so every agent opened as the airport
+         * analyst. An insurance agent created minutes earlier greeted its first caller by
+         * offering to compare LAX and SNA congestion.
+         *
+         * The chips are only rendered when the agent has some. An agent whose maker wrote
+         * none gets a heading and a line, which is the honest empty state; borrowing another
+         * agent's questions to fill the space is how this went wrong in the first place.
+         */}
         {messages.length === 0 && !loading && (
           <div className="welcome">
-            <h2>Ask about US airport expansion candidates</h2>
-            <p>
-              Every figure comes from a deterministic scoring engine over BTS T-100 data —
-              open the tool trace under any answer to see exactly which call produced it.
-              Follow-up questions work; try “why is the second one ahead of the third?”.
-            </p>
-            <div className="chips">
-              {TARGET_QUESTIONS.map((question) => (
-                <button
-                  key={question}
-                  type="button"
-                  className="chip"
-                  onClick={() => setInput(question)}
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
+            <h2>{openAgentRecord?.welcome?.title ?? openAgentRecord?.name ?? 'שיחה חדשה'}</h2>
+            {openAgentRecord?.welcome?.blurb && <p>{openAgentRecord.welcome.blurb}</p>}
+            {(openAgentRecord?.welcome?.questions ?? []).length > 0 && (
+              <div className="chips">
+                {openAgentRecord.welcome.questions.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    className="chip"
+                    onClick={() => setInput(question)}
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -600,6 +738,7 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
         {live && (
           <LivePanel
             provider={activeProvider}
+            agentId={agentId}
             lang={lang}
             onAppend={appendLive}
             onAmendTools={amendLiveTools}
@@ -627,6 +766,10 @@ Not on this path: ${activeProvider.tools.withheld.join(', ')} — they run only 
           </span>
         </div>
       )}
+
+      {/* Above whichever bottom bar this path has — the composer on text, the call controls
+          on voice — because that is the one place on screen that does not scroll away. */}
+      <ComparisonSheet live={live} onPick={setInput} />
 
       {!live && (
       <form

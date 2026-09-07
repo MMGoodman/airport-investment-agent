@@ -87,8 +87,11 @@ const GROUPS = [
     label: 'Behaviour',
     items: [
       { id: 'prompt', label: 'Instructions', icon: 'prompt' },
-      { id: 'skills', label: 'Skills', icon: 'skills' },
+      // Tools before Skills, same as the workspace rail and the create flow. A skill points
+      // at tools and nothing points back, so that is the order the create flow is forced
+      // into — and this list had the opposite one, which is two orders for one pair.
       { id: 'tools', label: 'Tools', icon: 'tools' },
+      { id: 'skills', label: 'Skills', icon: 'skills' },
     ],
   },
   {
@@ -178,7 +181,7 @@ function Disclosure({ title, meta, tone, children, defaultOpen = false }) {
  * than extracting them means the sheet and the workspace can never drift into showing
  * different things under the same name.
  */
-export default function AgentConsole({ open, onClose, bare = false, pane: panePropCargo, onPaneChange }) {
+export default function AgentConsole({ agentId, open, onClose, bare = false, pane: panePropCargo, onPaneChange }) {
   const [state, setState] = useState(null)
   const [error, setError] = useState(null)
   const [panePriv, setPane] = useState('prompt')
@@ -213,7 +216,7 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/workbench')
+      const res = await fetch(`/api/workbench?agent=${encodeURIComponent(agentId ?? '')}`)
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? 'could not read the workbench')
       setState(body)
@@ -222,7 +225,7 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
     } catch (err) {
       setError(err.message)
     }
-  }, [])
+  }, [agentId])
 
   const loadDocs = useCallback(() => {
     fetch('/api/knowledge')
@@ -254,7 +257,8 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
       const res = await fetch('/api/workbench', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        // The agent travels with the edit, or a change to one is applied to another.
+        body: JSON.stringify({ ...body, agent: agentId }),
       })
       const out = await res.json()
       if (!res.ok) throw new Error(out.error ?? 'could not apply')
@@ -267,7 +271,16 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
     } finally {
       setSaving(false)
     }
-  }, [])
+    /**
+     * `agentId` belongs here, and leaving it out undid the line above.
+     *
+     * An empty dependency array freezes this callback around the agent that was selected
+     * on first render. The body sends `agent: agentId` precisely so an edit cannot land on
+     * the wrong agent — and then captured the first one forever, so switching agents in a
+     * console that stays mounted would post every later save against the original. The
+     * comment describing the guard and the array defeating it were four lines apart.
+     */
+  }, [agentId])
 
   useEffect(() => {
     if (!saved) return undefined
@@ -292,7 +305,21 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
    */
   const badge = {
     prompt: p && (p.systemIsOverridden || p.voiceAddendumIsOverridden) ? 'נערך' : '',
-    tools: state ? `${state.tools.filter((t) => t.enabled).length}/${state.tools.length}` : '',
+    /**
+     * The ratio counts tools that can run, and declared ones are counted apart.
+     *
+     * A declared tool is permanently `enabled: false`, so leaving it in the denominator
+     * turned an agent with every tool switched on into "8/9" — a badge reporting a problem
+     * that does not exist. The count of declarations goes beside it as a separate figure,
+     * because it is a separate fact.
+     */
+    tools: state
+      ? (() => {
+          const real = state.tools.filter((t) => !t.declared)
+          const declared = state.tools.length - real.length
+          return `${real.filter((t) => t.enabled).length}/${real.length}${declared ? ` +${declared}` : ''}`
+        })()
+      : '',
     knowledge: state ? String(state.knowledge.airports) : '',
     vocabulary: state ? String(state.vocabulary.he.terms.length) : '',
     evals: state ? String(state.evals.total) : '',
@@ -417,6 +444,15 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
 
         {state && pane === 'tools' && (
           <div className="ac-pane">
+            {/**
+             * The brief, on the pane where the gap is visible.
+             *
+             * A declared tool shows here marked "אין מימוש", and the next question is always
+             * the same one: what do I hand to whoever writes it. This answers it in one
+             * click — the agent's rules, every declared tool as a JSON Schema, this repo's
+             * conventions, and the list of questions the declaration leaves open.
+             */}
+            <SpecExport agentId={agentId} />
             {state.tools.map((tool) => {
               const params = Object.entries(tool.parameters?.properties ?? {})
               return (
@@ -426,6 +462,11 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
                   tone={tool.enabled ? '' : 'off'}
                   meta={
                     <>
+                      {/* A contract with no code behind it, said on the row rather than
+                          only inside it — the list is where someone counts what an agent
+                          can do, and counting a declaration as a capability is the whole
+                          mistake this marker exists to prevent. */}
+                      {tool.declared && <span className="ac-declared">אין מימוש</span>}
                       {tool.skillName && <span className="ac-tool-skill">{tool.skillName}</span>}
                       <span className={`ac-place ${tool.placement}`}>
                         {tool.placement === 'server' ? 'השרת שלך' : 'הדפדפן'}
@@ -433,22 +474,44 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
                     </>
                   }
                 >
-                  <label className="ac-tool-toggle">
-                    <input
-                      type="checkbox"
-                      checked={tool.enabled}
-                      onChange={(event) => {
-                        const off = new Set(
-                          state.tools.filter((t) => !t.enabled).map((t) => t.name),
-                        )
-                        if (event.target.checked) off.delete(tool.name)
-                        else off.add(tool.name)
-                        patch({ disabledTools: [...off] })
-                      }}
-                    />
-                    <span>מוצע למודל</span>
-                  </label>
+                  {/**
+                   * No toggle on a declared tool.
+                   *
+                   * "מוצע למודל" answers "should this agent be given a function that
+                   * exists". For a name with nothing behind it the answer is not yes or
+                   * no — a checkbox there would let someone switch on a tool that cannot
+                   * run, and the first the caller hears of it is the agent reporting a
+                   * tool failure mid-conversation.
+                   */}
+                  {tool.declared ? (
+                    <p className="ac-warn-note">
+                      הוגדר כאן, אבל אין קוד שעונה לו. זה החוזה שהמודל היה רואה — שם,
+                      תיאור וארגומנטים. עד שייכתב מימוש הוא לא מוצע בשיחה.
+                    </p>
+                  ) : (
+                    <label className="ac-tool-toggle">
+                      <input
+                        type="checkbox"
+                        checked={tool.enabled}
+                        onChange={(event) => {
+                          const off = new Set(
+                            state.tools.filter((t) => !t.declared && !t.enabled).map((t) => t.name),
+                          )
+                          if (event.target.checked) off.delete(tool.name)
+                          else off.add(tool.name)
+                          patch({ disabledTools: [...off] })
+                        }}
+                      />
+                      <span>מוצע למודל</span>
+                    </label>
+                  )}
                   <p className="ac-tool-desc">{tool.description}</p>
+                  {tool.declared && tool.handler && (
+                    <details className="ac-handler">
+                      <summary>הסקיצה שנשמרה</summary>
+                      <pre className="mono">{tool.handler}</pre>
+                    </details>
+                  )}
                   {tool.skillName && (
                     <p className="ac-hint">
                       קריאה ראשונה לכלי הזה טוענת את הסקיל <b>{tool.skillName}</b> — הכללים שלו
@@ -790,6 +853,75 @@ export default function AgentConsole({ open, onClose, bare = false, pane: panePr
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Copy the agent's brief to the clipboard.
+ *
+ * WHY COPY AND NOT DOWNLOAD
+ *
+ * The destination is a chat box. A downloaded file has to be found, opened and pasted; the
+ * clipboard is one step and it is the step the reader was going to take anyway.
+ *
+ * WHY THE STATE MACHINE IS FOUR LINES LONG
+ *
+ * `navigator.clipboard.writeText` fails in ways nobody expects — an insecure origin, a
+ * denied permission, a document that is not focused. A button that reports success it did
+ * not have is worse than one that says it could not: the person walks away believing they
+ * are holding a specification. So a failure falls back to showing the text with it already
+ * selected, which is a worse experience and a true one.
+ */
+function SpecExport({ agentId }) {
+  const [state, setState] = useState('idle')
+  const [text, setText] = useState(null)
+
+  const run = async () => {
+    setState('working')
+    try {
+      const res = await fetch(`/api/agent-store/${encodeURIComponent(agentId)}/spec`)
+      if (!res.ok) throw new Error('could not build the spec')
+      const md = await res.text()
+      try {
+        await navigator.clipboard.writeText(md)
+        setState('copied')
+        setTimeout(() => setState('idle'), 4000)
+      } catch {
+        // Clipboard refused. Show it instead of claiming it was copied.
+        setText(md)
+        setState('manual')
+      }
+    } catch {
+      setState('failed')
+    }
+  }
+
+  return (
+    <div className="ac-spec">
+      <div className="ac-spec-row">
+        <button type="button" onClick={run} disabled={state === 'working'}>
+          {state === 'working' ? 'בונה…' : 'העתק מפרט לקלוד'}
+        </button>
+        <p className="ac-hint">
+          הכללים של הסוכן, כל כלי מוצהר כ-JSON Schema, המוסכמות של הריפו, ורשימת מה שחסר.
+        </p>
+        {state === 'copied' && <span className="ac-saved">הועתק</span>}
+        {state === 'failed' && <span className="ac-error">לא הצליח</span>}
+      </div>
+
+      {state === 'manual' && (
+        <>
+          <p className="ac-warn-note">הדפדפן לא נתן גישה ללוח. העתק מכאן:</p>
+          <textarea
+            className="ac-spec-text mono"
+            readOnly
+            rows={12}
+            value={text ?? ''}
+            ref={(el) => el?.select()}
+          />
+        </>
+      )}
     </div>
   )
 }

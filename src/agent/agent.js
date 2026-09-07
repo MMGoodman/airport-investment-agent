@@ -35,7 +35,7 @@ function retryDelayMs(payload) {
   return fromMessage ? Math.ceil(Number(fromMessage[1]) * 1000) : 20_000
 }
 
-async function callModel(contents, apiKey, instructions, attempt = 1) {
+async function callModel(contents, apiKey, instructions, declarations = functionDeclarations, attempt = 1) {
   const MAX_ATTEMPTS = 3
 
   const res = await fetch(`${ENDPOINT}/${MODEL}:generateContent`, {
@@ -44,7 +44,7 @@ async function callModel(contents, apiKey, instructions, attempt = 1) {
     body: JSON.stringify({
       system_instruction: { parts: [{ text: instructions }] },
       contents,
-      tools: [{ functionDeclarations }],
+      tools: [{ functionDeclarations: declarations }],
     }),
   })
 
@@ -54,7 +54,7 @@ async function callModel(contents, apiKey, instructions, attempt = 1) {
     const wait = Math.min(retryDelayMs(data), 30_000)
     console.warn(`  rate limited, waiting ${Math.round(wait / 1000)}s (attempt ${attempt})`)
     await sleep(wait + 500)
-    return callModel(contents, apiKey, instructions, attempt + 1)
+    return callModel(contents, apiKey, instructions, declarations, attempt + 1)
   }
 
   if (!res.ok) {
@@ -69,7 +69,15 @@ async function callModel(contents, apiKey, instructions, attempt = 1) {
  * @param {{role: 'user'|'assistant', content: string}[]} messages conversation so far
  * @returns {{reply: string, trace: object[], turns: number}}
  */
-export async function runAgent(messages, { apiKey, lang = 'en' } = {}) {
+/**
+ * @param opts.instructions  the agent's own prompt, when the caller has one.
+ * @param opts.allows        which tools it may reach for. Defaults to all of them.
+ *
+ * Both optional, and both default to what this file used to hardcode — so the CLI, the
+ * evals and every existing caller keep behaving exactly as before, and only a request that
+ * names an agent gets that agent.
+ */
+export async function runAgent(messages, { apiKey, lang = 'en', instructions: given, allows } = {}) {
   if (!apiKey) throw Object.assign(new Error('GEMINI_API_KEY is not set in .env.'), { status: 500 })
 
   const contents = messages.map((m) => ({
@@ -77,11 +85,20 @@ export async function runAgent(messages, { apiKey, lang = 'en' } = {}) {
     parts: [{ text: m.content }],
   }))
 
-  const instructions = SYSTEM_PROMPT + TEXT_LENGTH + languageInstruction(lang)
+  const instructions = given
+    ? given + TEXT_LENGTH + languageInstruction(lang)
+    : SYSTEM_PROMPT + TEXT_LENGTH + languageInstruction(lang)
+
+  // Narrowed to what this agent holds. A tool it was not given is not declared, so the
+  // model cannot reach for it and then be refused — which reads to a caller as the agent
+  // being broken rather than as it not having that tool.
+  const declarations = allows
+    ? functionDeclarations.filter((d) => allows(d.name))
+    : functionDeclarations
   const trace = []
 
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
-    const data = await callModel(contents, apiKey, instructions)
+    const data = await callModel(contents, apiKey, instructions, declarations)
     const parts = data.candidates?.[0]?.content?.parts ?? []
     const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall)
 

@@ -1,0 +1,574 @@
+/**
+ * The run pane.
+ *
+ * Three colours and each one earns it: green for a check that held, amber for one that did
+ * not, and a third, distinct treatment for a run that never reached the model at all. The
+ * last is the one people misread — a dropped socket looks like a failure unless it is told
+ * apart from one, so it gets its own mark and its own sentence rather than a red row.
+ */
+
+.er {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* ---- controls ------------------------------------------------------------- */
+
+.er-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.er-path {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.er-path select,
+.er-controls button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-3);
+  min-block-size: 30px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.er-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.er-controls button:not(:disabled):hover {
+  border-color: var(--rule-strong);
+}
+
+.er-stop {
+  color: var(--signal) !important;
+  border-color: color-mix(in srgb, var(--signal) 40%, transparent) !important;
+}
+
+/* ---- progress -------------------------------------------------------------- */
+
+.er-run {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.er-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.er-progress-bar {
+  flex: 1;
+  block-size: 6px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.er-progress-bar > span {
+  display: block;
+  block-size: 100%;
+  background: var(--live);
+  transition: inline-size 300ms ease;
+}
+
+.er-tally {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.er-tally .ok {
+  color: var(--live);
+}
+
+.er-tally .bad {
+  color: var(--signal);
+}
+
+.er-tally .err {
+  color: var(--text-dim);
+}
+
+.er-status {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* ---- results ---------------------------------------------------------------- */
+
+.er-results,
+.er-cases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.er-result {
+  background: var(--bg-panel);
+}
+
+.er-result.failed {
+  border-inline-start: 3px solid var(--signal);
+}
+
+.er-result.passed {
+  border-inline-start: 3px solid var(--live);
+}
+
+/* Neither pass nor fail: nothing was measured. Deliberately neutral. */
+.er-result.errored {
+  border-inline-start: 3px solid var(--rule-strong);
+}
+
+.er-result-head {
+  inline-size: 100%;
+  display: grid;
+  grid-template-columns: 1.2rem minmax(6rem, auto) auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.er-result-head:hover {
+  background: var(--bg-sunk);
+}
+
+.er-mark {
+  font-weight: 600;
+}
+
+.er-result.passed .er-mark {
+  color: var(--live);
+}
+
+.er-result.failed .er-mark {
+  color: var(--signal);
+}
+
+.er-result.errored .er-mark {
+  color: var(--text-dim);
+}
+
+.er-id {
+  color: var(--text-strong);
+}
+
+.er-group,
+.er-badge {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.er-badge {
+  color: var(--live);
+}
+
+.er-ask {
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.er-ms {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+/* ---- one result, open --------------------------------------------------------- */
+
+.er-result-body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-block-start: 1px solid var(--rule);
+  background: var(--bg-sunk);
+}
+
+.er-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.er-checks li {
+  display: grid;
+  grid-template-columns: 1.2rem auto minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: var(--fs-sm);
+}
+
+.er-checks li.ok .er-mark {
+  color: var(--live);
+}
+
+.er-checks li.bad .er-mark {
+  color: var(--signal);
+}
+
+.er-check-name {
+  color: var(--text-strong);
+}
+
+/* The detail says what was wanted and what arrived. It is the whole reason a verdict is
+   arguable rather than a thing you have to believe. */
+.er-check-detail {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.er-evidence {
+  display: grid;
+  gap: var(--space-1);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--rule);
+}
+
+.er-label {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.er-tool {
+  font-size: var(--fs-xs);
+  color: var(--text);
+}
+
+.er-tool em {
+  font-style: normal;
+  color: var(--text-dim);
+}
+
+.er-tool.none {
+  color: var(--signal);
+}
+
+.er-reply {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  color: var(--text);
+  max-inline-size: 62rem;
+}
+
+.er-transport {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+/* ---- picking ------------------------------------------------------------------- */
+
+.er-pick h4 {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.er-cases li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-panel);
+  font-size: var(--fs-sm);
+}
+
+.er-cases label {
+  display: grid;
+  grid-template-columns: auto minmax(6rem, auto) auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+  flex: 1;
+  min-inline-size: 0;
+  cursor: pointer;
+}
+
+.er-single {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 1px var(--space-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.er-single:not(:disabled):hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+.er-single:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .er-result-head,
+  .er-cases label {
+    grid-template-columns: 1.2rem minmax(0, 1fr) auto;
+  }
+
+  .er-ask {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+}
+
+/* ---- saved presets ---------------------------------------------------------- */
+
+.er-presets {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--bg-panel);
+}
+
+.er-presets h4 {
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.er-preset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Three controls that belong to one preset, joined so they read as one chip. */
+.er-preset-list li {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.er-preset-list button {
+  font: inherit;
+  font-size: var(--fs-xs);
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-3);
+}
+
+.er-preset {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--text) !important;
+}
+
+.er-preset .mono {
+  color: var(--text-dim);
+}
+
+.er-preset-run {
+  border-inline-start: 1px solid var(--rule) !important;
+  color: var(--live) !important;
+}
+
+.er-preset-del {
+  border-inline-start: 1px solid var(--rule) !important;
+}
+
+.er-preset-list button:not(:disabled):hover {
+  background: var(--bg-sunk);
+}
+
+.er-preset-del:not(:disabled):hover {
+  color: var(--signal) !important;
+}
+
+.er-preset-list button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.er-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--rule);
+}
+
+.er-save input {
+  flex: 1;
+  min-inline-size: 14rem;
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg-sunk);
+  color: var(--text);
+}
+
+.er-save button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.er-save button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---- a run that never reached the model ------------------------------------- */
+
+.er-failure {
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* What happened, in the reader's terms. */
+.er-why {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+
+/* What to do about it. Absent when there is nothing honest to suggest. */
+.er-fix {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.er-raw summary {
+  cursor: pointer;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.er-raw p {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* ---- repeats: the case-level verdict -------------------------------------- */
+
+.er-elapsed {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.er-copy {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 1px var(--space-3);
+  min-block-size: 26px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.er-copy:not(:disabled):hover {
+  color: var(--text);
+  border-color: var(--rule-strong);
+}
+
+.er-copy:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* One row per case rather than per attempt: with repeats, the case is the unit that has a
+   verdict and the attempt is only evidence for it. */
+.er-bycase {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.er-bycase li {
+  display: grid;
+  grid-template-columns: 1.2rem minmax(8rem, auto) 3rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-panel);
+  font-size: var(--fs-sm);
+}
+
+.er-bycase li.passed .er-mark { color: var(--live); }
+.er-bycase li.failed .er-mark { color: var(--signal); }
+
+/* Neither colour. Flaky is its own thing and reading it as either is the mistake. */
+.er-bycase li.flaky {
+  border-inline-start: 3px solid var(--signal);
+}
+
+.er-bycase li.flaky .er-mark {
+  color: var(--signal);
+  opacity: 0.7;
+}
+
+.er-flaky-note {
+  font-size: var(--fs-xs);
+  color: var(--signal);
+}
+
+.er-attempt {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}

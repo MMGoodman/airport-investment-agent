@@ -13,14 +13,16 @@
  * speech recognition, and does not pretend to.
  */
 import WebSocket from 'ws'
-import { runTool, toolSchemas } from '../src/agent/tools.js'
+import { runTool, toolSchemas, toolSchemasFor } from '../src/agent/tools.js'
+import { elevenlabs } from './elevenlabsAdapter.js'
+import { openaiAudio } from './audioAdapter.js'
 import { SYSTEM_PROMPT, VOICE_ADDENDUM, languageInstruction } from '../src/agent/prompt.js'
 import { eagerSkills } from '../src/agent/skills.js'
 
 const API = process.env.EVAL_API ?? 'http://localhost:3001'
 
 /** The text path, over the HTTP endpoint the UI uses. */
-export async function gemini(turns, lang = 'en') {
+export async function gemini(turns, lang = 'en', _opts = {}) {
   const started = Date.now()
   const messages = []
   let reply = ''
@@ -50,7 +52,19 @@ export async function gemini(turns, lang = 'en') {
  * OpenAI Realtime over WebSocket rather than WebRTC — same session shape, same tools,
  * no browser and no audio. Output is forced to text so a run costs no synthesis.
  */
-export async function openai(turns, lang = 'en') {
+/**
+ * @param opts.instructions  the prompt to use, when the caller has one.
+ * @param opts.transport      'browser' for the six tools a direct call is offered, 'relay'
+ *                            for all eight. Defaults to eight, which is what this adapter
+ *                            has always sent.
+ *
+ * The CLI has none and falls back to the file, which is right for a suite run from a clean
+ * checkout. A run started from the workbench passes the EFFECTIVE prompt instead — the one
+ * with your unsaved edits in it. Without that, editing the instructions and pressing run
+ * would grade the file you did not change, which is the same failure this adapter's own
+ * comment already warns about one paragraph down.
+ */
+export async function openai(turns, lang = 'en', opts = {}) {
   const started = Date.now()
   const key = process.env.OPENAI_API_KEY
   if (!key) throw new Error('OPENAI_API_KEY is not set')
@@ -88,15 +102,24 @@ export async function openai(turns, lang = 'en') {
        * the live session, and this adapter is not the thing that models that.
        */
       instructions:
+        opts.instructions ??
         SYSTEM_PROMPT +
-        VOICE_ADDENDUM +
-        languageInstruction(lang, true) +
-        eagerSkills()
-          .map((skill) => `
+          VOICE_ADDENDUM +
+          languageInstruction(lang, true) +
+          eagerSkills()
+            .map((skill) => `
 
 ${skill.instructions}`)
-          .join(''),
-      tools: toolSchemas.map((t) => ({
+            .join(''),
+      /**
+       * The tool list is the difference between two paths, so it cannot be a constant.
+       *
+       * This was `toolSchemas` — all eight — under the name `openai`, which is the DIRECT
+       * path, and the direct path is offered six. So the adapter called "openai" was
+       * quietly measuring the hybrid: a case that only passes because get_airport_weather
+       * was available would have passed here and failed on the line it claims to model.
+       */
+      tools: (opts.transport ? toolSchemasFor(opts.transport).tools : toolSchemas).map((t) => ({
         type: 'function',
         name: t.name,
         description: t.description,
@@ -217,4 +240,39 @@ ${skill.instructions}`)
   return { reply, toolCalls, lastTurnToolCalls, ms: Date.now() - started }
 }
 
-export const adapters = { gemini, openai }
+/**
+ * The paths a case can be run against.
+ *
+ * Two of them are the same model and differ only in how many tools it holds, which is the
+ * whole comparison this project is about: run a batch on both and the cases that pass only
+ * on the second are exactly the ones that need a server-placed tool.
+ *
+ * ElevenLabs is here too, and the comment that used to say it could not be was wrong — see
+ * elevenlabsAdapter.js. Its two rows carry the same 6/8 versus 8/8 split, so a batch across
+ * all five compares two providers AND the tool boundary in one run.
+ */
+export const adapters = {
+  gemini,
+  openai: (turns, lang, opts = {}) => openai(turns, lang, { ...opts, transport: 'browser' }),
+  'openai-hybrid': (turns, lang, opts = {}) => openai(turns, lang, { ...opts, transport: 'relay' }),
+  /**
+   * The same two paths, driven by speech instead of text.
+   *
+   * Separate entries rather than a flag, because they are not the same measurement and a
+   * result table that blurred them would be worse than one that lacked them. A case can
+   * pass on `openai-hybrid` and fail on `openai-hybrid · audio`, and that gap is the finding
+   * — it is the difference between what the model does with words and what it does with
+   * someone talking. Both of this week's live failures live in exactly that gap.
+   *
+   * They cost synthesis, audio output tokens and real seconds. Reach for them when a case is
+   * about conversation rather than about content.
+   */
+  'openai-audio': (turns, lang, opts = {}) =>
+    openaiAudio(turns, lang ?? 'he', { ...opts, transport: 'browser' }),
+  'openai-hybrid-audio': (turns, lang, opts = {}) =>
+    openaiAudio(turns, lang ?? 'he', { ...opts, transport: 'relay' }),
+  // Their agents are configured at sync time, so the language preset is the only thing an
+  // eval chooses here — the tools and the prompt are already on the agent it connects to.
+  elevenlabs: (turns, lang) => elevenlabs(turns, lang ?? 'he', { hybrid: false }),
+  'elevenlabs-hybrid': (turns, lang) => elevenlabs(turns, lang ?? 'he', { hybrid: true }),
+}

@@ -98,6 +98,121 @@
   padding: 0 var(--space-3) var(--space-2);
 }
 
+/* ---- delete -----------------------------------------------------------------
+ *
+ * At the foot of the rail, pushed there by margin-block-start:auto rather than placed
+ * after the nav: it belongs at the bottom of the sidebar whether there are four sections
+ * or twelve. Not tinted red at rest — a destructive control that shouts from across the
+ * room is one people learn to look past, and this one only has to be findable.
+ */
+
+.ws-side-foot {
+  margin-block-start: auto;
+  padding: var(--space-2);
+  border-block-start: 1px solid var(--rule);
+}
+
+.ws-delete {
+  font: inherit;
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.ws-delete.icon-only {
+  justify-content: center;
+}
+
+.ws-delete:hover {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+}
+
+.ws-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, black 55%, transparent);
+}
+
+.ws-confirm {
+  inline-size: min(30rem, 100%);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--rule-strong);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+
+.ws-confirm h3 {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.ws-confirm-loss {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.ws-confirm-warn {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--warn);
+}
+
+.ws-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.ws-confirm-actions button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+/* The one control that is actually tinted: it is the only one here that destroys
+   anything, and it is the one you have to aim at. */
+.ws-confirm-go {
+  border-color: color-mix(in srgb, var(--warn) 55%, transparent) !important;
+  color: var(--warn) !important;
+}
+
+.ws-confirm-go:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn) 15%, transparent);
+}
+
+.ws-confirm-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .ws-side-nav ul {
   list-style: none;
   margin: 0;
@@ -375,38 +490,44 @@
  * measure. Two different problems that a single max-width on the page had been solving as
  * one, badly.
  */
-.ws-center > .messages {
+/**
+ * These target `.ws-center-body`, not `.ws-center`.
+ *
+ * They were written as `.ws-center > .messages` and matched nothing: the conversation is
+ * rendered inside `.ws-center-body`, one level further down, so it is a grandchild and the
+ * child combinator never fired. The gutter and the 68rem measure were both in the file and
+ * neither reached the screen — the heading sat against the left edge and the fourth
+ * suggestion card ran off the right one.
+ */
+.ws-center-body > .messages {
   flex: 1;
   min-block-size: 0;
   overflow-y: auto;
   padding-inline: var(--gutter);
 }
 
-.ws-center > .messages > * {
+.ws-center-body > .messages > * {
   inline-size: min(100%, 68rem);
   margin-inline: auto;
 }
 
-.ws-center > .composer-inner {
+.ws-center-body > .composer-inner {
   inline-size: min(100%, 68rem);
   margin-inline: auto;
   padding-inline: var(--gutter);
-}
-
-.ws-center > .composer-inner {
   flex-shrink: 0;
 }
 
 /* Prose keeps a tighter measure than the cards and the transcript, which are scannable
    rather than read line by line. */
-.ws-center .empty p,
-.ws-center .msg {
+.ws-center-body .empty p,
+.ws-center-body .msg {
   max-inline-size: 62rem;
 }
 
 /* The panel keeps its call controls in the middle; its board and its trace are portalled
    out, so the wrapper is only a controls strip now. */
-.ws-center > .live {
+.ws-center-body > .live {
   flex-shrink: 0;
   border-block-start: 1px solid var(--rule);
 }
@@ -510,4 +631,52 @@
 .ws-rail-body > * {
   flex: 1;
   min-block-size: 0;
+}
+
+/* ---- a nav item that opens ------------------------------------------------ */
+
+.ws-item-caret {
+  margin-inline-start: auto;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  /* Rotated rather than replaced: the same glyph turning is what tells you it is the same
+     control in two states. */
+  transition: transform 0.15s ease;
+}
+
+.ws-item-caret.open {
+  transform: rotate(90deg);
+}
+
+.ws-item.on .ws-item-caret {
+  color: var(--text-strong);
+}
+
+.ws-subnav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+/* Indented to the parent's label, not its icon, so the two read as one column. */
+.ws-subitem {
+  inline-size: 100%;
+  text-align: start;
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--space-1) var(--space-3) var(--space-1) 2.6rem;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.ws-subitem:hover {
+  color: var(--text);
+}
+
+.ws-subitem.on {
+  color: var(--text-strong);
+  background: var(--bg-sunk);
 }

@@ -7,12 +7,15 @@ import { runTool, placementOf } from '../src/agent/tools.js'
 import { getStore } from '../src/data/store.js'
 import { describeUpstreamError } from '../src/upstreamError.js'
 import { mountWebhookToolRoute } from './webhookTools.js'
+import { apiGate, announce } from './auth.js'
 import { mountTagRoutes, tagConversation } from './tags.js'
 import { mountSessionRoutes, saveTags, turnsOf } from './sessions.js'
 import { mountVoiceRoutes } from './voice.js'
 import { recordToolCall, callsForSession, reconcile, mostRecentSession } from './toolLog.js'
 import { attachRelay } from './relay.js'
 import { createServer } from 'node:http'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 const app = express()
 // The audit headers are custom, so a cross-origin caller cannot read them unless they are
@@ -20,6 +23,19 @@ const app = express()
 // would have failed the reconciliation silently, which is the worst way for it to fail.
 app.use(cors({ exposedHeaders: ['x-tool-call-id', 'x-tool-digest'] }))
 app.use(express.json({ limit: '1mb' }))
+
+/**
+ * The gate, before every route and after the body parser.
+ *
+ * After, because a 401 should cost the same as a 200 to produce and reading the body is how
+ * that stays true; before every route, because listing them and gating each one is how a
+ * route added next month arrives unguarded. See server/auth.js — with no APP_ACCESS_TOKEN
+ * this does nothing at all, which is the local case.
+ */
+app.use('/api', apiGate)
+
+/** Unauthenticated on purpose: a host's health check has no token and needs none. */
+app.get('/api/health', (_req, res) => res.json({ ok: true })) 
 
 const PORT = process.env.PORT || 3001
 const API_KEY = process.env.GEMINI_API_KEY
@@ -269,8 +285,34 @@ app.post('/api/chat', async (req, res) => {
 
 // A plain http server rather than app.listen, so the realtime relay can take WebSocket
 // upgrades on the same port the HTTP API answers on.
+/**
+ * The built UI, from the same origin as the API.
+ *
+ * Only when `dist/` exists — locally it does not, because Vite serves the pages on 5173 and
+ * proxies here, and a stale `dist/` from an old build silently shadowing that is a debugging
+ * afternoon nobody enjoys.
+ *
+ * One origin is the point: no CORS to configure, no second host to keep in step, and the
+ * ElevenLabs webhook becomes a path on the same permanent domain rather than a tunnel that
+ * gets a new address every time it restarts.
+ */
+if (existsSync('dist')) {
+  app.use(express.static('dist'))
+  /**
+   * Anything that is not an API route is the single page.
+   *
+   * `/agents/<id>` is a real URL a person can reload — see agentIdFromPath in App.jsx —
+   * and without this it reaches the static handler, matches no file, and 404s. The `/api`
+   * guard has to be here or a mistyped endpoint would answer with the HTML shell, which
+   * arrives at a fetch as a JSON parse error naming nothing.
+   */
+  app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(resolve('dist/index.html')))
+  console.log('  serving the built UI from dist/')
+}
+
 const server = createServer(app)
 attachRelay(server)
 server.listen(PORT, () => {
   console.log(`API server listening on http://localhost:${PORT}  (model: ${MODEL})`)
+  announce()
 })

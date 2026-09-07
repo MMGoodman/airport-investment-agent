@@ -1,0 +1,78 @@
+/**
+ * The gate screen.
+ *
+ * Centred and small on purpose: it is the only thing on the page and it has one field. A
+ * layout that filled the window would imply there is more to do here than there is.
+ */
+
+.gate {
+  min-block-size: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+
+.gate-card {
+  inline-size: min(24rem, 100%);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5, 1.5rem);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--bg-panel);
+}
+
+.gate-card h1 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  color: var(--text-strong);
+}
+
+.gate-card p {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.gate-card input {
+  font: inherit;
+  font-size: var(--fs-base);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.gate-card input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.gate-card button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.gate-card button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.gate-error {
+  font-size: var(--fs-xs);
+  color: var(--warn);
+}
+
+.gate-card small {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}

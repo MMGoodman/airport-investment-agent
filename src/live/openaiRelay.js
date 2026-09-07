@@ -12,6 +12,7 @@
  * cancellation beyond getUserMedia's own, jitter buffering, and loss concealment — that
  * loss is part of what the comparison measures.
  */
+import { withToken } from '../accessToken.js'
 import { getToolSession } from './tools.js'
 
 export async function startOpenAIRelay({
@@ -39,7 +40,8 @@ export async function startOpenAIRelay({
   if (session) params.set('session', session)
 
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  const ws = new WebSocket(`${proto}://${location.host}/api/relay?${params}`)
+  // The token goes in the URL because a browser WebSocket has nowhere else to put it.
+  const ws = new WebSocket(withToken(`${proto}://${location.host}/api/relay?${params}`))
   ws.binaryType = 'arraybuffer'
 
   /**

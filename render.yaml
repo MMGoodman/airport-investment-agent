@@ -1,0 +1,94 @@
+# Render blueprint — one web service, one origin, one permanent address.
+#
+# WHY A WEB SERVICE AND NOT A STATIC SITE PLUS FUNCTIONS
+#
+# This process has to stay alive. `server/relay.js` accepts WebSocket upgrades on
+# /api/relay, `server/sideband.js` holds an outbound socket to OpenAI for the length of a
+# call, an eval run is background work that outlives the request that started it, and the
+# scenario drafts and workbench overrides live in memory between requests. None of those
+# survive a request/response function, which is why Vercel is the wrong shape here and a
+# container is the right one.
+#
+# WHAT THIS FIXES BESIDES HOSTING
+#
+# The tunnel. `cloudflared tunnel --url` hands out a new random hostname every time it
+# starts, so PUBLIC_BASE_URL goes stale, the ElevenLabs agent keeps a webhook address that
+# no longer answers, and its two server-placed tools quietly stop working until somebody
+# re-runs `npm run sync:agent`. A Render service has one hostname forever: set
+# PUBLIC_BASE_URL to it once, sync once, and that whole category of breakage is gone.
+
+services:
+  - type: web
+    name: airport-investment-agent
+    runtime: node
+    plan: starter # free instances sleep, and a sleeping agent is not a test environment
+    region: frankfurt # nearest to Israel of Render's regions; latency is the product here
+    branch: live-voice-agents
+
+    # The UI is built into dist/, which server/index.js serves when it exists. One origin,
+    # so there is no CORS to configure and no second deploy to keep in step.
+    buildCommand: npm ci && npm run build
+    startCommand: npm run server
+
+    healthCheckPath: /api/health
+
+    # Without this, every deploy starts with an empty data/ — the agents you created, the
+    # conversations you recorded to study, the eval presets. All of it is written at runtime
+    # by the server, none of it is in the repo, and losing it on each push would make a test
+    # deployment useless for the thing it exists for.
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+
+    envVars:
+      # THE ONE THAT MUST NOT BE SKIPPED.
+      #
+      # Without it the gate in server/auth.js is off, and this address mints ephemeral
+      # OpenAI keys, ElevenLabs signed URLs that spend real minutes, Soniox keys and Gemini
+      # quota for anyone who finds it. `generateValue` makes Render invent one and keep it;
+      # read it from the dashboard once and paste it into the page.
+      - key: APP_ACCESS_TOKEN
+        generateValue: true
+
+      # Its own hostname, so the ElevenLabs webhook tools have somewhere permanent to call.
+      # `fromService` means it is filled in after the service exists rather than typed and
+      # mistyped — but note it arrives WITHOUT a scheme, so set it by hand as
+      # https://<host> the first time. Then run `npm run sync:agent` once, locally, with
+      # PUBLIC_BASE_URL pointing here.
+      - key: PUBLIC_BASE_URL
+        sync: false
+
+      # Provider credentials. `sync: false` keeps them out of this file and out of git —
+      # they are entered in the Render dashboard and never leave it.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_HYBRID_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_WEBHOOK_SECRET
+        sync: false
+      - key: SONIOX_API_KEY
+        sync: false
+
+      # Behaviour, safe to keep in the repo. Anything omitted falls back to the default in
+      # the code, so this list is the settings worth being explicit about rather than all
+      # of them.
+      - key: NODE_VERSION
+        value: "22" # node:sqlite and the Vite requirement both want ≥ 20.19; 22 is clear of both
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: OPENAI_REALTIME_MODEL
+        value: gpt-realtime
+      - key: DEFAULT_LANG
+        value: he
+      # `low` is what makes semantic_vad wait for a thought to finish — and, measured, never
+      # close a turn that was cut off mid-word. `medium` is the setting to test a public
+      # deployment on; the pipeline panel can still override it per session.
+      - key: OPENAI_VAD_EAGERNESS
+        value: medium

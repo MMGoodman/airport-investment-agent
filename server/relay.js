@@ -20,6 +20,7 @@
  * sends raw Int16 frames as binary messages; OpenAI's base64 stays server-side.
  */
 import { WebSocketServer, WebSocket } from 'ws'
+import { tokenIsValid, tokenFrom } from './auth.js'
 import { buildRealtimeSession } from './voice.js'
 import { runTool } from '../src/agent/tools.js'
 import { recordToolCall } from './toolLog.js'
@@ -31,6 +32,24 @@ export function attachRelay(httpServer) {
   const wss = new WebSocketServer({ server: httpServer, path: '/api/relay' })
 
   wss.on('connection', async (client, req) => {
+    /**
+     * The gate again, because Express never saw this connection.
+     *
+     * `new WebSocketServer({ server })` takes the upgrade off the HTTP server before any
+     * middleware runs, so the `app.use('/api', apiGate)` two files away does not cover the
+     * one endpoint here — and this endpoint opens an upstream socket to OpenAI on your key.
+     * A gate that stopped at the HTTP routes would have looked complete and left the most
+     * expensive door open.
+     *
+     * The token arrives in the query string: a browser's WebSocket constructor takes a URL
+     * and subprotocols and cannot set a header. Closing with 1008 rather than answering,
+     * because there is no protocol here for "authenticate now".
+     */
+    if (!tokenIsValid(tokenFrom(req))) {
+      client.close(1008, 'access token required')
+      return
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       client.close(1011, 'OPENAI_API_KEY is not set')
       return

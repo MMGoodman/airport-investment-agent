@@ -7,6 +7,7 @@ import { annualFor, getStore, resolveRegion, selectAirports } from '../data/stor
 import { explain, scoreAirports } from '../scoring/score.js'
 import { longHaulProfile, rawMetrics, BASELINE_YEAR, MOMENTUM_FROM, LATEST_YEAR } from '../scoring/metrics.js'
 import { round } from '../scoring/normalize.js'
+import { readFile } from 'node:fs/promises'
 
 /** The only metric names compare_airports understands. */
 export const COMPARABLE_METRICS = [
@@ -67,16 +68,120 @@ function meta(extra = []) {
  */
 const WEATHER_SOURCE = 'Open-Meteo current conditions (api.open-meteo.com), a live third-party feed'
 
-function weatherMeta(extra = []) {
-  return {
+/**
+ * api.weather.gov refuses a generic agent string, and asks for a contact rather than a name.
+ *
+ * It is a public service with no key and no account, so the User-Agent is the only way they
+ * can reach whoever is calling. Overridable for a real deployment.
+ */
+const NWS_HEADERS = {
+  'User-Agent':
+    process.env.NWS_USER_AGENT ||
+    'airport-investment-agent (https://github.com/MMGoodman/airport-investment-agent)',
+}
+
+/**
+ * Provenance, per source — because the two sources are not the same kind of fact.
+ *
+ * This used to hardcode one line: "Model output at the airport coordinates, not an official
+ * METAR from the field." That is true of Open-Meteo and FALSE of the National Weather
+ * Service, whose readings come from an instrument at the airport. A `meta` block that said
+ * the first while the second had answered would be the system quietly misdescribing its own
+ * evidence — in the one project whose whole claim is that every figure can be traced.
+ *
+ * So the caveat travels with whoever answered, and the fallback ends up strengthening the
+ * provenance rather than diluting it.
+ */
+const WEATHER_SOURCES = {
+  'open-meteo': {
     source: WEATHER_SOURCE,
+    caveat: 'Model output at the airport coordinates, not an official METAR from the field.',
+  },
+  nws: {
+    source:
+      'US National Weather Service (api.weather.gov), the latest observation from the airport’s own reporting station',
+    caveat:
+      'An instrument reading from the field, not a model. Some stations report partially — a field that is null was not observed, and must not be described as absent or as zero.',
+  },
+}
+
+function weatherMeta(which = 'open-meteo', extra = []) {
+  const { source, caveat } = WEATHER_SOURCES[which] ?? WEATHER_SOURCES['open-meteo']
+  return {
+    source,
     period: 'current observation',
     coverage: 'The 158 airports in this build, located by the coordinates in data/airports.json.',
     assumptions: [
       'Live reading, not a scored figure. It is not deterministic and it is not an input to any ranking.',
-      'Model output at the airport coordinates, not an official METAR from the field.',
+      caveat,
       ...extra,
     ],
+  }
+}
+
+/**
+ * The airport's own observation station, resolved once by scripts/build-nws-stations.js.
+ *
+ * Read lazily and kept, because most sessions never ask about weather and this is a file
+ * read on a path that otherwise touches no disk. Absent file, absent airport, absent
+ * everything: the reader falls back to asking NWS live, which costs a round trip and works.
+ */
+let nwsStations = null
+async function stationFor(iata, lat, lon) {
+  if (nwsStations === null) {
+    try {
+      nwsStations = JSON.parse(await readFile(new URL('../../data/nws-stations.json', import.meta.url), 'utf8'))
+    } catch {
+      nwsStations = {}
+    }
+  }
+  if (nwsStations[iata]) return nwsStations[iata]
+
+  const res = await fetch(`https://api.weather.gov/points/${lat},${lon}/stations`, {
+    headers: NWS_HEADERS,
+    signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
+  })
+  if (!res.ok) throw new Error(`station lookup returned ${res.status}`)
+  const id = (await res.json())?.features?.[0]?.properties?.stationIdentifier
+  if (!id) throw new Error('no reporting station near that airport')
+  return id
+}
+
+/**
+ * The same shape Open-Meteo produces, from an instrument reading.
+ *
+ * NULLS ARE KEPT AS NULLS, deliberately. A METAR is often partial — measured here, Honolulu
+ * returned a temperature and no textDescription, San Juan and Guam the same. The tempting
+ * repair is a default: call it "clear", call the cloud cover 0. Both are inventions, and
+ * inventing a figure is the single thing this whole system exists to prevent. A null says
+ * "not observed", the tool's description tells the model to say so, and that is the honest
+ * answer to a partial observation.
+ *
+ * cloudCoverPct has no counterpart at all: NWS reports cloud LAYERS, not a percentage.
+ * Deriving one would be arithmetic on an observation nobody made.
+ */
+function fromNws(properties) {
+  const c = (v) => (v == null ? null : round(v, 1))
+  const knots = (kmh) => (kmh == null ? null : round(kmh * 0.539957, 1))
+  const f = (celsius) => (celsius == null ? null : round(celsius * 1.8 + 32, 1))
+  const t = c(properties.temperature?.value)
+  // NWS gives whichever of the two applies to the conditions, and null for the other.
+  const feels = c(properties.heatIndex?.value ?? properties.windChill?.value ?? properties.temperature?.value)
+
+  return {
+    observedAt: properties.timestamp ?? null,
+    conditions: properties.textDescription?.trim() || null,
+    temperatureC: t,
+    temperatureF: f(t),
+    feelsLikeC: feels,
+    feelsLikeF: f(feels),
+    windKnots: knots(properties.windSpeed?.value),
+    windGustKnots: knots(properties.windGust?.value),
+    windDirectionDegrees: properties.windDirection?.value ?? null,
+    visibilityMetres: properties.visibility?.value ?? null,
+    precipitationMm: properties.precipitationLastHour?.value ?? null,
+    cloudCoverPct: null,
+    station: properties.station ? String(properties.station).split('/').pop() : null,
   }
 }
 
@@ -457,31 +562,73 @@ export const handlers = {
       'wind_gusts_10m,visibility,precipitation,cloud_cover,weather_code' +
       '&wind_speed_unit=kn&timezone=auto'
 
-    let current
-    try {
-      const upstream = await fetch(url, { signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS) })
-      if (!upstream.ok) {
+    /**
+     * The National Weather Service, when Open-Meteo will not answer.
+     *
+     * WHY A SECOND SOURCE AT ALL
+     *
+     * Open-Meteo is free and keyless, and it rate-limits by address. A laptop is one caller;
+     * a shared host is thousands. Measured on the deployment: every weather question came
+     * back `429 upstream` while the identical call from the developer's machine succeeded —
+     * so the tool worked everywhere except the place people were sent to try it.
+     *
+     * WHY THIS SOURCE
+     *
+     * Because it fits the product better than the primary does. This agent covers US
+     * airports only, and NWS is the US government's own service: keyless, no per-address
+     * limit, and its reading comes from an instrument AT the airport rather than a model
+     * evaluated at its coordinates. The fallback is more authoritative than the thing it
+     * falls back from, which is not the usual shape of a workaround.
+     *
+     * WHY NOT SWAP THEM
+     *
+     * One request against two, and speed is the product here. NWS has no endpoint that takes
+     * an IATA code, so it needs the station resolved first — pre-resolved for all 158 in
+     * data/nws-stations.json, but a mistaken guess there costs a live lookup. Open-Meteo
+     * stays first because it is one call and it answers everything; this catches the case
+     * where it will not.
+     */
+    const viaNws = async (why) => {
+      try {
+        const station = await stationFor(code, airport.lat, airport.lon)
+        const res = await fetch(`https://api.weather.gov/stations/${station}/observations/latest`, {
+          headers: NWS_HEADERS,
+          signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
+        })
+        if (!res.ok) throw new Error(`observations returned ${res.status}`)
+        const properties = (await res.json())?.properties
+        if (!properties) throw new Error('no observation in the response')
         return {
-          data: { error: 'weather_feed_failed', requested: code, status: upstream.status, stage: 'upstream' },
-          meta: weatherMeta(),
+          data: { ...describe(store, code), ...fromNws(properties) },
+          // The reason the primary was skipped rides along: a reader comparing two traces of
+          // the same question needs to know why they came from different places.
+          meta: weatherMeta('nws', [`Open-Meteo did not answer (${why}), so this is the NWS observation.`]),
         }
-      }
-      current = (await upstream.json()).current
-    } catch (err) {
-      return {
-        data: {
-          error: 'weather_feed_unreachable',
-          requested: code,
-          stage: 'network',
-          why: err.name === 'TimeoutError' ? `No answer within ${WEATHER_TIMEOUT_MS} ms.` : err.message,
-        },
-        meta: weatherMeta(),
+      } catch (err) {
+        // Both sources down is a different fact from one being down, and says so.
+        return {
+          data: {
+            error: 'weather_unavailable',
+            requested: code,
+            stage: 'both_sources',
+            openMeteo: why,
+            nws: err.message,
+          },
+          meta: weatherMeta('nws'),
+        }
       }
     }
 
-    if (!current) {
-      return { data: { error: 'weather_feed_empty', requested: code }, meta: weatherMeta() }
+    let current
+    try {
+      const upstream = await fetch(url, { signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS) })
+      if (!upstream.ok) return viaNws(`HTTP ${upstream.status}`)
+      current = (await upstream.json()).current
+    } catch (err) {
+      return viaNws(err.name === 'TimeoutError' ? `no answer within ${WEATHER_TIMEOUT_MS} ms` : err.message)
     }
+
+    if (!current) return viaNws('an empty response')
 
     // Both scales, computed here rather than left to the model: US airports are read in
     // Fahrenheit and the caller may be thinking in Celsius, and a unit conversion is
@@ -666,7 +813,7 @@ export const toolSchemas = [
     name: 'get_airport_weather',
     placement: 'server',
     description:
-      'Current weather at one covered airport, read live from a third-party feed. Use for "what is the weather at X" questions. It is an observation, not a scored figure, and it is not an input to any ranking — never use it to argue for or against an expansion. The iata argument must come from a tool result or from the caller: call list_supported_regions to turn a region or city into codes rather than recalling one. The result names the airport city, state and region — check them against what was asked before reporting the reading.',
+      'Current weather at one covered airport, read live. Use for "what is the weather at X" questions. It is an observation, not a scored figure, and it is not an input to any ranking — never use it to argue for or against an expansion. The iata argument must come from a tool result or from the caller: call list_supported_regions to turn a region or city into codes rather than recalling one. The result names the airport city, state and region — check them against what was asked before reporting the reading. A NULL FIELD MEANS THAT INSTRUMENT DID NOT REPORT, not that the value is zero or that conditions are clear: say the field was not observed and give the ones that were. `meta.source` names which feed answered and differs between calls — quote what it says rather than assuming.',
     parameters: {
       type: 'object',
       properties: {

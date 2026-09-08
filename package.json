@@ -23,7 +23,8 @@
     "notebook:html": "python -m nbconvert --to html --no-input --output voice-latency notebooks/voice-latency.ipynb",
     "verify:claims": "node scripts/verify-claims.js",
     "probe:sideband": "node scripts/probe-sideband-instructions.js",
-    "diagrams": "node scripts/gen-architecture-tabs.mjs && node scripts/gen-hybrid-sequence.mjs && node scripts/gen-hybrid-simple.mjs && node scripts/gen-elevenlabs-hybrid.mjs"
+    "diagrams": "node scripts/gen-architecture-tabs.mjs && node scripts/gen-hybrid-sequence.mjs && node scripts/gen-hybrid-simple.mjs && node scripts/gen-elevenlabs-hybrid.mjs",
+    "stations": "node scripts/build-nws-stations.js"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.23.0",

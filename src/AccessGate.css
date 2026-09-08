@@ -76,3 +76,63 @@
   font-size: var(--fs-xs);
   color: var(--text-dim);
 }
+
+/* ---- the code field ---------------------------------------------------------
+ *
+ * Large, spaced and centred: a code that gets read off a slide or repeated down a phone is
+ * checked by eye after typing, and a normal-sized input in a normal font makes that
+ * checking harder than the typing was.
+ */
+
+.gate-code {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 1.25rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.gate-code::placeholder {
+  font-size: 0.9rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* ---- waking -----------------------------------------------------------------
+ *
+ * Shown only after the probe has taken more than a beat. Its job is to turn a blank
+ * rectangle into a stated cost — see AccessGate.jsx for what it replaced.
+ */
+
+.gate-waking {
+  text-align: center;
+}
+
+.gate-waking-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--text-strong) !important;
+  font-size: var(--fs-base) !important;
+}
+
+/* A slow pulse rather than a spinner: a spinner implies work that is nearly done, and this
+   wait is not nearly done. */
+.gate-dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: gate-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes gate-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* Motion is decoration here; the words carry the meaning. */
+@media (prefers-reduced-motion: reduce) {
+  .gate-dot { animation: none; opacity: 0.7; }
+}

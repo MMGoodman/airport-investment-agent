@@ -73,11 +73,75 @@ export const gateIsOn = () => token().length > 0
  * would leak the token's length to anyone willing to time the difference. Hashing first
  * makes both sides 32 bytes whatever was sent.
  */
+/**
+ * Compare the way a person types, not the way a machine stores.
+ *
+ * The generated token — `Xy7_kQm-9vB3nFp2…`, 43 characters of base64url — is unreadable
+ * down a phone line and unreadable off a slide. Somebody who wants to show this to a room
+ * should be able to set `APP_ACCESS_TOKEN=JONES-2026` and say it out loud. That only works
+ * if the gate forgives what a human does to a code between hearing it and typing it: a
+ * trailing space from a paste, a lowercase morning, a dash they remember as a space.
+ *
+ * So both sides are folded to letters and digits, uppercased, before comparing. `jones 2026`
+ * and `JONES-2026` become the same string; so do `Jones2026` and `  JONES-2026  `.
+ *
+ * WHAT THAT COSTS, SAID PLAINLY
+ *
+ * Entropy. Case folding turns 62 symbols into 36; dropping punctuation removes more. On a
+ * 43-character random token the remainder is still far past anything brute force reaches. On
+ * a short human code it is not, and that is the whole reason the rate limit below exists —
+ * forgiveness and a short code together are only safe if guessing is slow.
+ */
+const fold = (s) =>
+  String(s ?? '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+
 export function tokenIsValid(given) {
   const expected = token()
   if (!expected) return true
-  const digest = (s) => createHash('sha256').update(String(s ?? '')).digest()
+  /**
+   * Hashed first so both buffers are 32 bytes.
+   *
+   * `timingSafeEqual` throws on a length mismatch, and returning early on that would leak
+   * the code's length to anyone willing to time it — which matters far more for a short code
+   * than for a long one.
+   */
+  const digest = (s) => createHash('sha256').update(fold(s)).digest()
   return timingSafeEqual(digest(given), digest(expected))
+}
+
+/**
+ * Guessing has to be slow, or a short code is not a code.
+ *
+ * Six digits is a million combinations — an afternoon at any speed the network allows, and
+ * the difference between "a code" and "a formality". Ten wrong answers from one address
+ * buys a minute of silence, which turns that afternoon into years without ever
+ * inconveniencing somebody who mistyped twice.
+ *
+ * Per address and in memory, which is the right shape for the threat: this is a link shared
+ * with a team, not a service under attack. A restart clears it, and that is fine — an
+ * attacker cannot cause a restart, and the operator who can has better options.
+ */
+const attempts = new Map()
+const WINDOW_MS = 60_000
+const MAX_FAILURES = 10
+
+export function overGuessLimit(ip) {
+  const now = Date.now()
+  const recent = (attempts.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
+  attempts.set(ip, recent)
+  return recent.length >= MAX_FAILURES
+}
+
+export function recordFailure(ip) {
+  const now = Date.now()
+  attempts.set(ip, [...(attempts.get(ip) ?? []).filter((t) => now - t < WINDOW_MS), now])
+  // Unbounded growth is a slow leak on a long-lived process; addresses that have gone quiet
+  // are not worth remembering.
+  if (attempts.size > 5000) {
+    for (const [key, times] of attempts) if (!times.some((t) => now - t < WINDOW_MS)) attempts.delete(key)
+  }
 }
 
 /** From a header, or from the query string when the caller is a browser WebSocket. */
@@ -87,16 +151,33 @@ export const tokenFrom = (req) =>
   new URL(req.url ?? '/', 'http://host').searchParams.get('token') ||
   ''
 
+/** Behind Render, and behind cloudflared, the caller is not `req.ip`. */
+const callerIp = (req) =>
+  req.get?.('cf-connecting-ip') ||
+  (req.get?.('x-forwarded-for') || '').split(',')[0].trim() ||
+  req.ip ||
+  ''
+
 export function apiGate(req, res, next) {
   if (!gateIsOn()) return next()
   if (OPEN.some((prefix) => fullPath(req).startsWith(prefix))) return next()
+
+  const ip = callerIp(req)
+  if (overGuessLimit(ip)) {
+    // 429 rather than 401: the difference between "wrong" and "stop asking" is the whole
+    // point of the limit, and a client that cannot tell them apart will keep retrying.
+    return res.status(429).json({ error: 'too many attempts — wait a minute' })
+  }
+
   if (tokenIsValid(tokenFrom(req))) return next()
 
+  recordFailure(ip)
   /**
    * 401 and nothing else.
    *
-   * No hint about what was wrong, no echo of what was sent. The reply to a caller without
-   * the token should tell them only that there is one.
+   * No hint about what was wrong, no echo of what was sent, and no word about how many
+   * attempts are left. The reply to a caller without the code should tell them only that
+   * there is one.
    */
   return res.status(401).json({ error: 'access token required' })
 }

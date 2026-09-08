@@ -13,7 +13,7 @@
  * back here.
  */
 import { describe, it, expect, afterEach } from 'vitest'
-import { apiGate, tokenIsValid, gateIsOn } from '../auth.js'
+import { apiGate, tokenIsValid, gateIsOn, overGuessLimit, recordFailure } from '../auth.js'
 
 const before = process.env.APP_ACCESS_TOKEN
 afterEach(() => {
@@ -108,5 +108,47 @@ describe('the access gate', () => {
     expect(() => tokenIsValid('x')).not.toThrow()
     expect(tokenIsValid('x')).toBe(false)
     expect(tokenIsValid('a-fairly-long-token-value')).toBe(true)
+  })
+})
+
+/**
+ * The forgiving comparison and the limit that makes it safe.
+ *
+ * These exist together on purpose. Folding case and punctuation is what lets somebody set
+ * `JONES-2026` and say it out loud; it also shrinks the search space, and a short code with
+ * a forgiving comparison and no rate limit is a formality rather than a gate.
+ */
+describe('a code a person can be told', () => {
+  it('ignores case, spaces and dashes on both sides', () => {
+    process.env.APP_ACCESS_TOKEN = 'JONES-2026'
+    for (const typed of ['JONES-2026', 'jones-2026', 'jones 2026', 'Jones2026', '  JONES-2026  ']) {
+      expect(tokenIsValid(typed), typed).toBe(true)
+    }
+    expect(tokenIsValid('JONES-2027')).toBe(false)
+    expect(tokenIsValid('')).toBe(false)
+  })
+
+  it('still matches a long generated token, which contains - and _', () => {
+    process.env.APP_ACCESS_TOKEN = 'Xy7_kQm-9vB3nFp2QrLs4TvWx8ZaBcDeFgHiJkLmNoP'
+    expect(tokenIsValid('Xy7_kQm-9vB3nFp2QrLs4TvWx8ZaBcDeFgHiJkLmNoP')).toBe(true)
+    expect(tokenIsValid('Xy7_kQm-9vB3nFp2QrLs4TvWx8ZaBcDeFgHiJkLmNoQ')).toBe(false)
+  })
+
+  it('stops guessing after ten wrong answers from one address', () => {
+    process.env.APP_ACCESS_TOKEN = '482913'
+    const ip = '203.0.113.9'
+    expect(overGuessLimit(ip)).toBe(false)
+    for (let i = 0; i < 10; i += 1) recordFailure(ip)
+    expect(overGuessLimit(ip)).toBe(true)
+    // One address being throttled must not throttle anybody else.
+    expect(overGuessLimit('203.0.113.10')).toBe(false)
+  })
+
+  it('refuses a throttled caller with 429, which is not the same answer as a wrong code', () => {
+    process.env.APP_ACCESS_TOKEN = '482913'
+    const req = request('/api/agents', 'wrong')
+    req.headers['x-forwarded-for'] = '198.51.100.7'
+    for (let i = 0; i < 12; i += 1) run(req)
+    expect(run(req)).toBe(429)
   })
 })
